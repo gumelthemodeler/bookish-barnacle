@@ -72,17 +72,27 @@ end
 local function UpdateLayoutForScreen()
 	local vp = camera.ViewportSize
 	if vp.X == 0 or vp.Y == 0 or not LayoutRefs.MasterLayout then return end
-	local isMobile = (vp.X <= 850) or (vp.Y > vp.X)
+	local isMobile = (vp.X <= 650) or (vp.Y > vp.X * 1.1)
 
 	if isMobile then
 		LayoutRefs.MasterLayout.FillDirection = Enum.FillDirection.Vertical
-		LayoutRefs.MissionsPanel.Size = UDim2.new(0.95, 0, 0.65, 0)
-		LayoutRefs.PartyPanel.Size = UDim2.new(0.95, 0, 0.35, -20)
+		LayoutRefs.MissionsPanel.Size = UDim2.new(0.95, 0, 0, 650)
+		LayoutRefs.PartyPanel.Size = UDim2.new(0.95, 0, 0, 0)
+		LayoutRefs.PartyPanel.AutomaticSize = Enum.AutomaticSize.Y
+		if LayoutRefs.PartyContent then
+			LayoutRefs.PartyContent.Size = UDim2.new(1, -30, 0, 0)
+			LayoutRefs.PartyContent.AutomaticSize = Enum.AutomaticSize.Y
+		end
 		LayoutRefs.PartyPanel.Position = UDim2.new(0, 0, 0, 0)
 	else
 		LayoutRefs.MasterLayout.FillDirection = Enum.FillDirection.Horizontal
 		LayoutRefs.MissionsPanel.Size = UDim2.new(0.68, 0, 1, 0)
 		LayoutRefs.PartyPanel.Size = UDim2.new(0.28, 0, 1, -20)
+		LayoutRefs.PartyPanel.AutomaticSize = Enum.AutomaticSize.None
+		if LayoutRefs.PartyContent then
+			LayoutRefs.PartyContent.Size = UDim2.new(1, -30, 1, -30)
+			LayoutRefs.PartyContent.AutomaticSize = Enum.AutomaticSize.None
+		end
 		LayoutRefs.PartyPanel.Position = UDim2.new(0, 0, 0, 10)
 	end
 end
@@ -90,10 +100,23 @@ end
 function ExpeditionsTab.Initialize(parentFrame)
 	for _, child in ipairs(parentFrame:GetChildren()) do if child:IsA("GuiObject") then child:Destroy() end end
 
-	local MasterLayout = Instance.new("UIListLayout", parentFrame)
-	MasterLayout.SortOrder = Enum.SortOrder.LayoutOrder; MasterLayout.Padding = UDim.new(0, 20); MasterLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	local MasterScroll = Instance.new("ScrollingFrame", parentFrame)
+	MasterScroll.Size = UDim2.new(1, 0, 1, 0)
+	MasterScroll.BackgroundTransparency = 1
+	MasterScroll.ScrollBarThickness = 0
+	MasterScroll.BorderSizePixel = 0
 
-	local MissionsPanel = Instance.new("Frame", parentFrame)
+	local MasterLayout = Instance.new("UIListLayout", MasterScroll)
+	MasterLayout.SortOrder = Enum.SortOrder.LayoutOrder; MasterLayout.Padding = UDim.new(0, 20); MasterLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	MasterLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		if MasterLayout.FillDirection == Enum.FillDirection.Vertical then
+			MasterScroll.CanvasSize = UDim2.new(0, 0, 0, MasterLayout.AbsoluteContentSize.Y + 40)
+		else
+			MasterScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+		end
+	end)
+
+	local MissionsPanel = Instance.new("Frame", MasterScroll)
 	MissionsPanel.BackgroundTransparency = 1; MissionsPanel.LayoutOrder = 1
 
 	local HeaderFrame = Instance.new("Frame", MissionsPanel)
@@ -326,7 +349,6 @@ function ExpeditionsTab.Initialize(parentFrame)
 
 	FetchDoomsdayData = function(isBackgroundSync)
 		task.spawn(function()
-			-- [[ THE FIX: Added 3 second timeout so the client doesn't freeze if the boss isn't spawned ]]
 			local remote = Network:WaitForChild("GetDoomsdayData", 3)
 			if not remote then return end
 
@@ -415,7 +437,6 @@ function ExpeditionsTab.Initialize(parentFrame)
 
 	Network:WaitForChild("PvPUpdate").OnClientEvent:Connect(function(action, matchId, p1Name, p2Name, p1Id, p2Id, turnEndTime, is3v3, t1Ids, t2Ids)
 		if action == "MatchStarted" then
-			-- [[ THE FIX: Check if we are actually involved in the match before visually resetting the queue button ]]
 			local amIInvolved = false
 			if is3v3 and t1Ids and t2Ids then
 				if table.find(t1Ids, player.UserId) or table.find(t2Ids, player.UserId) then amIInvolved = true end
@@ -477,24 +498,32 @@ function ExpeditionsTab.Initialize(parentFrame)
 	-- ==========================================
 	-- RIGHT PANEL: PARTY SYSTEM 
 	-- ==========================================
-	local PartyPanel = Instance.new("Frame", parentFrame)
+	local PartyPanel = Instance.new("Frame", MasterScroll)
 	PartyPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 18); PartyPanel.LayoutOrder = 2
 	local pStroke = Instance.new("UIStroke", PartyPanel); pStroke.Color = UIHelpers.Colors.BorderMuted; pStroke.Thickness = 2
 
+	local PartyContent = Instance.new("Frame", PartyPanel)
+	PartyContent.Size = UDim2.new(1, -30, 1, -30); PartyContent.Position = UDim2.new(0, 15, 0, 15); PartyContent.BackgroundTransparency = 1
+
+	LayoutRefs.MasterScroll = MasterScroll
 	LayoutRefs.MasterLayout = MasterLayout
 	LayoutRefs.MissionsPanel = MissionsPanel
 	LayoutRefs.PartyPanel = PartyPanel
+	LayoutRefs.PartyContent = PartyContent
 
 	camera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateLayoutForScreen)
 	UpdateLayoutForScreen()
-
-	local PartyContent = Instance.new("Frame", PartyPanel)
-	PartyContent.Size = UDim2.new(1, -30, 1, -30); PartyContent.Position = UDim2.new(0, 15, 0, 15); PartyContent.BackgroundTransparency = 1
 
 	local function RenderPartyUI()
 		for _, child in ipairs(PartyContent:GetChildren()) do child:Destroy() end
 
 		local pLayout = Instance.new("UIListLayout", PartyContent); pLayout.SortOrder = Enum.SortOrder.LayoutOrder; pLayout.Padding = UDim.new(0, 15); pLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		pLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			PartyContent.Size = UDim2.new(1, -30, 0, pLayout.AbsoluteContentSize.Y)
+			if LayoutRefs.MasterLayout.FillDirection == Enum.FillDirection.Vertical then
+				LayoutRefs.MasterScroll.CanvasSize = UDim2.new(0, 0, 0, LayoutRefs.MasterLayout.AbsoluteContentSize.Y + 40)
+			end
+		end)
 
 		if IsInParty then
 			local Header = UIHelpers.CreateLabel(PartyContent, "STRIKE TEAM (" .. #CurrentParty .. "/3)", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 18)
