@@ -37,7 +37,6 @@ local CosmeticUIUpdaters = {}
 local InitialCachePopulated = false
 
 local LayoutRefs = {}
-local UpdateLayoutForScreen -- Forward declaration for dynamic refreshing
 
 local function EvaluateCosmetics()
 	if type(CosmeticData.CheckUnlock) ~= "function" then return end
@@ -154,8 +153,22 @@ local function BuildIdentityTab(parentFrame, cachedTooltipMgr)
 	mPad.PaddingTop = UDim.new(0, 10)
 	mPad.PaddingBottom = UDim.new(0, 30)
 
-	local ShowcaseCard = CreateGrimPanel(MainScroll)
-	ShowcaseCard.Size = UDim2.new(0.95, 0, 0, 280)
+	local ColumnsWrapper = Instance.new("Frame", MainScroll)
+	ColumnsWrapper.Size = UDim2.new(1, 0, 0, 0)
+	ColumnsWrapper.AutomaticSize = Enum.AutomaticSize.Y
+	ColumnsWrapper.BackgroundTransparency = 1
+	ColumnsWrapper.LayoutOrder = 1
+	local cwLayout = Instance.new("UIListLayout", ColumnsWrapper)
+	cwLayout.FillDirection = Enum.FillDirection.Horizontal 
+	cwLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	cwLayout.Padding = UDim.new(0, 15)
+
+	cwLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		ColumnsWrapper.Size = UDim2.new(1, 0, 0, cwLayout.AbsoluteContentSize.Y)
+	end)
+
+	local ShowcaseCard = CreateGrimPanel(ColumnsWrapper)
+	ShowcaseCard.Size = UDim2.new(0.31, 0, 0, 430)
 	ShowcaseCard.LayoutOrder = 1
 
 	local AvatarTitle = CreateSharpLabel(ShowcaseCard, "HUMANITY'S VANGUARD", UDim2.new(1, 0, 0, 25), Enum.Font.GothamBlack, Color3.fromRGB(225, 185, 60), 20)
@@ -194,8 +207,8 @@ local function BuildIdentityTab(parentFrame, cachedTooltipMgr)
 	regIcon.BackgroundTransparency = 1
 	regIcon.ZIndex = 6
 
-	local MidCol = CreateGrimPanel(MainScroll)
-	MidCol.Size = UDim2.new(0.95, 0, 0, 430)
+	local MidCol = CreateGrimPanel(ColumnsWrapper)
+	MidCol.Size = UDim2.new(0.31, 0, 0, 430)
 	MidCol.LayoutOrder = 2
 
 	local RadarContainer = Instance.new("Frame", MidCol)
@@ -231,11 +244,14 @@ local function BuildIdentityTab(parentFrame, cachedTooltipMgr)
 
 	local toggleStatsBtn, _ = CreateSharpButton(ActionRow, "VIEW TITAN STATS", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBlack, 14)
 
-	local TabsWrapper = Instance.new("Frame", MainScroll)
-	TabsWrapper.Size = UDim2.new(0.95, 0, 0, 400)
+	local TabsWrapper = Instance.new("Frame", ColumnsWrapper)
+	TabsWrapper.Size = UDim2.new(0.32, 0, 0, 430)
 	TabsWrapper.BackgroundTransparency = 1
 	TabsWrapper.LayoutOrder = 3
 	local twLayout = Instance.new("UIListLayout", TabsWrapper); twLayout.SortOrder = Enum.SortOrder.LayoutOrder; twLayout.Padding = UDim.new(0, 10)
+	twLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		TabsWrapper.Size = UDim2.new(TabsWrapper.Size.X.Scale, TabsWrapper.Size.X.Offset, 0, twLayout.AbsoluteContentSize.Y)
+	end)
 
 	local TopNav = CreateGrimPanel(TabsWrapper)
 	TopNav.Size = UDim2.new(1, 0, 0, 45)
@@ -255,7 +271,7 @@ local function BuildIdentityTab(parentFrame, cachedTooltipMgr)
 	navLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() NavScroll.CanvasSize = UDim2.new(0, navLayout.AbsoluteContentSize.X + 20, 0, 0) end)
 
 	local ContentArea = Instance.new("Frame", TabsWrapper)
-	ContentArea.Size = UDim2.new(1, 0, 1, -55)
+	ContentArea.Size = UDim2.new(1, 0, 0, 375)
 	ContentArea.BackgroundTransparency = 1
 	ContentArea.LayoutOrder = 2
 
@@ -578,7 +594,9 @@ local function BuildIdentityTab(parentFrame, cachedTooltipMgr)
 		cwLayout = cwLayout, 
 		ShowcaseCard = ShowcaseCard, 
 		MidCol = MidCol, 
-		TabsWrapper = TabsWrapper 
+		TabsWrapper = TabsWrapper,
+		RegIcon = regIcon,
+		PlayerNameLbl = PlayerNameLbl
 	}
 	RefreshProfile()
 end
@@ -737,7 +755,7 @@ local function BuildAttributesTab(parentFrame)
 	local soldierData = SetupPanel("SOLDIER VITALITY", playerStatsList, false, ColumnsContainer)
 	local titanData = SetupPanel("TITAN POTENTIAL", titanStatsList, true, ColumnsContainer)
 
-	local TrainContainer = Instance.new("Frame", MainScroll); TrainContainer.Size = UDim2.new(1, 0, 0, 180); TrainContainer.BackgroundTransparency = 1; TrainContainer.LayoutOrder = 2
+	local TrainContainer = Instance.new("Frame", MainScroll); TrainContainer.Size = UDim2.new(0.95, 0, 0, 120); TrainContainer.BackgroundTransparency = 1; TrainContainer.LayoutOrder = 2
 	local tcLayout = Instance.new("UIListLayout", TrainContainer); tcLayout.FillDirection = Enum.FillDirection.Horizontal; tcLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center; tcLayout.Padding = UDim.new(0.04, 0)
 
 	local function CreateTrainBox(isTitan)
@@ -871,7 +889,6 @@ local function BuildSkillsTab(parentFrame)
 	local HeaderLabel = CreateSharpLabel(HeaderContainer, "ACTIVE LOADOUT", UDim2.new(1, 0, 0, 25), Enum.Font.GothamBlack, Color3.fromRGB(225, 185, 60), 18)
 	HeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-	-- [[ THE FIX: Exposing TopLoadoutGrid to the responsive listener ]]
 	local TopLoadoutGrid = Instance.new("Frame", HeaderContainer)
 	TopLoadoutGrid.Size = UDim2.new(1, 0, 0, 110)
 	TopLoadoutGrid.Position = UDim2.new(0, 0, 0, 40)
@@ -916,7 +933,6 @@ local function BuildSkillsTab(parentFrame)
 	libLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	libLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-	-- Register references for the dynamic layout listener
 	LayoutRefs.Skills = {
 		HeaderContainer = HeaderContainer,
 		TopLoadoutGrid = TopLoadoutGrid,
@@ -1097,7 +1113,15 @@ local function BuildSkillsTab(parentFrame)
 			end
 		end
 
-		if UpdateLayoutForScreen then UpdateLayoutForScreen() end
+		-- Trigger layout update if we just rebuilt
+		local vp = camera.ViewportSize
+		local isMobile = (vp.X <= 850) or (vp.Y > vp.X)
+		if LayoutRefs.Skills and LayoutRefs.Skills.LibraryGrids then
+			for _, grid in ipairs(LayoutRefs.Skills.LibraryGrids) do
+				grid.CellSize = isMobile and UDim2.new(0.95, 0, 0, 180) or UDim2.new(0.31, 0, 0, 180)
+				grid.CellPadding = isMobile and UDim2.new(0, 0, 0, 15) or UDim2.new(0.02, 0, 0, 15)
+			end
+		end
 	end
 	player.AttributeChanged:Connect(function(attr) if string.match(attr, "^EquippedSkill") then RefreshSkills() end end); RefreshSkills()
 end
@@ -1305,7 +1329,6 @@ local function BuildPrestigeTab(parentFrame)
 		LeftPanel = LeftPanel,
 		RightPanel = RightPanel
 	}
-	UpdateUI()
 end
 
 -- ==========================================
@@ -1779,18 +1802,33 @@ end
 -- ==========================================
 -- DYNAMIC LAYOUT LISTENER
 -- ==========================================
-UpdateLayoutForScreen = function()
+local function UpdateLayoutForScreen()
 	local vp = camera.ViewportSize
 	if vp.X == 0 or vp.Y == 0 then return end
+
 	local isMobile = (vp.X <= 850) or (vp.Y > vp.X)
 
 	-- Identity Tab
 	if LayoutRefs.Identity then
 		local ir = LayoutRefs.Identity
 		if ir.cwLayout then ir.cwLayout.FillDirection = isMobile and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal end
-		if ir.ShowcaseCard then ir.ShowcaseCard.Size = isMobile and UDim2.new(0.95, 0, 0, 280) or UDim2.new(0.31, 0, 0, 430) end
+		if ir.ShowcaseCard then ir.ShowcaseCard.Size = isMobile and UDim2.new(0.95, 0, 0, 380) or UDim2.new(0.31, 0, 0, 430) end
 		if ir.MidCol then ir.MidCol.Size = isMobile and UDim2.new(0.95, 0, 0, 430) or UDim2.new(0.31, 0, 0, 430) end
 		if ir.TabsWrapper then ir.TabsWrapper.Size = isMobile and UDim2.new(0.95, 0, 0, 400) or UDim2.new(0.32, 0, 0, 430) end
+
+		if ir.RegIcon then
+			if isMobile then
+				ir.RegIcon.Size = UDim2.new(0, 80, 0, 80)
+				ir.RegIcon.Position = UDim2.new(0.5, 0, 0, 210)
+				ir.RegIcon.AnchorPoint = Vector2.new(0.5, 0)
+				if ir.PlayerNameLbl then ir.PlayerNameLbl.Position = UDim2.new(0, 0, 0, 310) end
+			else
+				ir.RegIcon.Size = UDim2.new(0, 80, 0, 80)
+				ir.RegIcon.Position = UDim2.new(0, 15, 0, 15)
+				ir.RegIcon.AnchorPoint = Vector2.new(0, 0)
+				if ir.PlayerNameLbl then ir.PlayerNameLbl.Position = UDim2.new(0, 0, 0, 210) end
+			end
+		end
 	end
 
 	-- Attributes Tab
