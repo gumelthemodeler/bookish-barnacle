@@ -33,10 +33,6 @@ local isSpectating = false
 local amIPlayer1 = true
 local is3v3Match = false
 
-local pvpDraftedMoves = {}
-local PvPDraftContainer = nil
-local QTEOverlay = nil
-
 local InstantSkills = {
 	["Maneuver"] = true, ["Recover"] = true, ["Fall Back"] = true, ["Close In"] = true,
 	["Retreat"] = true, ["Transform"] = true, ["Eject"] = true, ["Titan Recover"] = true,
@@ -47,26 +43,131 @@ local doomsdayBoard = nil
 local inDoomsdayLoop = false
 local ddScroll = nil
 
--- [[ THE FIX: Smooth Carousel Sliders ]]
+local function CreateMinimalButton(parent, text, size, baseColorHex)
+	local btn = Instance.new("TextButton", parent)
+	btn.Size = size
+	btn.BackgroundColor3 = Color3.fromRGB(15, 15, 18) 
+	btn.BorderSizePixel = 0
+	btn.AutoButtonColor = false
+	btn.Font = Enum.Font.GothamBlack
+	btn.Text = text
+	btn.TextScaled = true
+
+	local tsc = Instance.new("UITextSizeConstraint", btn)
+	tsc.MaxTextSize = 14
+	tsc.MinTextSize = 9
+
+	local cColor = Color3.fromHex(baseColorHex:gsub("#", ""))
+	btn.TextColor3 = cColor
+
+	local grad = Instance.new("UIGradient", btn)
+	grad.Color = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, cColor),
+		ColorSequenceKeypoint.new(0.1, Color3.new(cColor.R * 0.4, cColor.G * 0.4, cColor.B * 0.4)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 12))
+	}
+	grad.Rotation = 90
+
+	local stroke = Instance.new("UIStroke", btn)
+	stroke.Color = Color3.new(cColor.R * 0.5, cColor.G * 0.5, cColor.B * 0.5)
+	stroke.Thickness = 2
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+	btn.MouseEnter:Connect(function() 
+		if btn.Active then 
+			TweenService:Create(grad, TweenInfo.new(0.2), {Offset = Vector2.new(0, -0.2)}):Play()
+			TweenService:Create(stroke, TweenInfo.new(0.2), {Color = cColor, Thickness = 3}):Play() 
+		end 
+	end)
+	btn.MouseLeave:Connect(function() 
+		if btn.Active then 
+			TweenService:Create(grad, TweenInfo.new(0.2), {Offset = Vector2.new(0, 0)}):Play()
+			TweenService:Create(stroke, TweenInfo.new(0.2), {Color = Color3.new(cColor.R * 0.5, cColor.G * 0.5, cColor.B * 0.5), Thickness = 2}):Play() 
+		end 
+	end)
+	return btn
+end
+
+local function ShowWaitingForOpponent()
+	if GUI.ActionGrid then GUI.ActionGrid.Visible = false end
+	if GUI.TargetMenu then GUI.TargetMenu.Visible = false end
+
+	if GUI.ActionContainer then
+		local existing = GUI.ActionContainer:FindFirstChild("WaitContainer")
+		if existing then existing:Destroy() end
+
+		local waitContainer = Instance.new("Frame", GUI.ActionContainer)
+		waitContainer.Name = "WaitContainer"
+		waitContainer.Size = UDim2.new(1, 0, 1, 0)
+		waitContainer.BackgroundColor3 = Color3.fromRGB(15, 10, 10)
+		waitContainer.BackgroundTransparency = 0.5
+		waitContainer.BorderSizePixel = 0
+
+		local waitMsg = UIHelpers.CreateLabel(waitContainer, "WAITING FOR OPPONENT", UDim2.new(1, 0, 1, -20), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 28)
+		local dots = UIHelpers.CreateLabel(waitContainer, "X X X", UDim2.new(1, 0, 1, 30), Enum.Font.GothamBlack, Color3.fromRGB(150, 50, 50), 36)
+
+		task.spawn(function()
+			local trans = 0; local up = true
+			while inputLocked and waitContainer.Parent do
+				if up then trans += 0.05 else trans -= 0.05 end
+				if trans >= 0.8 then up = false elseif trans <= 0 then up = true end
+				waitMsg.TextTransparency = trans
+				dots.TextTransparency = trans
+				task.wait(0.05)
+			end
+		end)
+	end
+end
+
+local function DestroyWaitContainer()
+	if GUI.ActionContainer then
+		local wc = GUI.ActionContainer:FindFirstChild("WaitContainer")
+		if wc then wc:Destroy() end
+	end
+end
+
 local function OpenTargetMenu()
 	if not GUI or not GUI.ActionGrid or not GUI.TargetMenu then return end
+	local isMobile = (camera.ViewportSize.X <= 850) or (camera.ViewportSize.Y > camera.ViewportSize.X)
 	GUI.TargetMenu.Visible = true
-	TweenService:Create(GUI.ActionGrid, TweenInfo.new(0.35, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(-1, -20, 0, 0)}):Play()
-	TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.35, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+
+	if isMobile then
+		TweenService:Create(GUI.ActionGrid, TweenInfo.new(0.15, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(-1, -20, 0, 0)}):Play()
+		TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.15, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+	else
+		GUI.ActionGrid.Visible = false
+		GUI.TargetMenu.Position = UDim2.new(0, 0, 0, 0)
+	end
 end
 
 local function CloseTargetMenu()
 	if not GUI or not GUI.ActionGrid or not GUI.TargetMenu then return end
-	TweenService:Create(GUI.ActionGrid, TweenInfo.new(0.35, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
-	local t = TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.35, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(1, 20, 0, 0)})
-	t:Play()
-	task.delay(0.35, function() if GUI.TargetMenu.Position.X.Scale == 1 then GUI.TargetMenu.Visible = false end end)
+	local isMobile = (camera.ViewportSize.X <= 850) or (camera.ViewportSize.Y > camera.ViewportSize.X)
+
+	if isMobile then
+		TweenService:Create(GUI.ActionGrid, TweenInfo.new(0.15, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+		local t = TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.15, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(1, 20, 0, 0)})
+		t:Play()
+		task.delay(0.15, function() if GUI.TargetMenu.Position.X.Scale == 1 then GUI.TargetMenu.Visible = false end end)
+	else
+		GUI.ActionGrid.Visible = true
+		GUI.TargetMenu.Visible = false
+		GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
+	end
 end
 
 local function SnapTargetMenuClosed()
 	if not GUI or not GUI.ActionGrid or not GUI.TargetMenu then return end
-	GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
-	GUI.TargetMenu.Position = UDim2.new(1, 20, 0, 0)
+	local isMobile = (camera.ViewportSize.X <= 850) or (camera.ViewportSize.Y > camera.ViewportSize.X)
+
+	if isMobile then
+		GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
+		GUI.TargetMenu.Position = UDim2.new(1, 20, 0, 0)
+	else
+		GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
+		GUI.TargetMenu.Position = UDim2.new(0, 0, 0, 0)
+	end
+	GUI.ActionGrid.Visible = true
 	GUI.TargetMenu.Visible = false
 end
 
@@ -148,207 +249,11 @@ local function UpdateDoomsdayBoard(data)
 	local ts3 = Instance.new("UIStroke", meLbl); ts3.Thickness = 2
 end
 
-local function CreateMinimalButton(parent, text, size, baseColorHex)
-	local btn = Instance.new("TextButton", parent)
-	btn.Size = size; btn.BackgroundColor3 = Color3.fromRGB(22, 22, 26); btn.BorderSizePixel = 0
-	btn.AutoButtonColor = false; btn.Font = Enum.Font.GothamBold; btn.Text = text
-
-	btn.TextScaled = true
-	local tsc = Instance.new("UITextSizeConstraint", btn)
-	tsc.MaxTextSize = 13
-	tsc.MinTextSize = 8
-
-	local cColor = Color3.fromHex(baseColorHex:gsub("#", ""))
-	btn.TextColor3 = cColor
-
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-	local stroke = Instance.new("UIStroke", btn)
-	stroke.Color = Color3.fromRGB(45, 45, 50); stroke.Thickness = 1; stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-	btn.MouseEnter:Connect(function() if btn.Active then TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 35)}):Play(); TweenService:Create(stroke, TweenInfo.new(0.2), {Color = cColor}):Play() end end)
-	btn.MouseLeave:Connect(function() if btn.Active then TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(22, 22, 26)}):Play(); TweenService:Create(stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(45, 45, 50)}):Play() end end)
-	return btn
-end
-
--- ==========================================
--- RESPONSIVE LAYOUT ENGINE
--- ==========================================
-local function UpdateLayoutForScreen()
-	local vp = camera.ViewportSize
-	if vp.X == 0 or vp.Y == 0 or not GUI then return end
-	local isMobile = (vp.X <= 850) or (vp.Y > vp.X)
-
-	if GUI.CombatWindow then
-		if isMobile then
-			GUI.CombatWindow.Size = UDim2.new(1, 0, 1, 0)
-			GUI.CombatWindow.Position = UDim2.new(0.5, 0, 0.5, 0)
-
-			if GUI.CombatantsFrame then
-				GUI.CombatantsFrame.Size = UDim2.new(1, -20, 0, 150)
-				GUI.CombatantsFrame.Position = UDim2.new(0, 10, 0, 10)
-			end
-			if GUI.LogContainer then
-				GUI.LogContainer.Size = UDim2.new(1, -20, 0.4, 0)
-				GUI.LogContainer.Position = UDim2.new(0, 10, 0, 170)
-			end
-			if GUI.ActionContainer then
-				GUI.ActionContainer.Size = UDim2.new(1, -20, 0.6, -180)
-				GUI.ActionContainer.Position = UDim2.new(0, 10, 0.4, 180)
-			end
-			if PvPDraftContainer then
-				PvPDraftContainer.Size = UDim2.new(1, 0, 0, 60)
-				PvPDraftContainer.Position = UDim2.new(0, 0, 0, -65)
-			end
-		else
-			GUI.CombatWindow.Size = UDim2.new(0, 900, 0, 650)
-			GUI.CombatWindow.Position = UDim2.new(0.5, 0, 0.5, 0)
-
-			if GUI.CombatantsFrame then
-				GUI.CombatantsFrame.Size = UDim2.new(1, -40, 0, 180)
-				GUI.CombatantsFrame.Position = UDim2.new(0, 20, 0, 20)
-			end
-			if GUI.LogContainer then
-				GUI.LogContainer.Size = UDim2.new(0.4, 0, 1, -230)
-				GUI.LogContainer.Position = UDim2.new(0, 20, 0, 210)
-			end
-			if GUI.ActionContainer then
-				GUI.ActionContainer.Size = UDim2.new(0.6, -30, 1, -230)
-				GUI.ActionContainer.Position = UDim2.new(0.4, 10, 0, 210)
-			end
-			if PvPDraftContainer then
-				PvPDraftContainer.Size = UDim2.new(1, 0, 0, 70)
-				PvPDraftContainer.Position = UDim2.new(0, 0, 0, -80)
-			end
-		end
-	end
-end
-
--- ==========================================
--- PVP CUSTOM UI BUILDERS
--- ==========================================
-local function BuildPvPUIAdditions()
-	if PvPDraftContainer then return end
-
-	PvPDraftContainer = Instance.new("Frame", GUI.ActionContainer)
-	PvPDraftContainer.Name = "PvPDraftContainer"
-	PvPDraftContainer.Size = UDim2.new(1, 0, 0, 70)
-	PvPDraftContainer.Position = UDim2.new(0, 0, 0, -80)
-	PvPDraftContainer.BackgroundTransparency = 1
-	PvPDraftContainer.Visible = false
-
-	local draftLayout = Instance.new("UIListLayout", PvPDraftContainer)
-	draftLayout.FillDirection = Enum.FillDirection.Horizontal
-	draftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	draftLayout.Padding = UDim.new(0, 15)
-
-	QTEOverlay = Instance.new("Frame", MasterGuiRef)
-	QTEOverlay.Name = "QTEOverlay"
-	QTEOverlay.Size = UDim2.new(1, 0, 1, 0)
-	QTEOverlay.BackgroundColor3 = Color3.new(0,0,0)
-	QTEOverlay.BackgroundTransparency = 0.3
-	QTEOverlay.ZIndex = 500
-	QTEOverlay.Visible = false
-
-	local QTEInst = UIHelpers.CreateLabel(QTEOverlay, "INCOMING ATTACK!", UDim2.new(1, 0, 0, 40), Enum.Font.GothamBlack, Color3.fromRGB(255, 100, 100), 28)
-	QTEInst.Position = UDim2.new(0, 0, 0.2, 0)
-	QTEInst.Name = "QTEInst"
-
-	local QTEResult = UIHelpers.CreateLabel(QTEOverlay, "", UDim2.new(1, 0, 0, 40), Enum.Font.GothamBlack, Color3.fromRGB(255, 255, 255), 36)
-	QTEResult.Position = UDim2.new(0, 0, 0.7, 0)
-	QTEResult.Name = "QTEResult"
-
-	local TargetRing = Instance.new("ImageLabel", QTEOverlay)
-	TargetRing.Size = UDim2.new(0, 120, 0, 120)
-	TargetRing.Position = UDim2.new(0.5, 0, 0.5, 0)
-	TargetRing.AnchorPoint = Vector2.new(0.5, 0.5)
-	TargetRing.BackgroundTransparency = 1
-	TargetRing.Image = "rbxassetid://13112895696" 
-	TargetRing.ImageColor3 = Color3.fromRGB(150, 150, 150)
-	TargetRing.ZIndex = 501
-
-	local ShrinkRing = Instance.new("ImageLabel", QTEOverlay)
-	ShrinkRing.Name = "ShrinkRing"
-	ShrinkRing.Size = UDim2.new(0, 350, 0, 350)
-	ShrinkRing.Position = UDim2.new(0.5, 0, 0.5, 0)
-	ShrinkRing.AnchorPoint = Vector2.new(0.5, 0.5)
-	ShrinkRing.BackgroundTransparency = 1
-	ShrinkRing.Image = "rbxassetid://13112895696"
-	ShrinkRing.ImageColor3 = UIHelpers.Colors.Gold
-	ShrinkRing.ZIndex = 502
-
-	local QTEBtn = Instance.new("TextButton", QTEOverlay)
-	QTEBtn.Name = "QTEBtn"
-	QTEBtn.Size = UDim2.new(1, 0, 1, 0)
-	QTEBtn.BackgroundTransparency = 1
-	QTEBtn.Text = ""
-	QTEBtn.ZIndex = 505
-end
-
-local function StartQTE(attackerName, skillName)
-	if not QTEOverlay then BuildPvPUIAdditions() end
-	QTEOverlay.Visible = true
-	QTEOverlay.QTEInst.Text = string.upper(attackerName) .. " IS USING " .. string.upper(skillName) .. "!"
-	QTEOverlay.QTEResult.Text = ""
-
-	local shrinkRing = QTEOverlay.ShrinkRing
-	shrinkRing.Size = UDim2.new(0, 400, 0, 400)
-	shrinkRing.ImageColor3 = UIHelpers.Colors.Gold
-
-	local maxTime = 1.0
-	local t = TweenService:Create(shrinkRing, TweenInfo.new(maxTime, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 30, 0, 30)})
-
-	local clicked = false
-	local conn
-
-	conn = QTEOverlay.QTEBtn.MouseButton1Click:Connect(function()
-		if clicked then return end
-		clicked = true
-		t:Cancel()
-
-		local currentSize = shrinkRing.Size.X.Offset
-		local status = "Miss"
-
-		if currentSize >= 90 and currentSize <= 150 then
-			status = "Parry"
-			QTEOverlay.QTEResult.Text = "<font color='#FFD700'>PERFECT PARRY!</font>"
-			shrinkRing.ImageColor3 = Color3.fromRGB(255, 215, 0)
-			if VFXManager and type(VFXManager.PlaySFX) == "function" then VFXManager.PlaySFX("HeavySlash", 1.5) end
-		elseif currentSize >= 50 and currentSize <= 190 then
-			status = "Block"
-			QTEOverlay.QTEResult.Text = "<font color='#AAAAAA'>BLOCKED!</font>"
-			shrinkRing.ImageColor3 = Color3.fromRGB(150, 150, 150)
-			if VFXManager and type(VFXManager.PlaySFX) == "function" then VFXManager.PlaySFX("Click", 0.8) end
-		else
-			status = "Miss"
-			QTEOverlay.QTEResult.Text = "<font color='#FF5555'>MISSED!</font>"
-			shrinkRing.ImageColor3 = Color3.fromRGB(255, 85, 85)
-			if VFXManager and type(VFXManager.PlaySFX) == "function" then VFXManager.PlaySFX("Error", 1.0) end
-		end
-
-		Network:WaitForChild("PvPAction"):FireServer("SubmitQTE", currentPvPMatch, status)
-		task.wait(0.6)
-		QTEOverlay.Visible = false
-		conn:Disconnect()
-	end)
-
-	t:Play()
-	t.Completed:Connect(function()
-		if not clicked then
-			clicked = true
-			QTEOverlay.QTEResult.Text = "<font color='#FF5555'>TOO SLOW!</font>"
-			Network:WaitForChild("PvPAction"):FireServer("SubmitQTE", currentPvPMatch, "Miss")
-			task.wait(0.6)
-			QTEOverlay.Visible = false
-			conn:Disconnect()
-		end
-	end)
-end
-
 local function RenderStatuses(container, combatant)
 	if not container then return end
 	for _, child in ipairs(container:GetChildren()) do if child:IsA("Frame") then child:Destroy() end end
 	local function addIcon(iconTxt, bgColor, strokeColor)
-		local f = Instance.new("Frame", container); f.Size = UDim2.new(0, 24, 0, 18); f.BackgroundColor3 = bgColor; Instance.new("UICorner", f).CornerRadius = UDim.new(0, 4)
+		local f = Instance.new("Frame", container); f.Size = UDim2.new(0, 24, 0, 18); f.BackgroundColor3 = bgColor; f.BorderSizePixel = 0
 		local s = Instance.new("UIStroke", f); s.Color = strokeColor; s.Thickness = 1; s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, 0, 1, 0); t.BackgroundTransparency = 1; t.Font = Enum.Font.GothamBlack; t.Text = iconTxt; t.TextColor3 = Color3.fromRGB(255,255,255); t.TextScaled = true
 	end
@@ -379,8 +284,8 @@ local function AppendLog(message, colorHex)
 
 	local panel = Instance.new("Frame", GUI.LogScroll)
 	panel.LayoutOrder = GlobalLogCounter
-	panel.Size = UDim2.new(1, 0, 0, 0); panel.BackgroundColor3 = Color3.fromRGB(15, 15, 18); panel.BackgroundTransparency = 0.3; panel.BorderSizePixel = 0; panel.AutomaticSize = Enum.AutomaticSize.Y
-	local pStroke = Instance.new("UIStroke", panel); pStroke.Color = Color3.fromRGB(40, 40, 45)
+	panel.Size = UDim2.new(1, 0, 0, 0); panel.BackgroundColor3 = Color3.fromRGB(15, 12, 12); panel.BackgroundTransparency = 0.3; panel.BorderSizePixel = 0; panel.AutomaticSize = Enum.AutomaticSize.Y
+	local pStroke = Instance.new("UIStroke", panel); pStroke.Color = Color3.fromRGB(40, 20, 20); pStroke.Thickness = 2
 	local pad = Instance.new("UIPadding", panel); pad.PaddingLeft = UDim.new(0, 10); pad.PaddingRight = UDim.new(0, 10); pad.PaddingTop = UDim.new(0, 8); pad.PaddingBottom = UDim.new(0, 8)
 
 	local lbl = UIHelpers.CreateLabel(panel, message, UDim2.new(1, 0, 0, 0), Enum.Font.GothamMedium, logColor, 12)
@@ -411,7 +316,7 @@ local function PlayLootAnimation(rewards)
 			popup.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 			popup.BackgroundTransparency = 0.1
 			popup.ZIndex = 250
-			Instance.new("UICorner", popup).CornerRadius = UDim.new(0, 6)
+			popup.BorderSizePixel = 0
 			local stroke = Instance.new("UIStroke", popup); stroke.Color = Color3.fromHex(reward.Color:gsub("#", "")); stroke.Thickness = 2; stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 			local lbl = UIHelpers.CreateLabel(popup, reward.Text, UDim2.new(1, 0, 1, 0), Enum.Font.GothamBlack, Color3.fromHex(reward.Color:gsub("#", "")), 16)
@@ -442,62 +347,18 @@ local function HideAlly()
 	end
 end
 
--- ==========================================
--- PVP DRAFTING & UI UPDATE
--- ==========================================
-local function RenderPvPDraftSlots()
-	if not PvPDraftContainer then return end
-	for _, c in ipairs(PvPDraftContainer:GetChildren()) do if c:IsA("Frame") or c:IsA("TextButton") then c:Destroy() end end
-
-	local clashLimit = is3v3Match and 1 or 3
-
-	for i = 1, clashLimit do
-		local slot, _ = CreateGrimPanel(PvPDraftContainer)
-		slot.Size = UDim2.new(0, 80, 0, 60)
-
-		if pvpDraftedMoves[i] then
-			slot.BackgroundColor3 = Color3.fromRGB(30, 35, 30)
-			local nameLbl = UIHelpers.CreateLabel(slot, pvpDraftedMoves[i].Move:upper(), UDim2.new(1, -4, 0.5, 0), Enum.Font.GothamBold, Color3.fromRGB(150, 255, 150), 10)
-			nameLbl.Position = UDim2.new(0.5, 0, 0, 5); nameLbl.AnchorPoint = Vector2.new(0.5, 0); nameLbl.TextScaled = true; Instance.new("UITextSizeConstraint", nameLbl).MaxTextSize = 10
-
-			local limbLbl = UIHelpers.CreateLabel(slot, pvpDraftedMoves[i].Limb:upper(), UDim2.new(1, 0, 0.4, 0), Enum.Font.GothamMedium, Color3.fromRGB(200, 200, 200), 9)
-			limbLbl.Position = UDim2.new(0.5, 0, 1, -5); limbLbl.AnchorPoint = Vector2.new(0.5, 1)
-
-			local remBtn = Instance.new("TextButton", slot); remBtn.Size = UDim2.new(1,0,1,0); remBtn.BackgroundTransparency = 1; remBtn.Text = ""
-			remBtn.MouseButton1Click:Connect(function() table.remove(pvpDraftedMoves, i); RenderPvPDraftSlots() end)
-		else
-			local numLbl = UIHelpers.CreateLabel(slot, "SLOT " .. i, UDim2.new(1, 0, 1, 0), Enum.Font.GothamBlack, Color3.fromRGB(100, 100, 110), 12)
-		end
-	end
-
-	if #pvpDraftedMoves >= clashLimit then
-		local subBtn, subStrk = CreateSharpButton(PvPDraftContainer, "SUBMIT", UDim2.new(0, 100, 0, 60), Enum.Font.GothamBlack, 16, "#FFD700")
-		subBtn.MouseButton1Click:Connect(function()
-			if inputLocked then return end
-			inputLocked = true
-			PvPDraftContainer.Visible = false
-			if GUI.ActionGrid then
-				for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
-				UIHelpers.CreateLabel(GUI.ActionGrid, "WAITING FOR OPPONENT...", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBold, UIHelpers.Colors.TextMuted, 18)
-			end
-			Network:WaitForChild("PvPAction"):FireServer("SubmitMoveSequence", currentPvPMatch, pvpDraftedMoves)
-		end)
-	end
-end
-
 local function UpdatePvPSkills()
 	inputLocked = false
-	if not PvPDraftContainer then BuildPvPUIAdditions() end
-	PvPDraftContainer.Visible = true
-	pvpDraftedMoves = {}
-	RenderPvPDraftSlots()
-
 	SnapTargetMenuClosed()
-	if GUI.ActionGrid then for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end end
+	DestroyWaitContainer()
+
+	if GUI.ActionGrid then 
+		GUI.ActionGrid.Visible = true
+		for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end 
+	end
 
 	if isSpectating then
-		PvPDraftContainer.Visible = false
-		UIHelpers.CreateLabel(GUI.ActionGrid, "SPECTATING MATCH...", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBold, UIHelpers.Colors.TextMuted, 18)
+		UIHelpers.CreateLabel(GUI.ActionGrid, "SPECTATING MATCH...", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBold, UIHelpers.Colors.TextMuted, 20)
 		return
 	end
 
@@ -512,16 +373,14 @@ local function UpdatePvPSkills()
 
 		btn.MouseButton1Click:Connect(function()
 			if inputLocked then return end
-			local clashLimit = is3v3Match and 1 or 3
-			if #pvpDraftedMoves >= clashLimit then return end
 
 			if InstantSkills[skillName] or skillName == "Surrender" or skillName == "Recover" then
+				inputLocked = true
 				if skillName == "Surrender" then 
-					inputLocked = true
 					Network:WaitForChild("PvPAction"):FireServer("Surrender", currentPvPMatch)
 				else
-					table.insert(pvpDraftedMoves, {Move = skillName, Limb = "Body"})
-					RenderPvPDraftSlots()
+					ShowWaitingForOpponent()
+					Network:WaitForChild("PvPAction"):FireServer("SubmitMoveSequence", currentPvPMatch, {{Move = skillName, Limb = "Body"}})
 				end
 			else
 				pendingSkillName = skillName
@@ -548,6 +407,7 @@ local function ShowPvPUI(p1Name, p2Name, p1Id, p2Id, turnEndTime, is3v3)
 	is3v3Match = is3v3
 
 	SnapTargetMenuClosed()
+	DestroyWaitContainer()
 
 	if GUI.ExecuteOverlay then GUI.ExecuteOverlay.Visible = false end
 	if GUI.CombatBackdrop then GUI.CombatBackdrop.BackgroundColor3 = Color3.new(0, 0, 0); GUI.CombatBackdrop.Visible = true; TweenService:Create(GUI.CombatBackdrop, TweenInfo.new(0.4), {BackgroundTransparency = 0.4}):Play() end
@@ -580,14 +440,16 @@ local function ShowPvPUI(p1Name, p2Name, p1Id, p2Id, turnEndTime, is3v3)
 	end
 
 	if GUI.eGateContainer then GUI.eGateContainer.Visible = false end
+
 	UpdatePvPSkills()
 end
 
 local function UpdatePvPState(data)
+	if not data then return end
 	local tInfo = TweenInfo.new(0.4, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)
 
-	local myTeamStates = amIPlayer1 and data.T1_States or data.T2_States
-	local enTeamStates = amIPlayer1 and data.T2_States or data.T1_States
+	local myTeamStates = (amIPlayer1 and data.T1_States or data.T2_States) or {}
+	local enTeamStates = (amIPlayer1 and data.T2_States or data.T1_States) or {}
 
 	local me = myTeamStates[1]
 	local en = enTeamStates[1]
@@ -610,18 +472,42 @@ local function UpdatePvPState(data)
 		RenderStatuses(GUI.EnemyStatusBox, {Statuses = en.Statuses})
 	end
 
-	if VFXManager and type(VFXManager.ScreenShake) == "function" and data.ShakeType ~= "None" then
-		if data.ShakeType == "Heavy" then VFXManager.ScreenShake(0.8, 0.3) else VFXManager.ScreenShake(0.3, 0.15) end
+	if data.ShakeType and data.ShakeType ~= "None" then
+		if VFXManager and type(VFXManager.ScreenShake) == "function" then
+			if data.ShakeType == "Heavy" then 
+				VFXManager.ScreenShake(1.5, 0.4) 
+
+				local flash = Instance.new("Frame", MasterGuiRef)
+				flash.Size = UDim2.new(1, 0, 1, 0)
+				flash.BackgroundColor3 = Color3.fromRGB(200, 20, 20)
+				flash.BackgroundTransparency = 0.5
+				flash.ZIndex = 1000
+				flash.BorderSizePixel = 0
+				game.Debris:AddItem(flash, 0.15)
+				TweenService:Create(flash, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
+			else 
+				VFXManager.ScreenShake(0.5, 0.2) 
+			end
+		end
 	end
 
-	local isMeAttacking = false
-	if isSpectating then
-		if GUI.pNameLbl then isMeAttacking = (data.Attacker == GUI.pNameLbl.Text) end
-	else
-		isMeAttacking = (data.Attacker == player.Name)
-	end
+	if data.DidHit and data.Attacker then
+		local isMeAttacking = false
+		if isSpectating then
+			if GUI.pNameLbl then isMeAttacking = (data.Attacker == GUI.pNameLbl.Text) end
+		else
+			isMeAttacking = (data.Attacker == player.Name)
+		end
 
-	if VFXManager and type(VFXManager.PlayCombatEffect) == "function" then VFXManager.PlayCombatEffect(data.SkillUsed, isMeAttacking, GUI.pAvatar, GUI.eAvatar, data.DidHit) end
+		if VFXManager and type(VFXManager.PlayVFX) == "function" then
+			local targetIcon = isMeAttacking and GUI.eAvatar or GUI.pAvatar
+			VFXManager.PlayVFX("Blood", targetIcon, Color3.fromRGB(180, 10, 10), true)
+		end
+
+		if VFXManager and type(VFXManager.PlayCombatEffect) == "function" and data.SkillUsed then 
+			VFXManager.PlayCombatEffect(data.SkillUsed, isMeAttacking, GUI.pAvatar, GUI.eAvatar, true) 
+		end
+	end
 end
 
 -- ==========================================
@@ -705,8 +591,12 @@ end
 local function UpdatePvESkills()
 	inputLocked = false
 	SnapTargetMenuClosed()
-	if GUI.ActionGrid then for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end end
-	if PvPDraftContainer then PvPDraftContainer.Visible = false end
+	DestroyWaitContainer()
+
+	if GUI.ActionGrid then 
+		GUI.ActionGrid.Visible = true
+		for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end 
+	end
 
 	local currentRange = "Close"
 	local pState = currentBattleState and currentBattleState.Player or nil
@@ -824,8 +714,12 @@ local function UpdatePvESkills()
 					local wasPaths = (skillName == "Retreat" or skillName == "Flee") and currentBattleState and currentBattleState.Context and currentBattleState.Context.IsPaths
 
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
-					local execLbl = UIHelpers.CreateLabel(GUI.ActionGrid, "EXECUTING MANEUVER...", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBold, UIHelpers.Colors.TextMuted, 18)
-					execLbl.TextScaled = true; local etsc = Instance.new("UITextSizeConstraint", execLbl); etsc.MaxTextSize = 20
+					local waitContainer = Instance.new("Frame", GUI.ActionContainer)
+					waitContainer.Name = "WaitContainer"
+					waitContainer.Size = UDim2.new(1, 0, 1, 0)
+					waitContainer.BackgroundTransparency = 1
+					UIHelpers.CreateLabel(waitContainer, "EXECUTING...", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBlack, UIHelpers.Colors.TextMuted, 22)
+
 					Network:WaitForChild("CombatAction"):FireServer("Attack", {SkillName = skillName})
 
 					if wasPaths then
@@ -1015,7 +909,7 @@ local function UpdateState(data)
 				if battle.Enemy.Statuses and battle.Enemy.Statuses["Enraged"] then
 					TweenService:Create(stroke, TweenInfo.new(0.3), {Color = Color3.fromRGB(255, 0, 0), Thickness = 3}):Play()
 				else
-					TweenService:Create(stroke, TweenInfo.new(0.3), {Color = Color3.fromRGB(255, 85, 85), Thickness = 1}):Play()
+					TweenService:Create(stroke, TweenInfo.new(0.3), {Color = Color3.fromRGB(255, 85, 85), Thickness = 2}):Play()
 				end
 			end
 		end
@@ -1085,11 +979,10 @@ local function CloseUI(forcePathsOpen)
 	HideAlly()
 
 	if doomsdayBoard then doomsdayBoard.Visible = false end
-	if PvPDraftContainer then PvPDraftContainer.Visible = false end
-	if QTEOverlay then QTEOverlay.Visible = false end
 	inDoomsdayLoop = false
 
 	SnapTargetMenuClosed()
+	DestroyWaitContainer()
 
 	if GUI.ExecuteOverlay then GUI.ExecuteOverlay.Visible = false end
 
@@ -1126,10 +1019,6 @@ end
 function CombatUI.Initialize(masterScreenGui)
 	MasterGuiRef = masterScreenGui
 	GUI = CombatBuilder.Build(masterScreenGui, player)
-	BuildPvPUIAdditions()
-
-	camera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateLayoutForScreen)
-	UpdateLayoutForScreen()
 
 	GUI.ClickOverlay.MouseButton1Click:Connect(function()
 		if isTypewriting then skipTypewriting = true else ClickSignal:Fire() end
@@ -1143,20 +1032,23 @@ function CombatUI.Initialize(masterScreenGui)
 				if targetId == "LLeg" or targetId == "RLeg" then trueTarget = "Legs" end
 
 				if currentPvPMatch then
-					table.insert(pvpDraftedMoves, {Move = pendingSkillName, Limb = trueTarget})
-					RenderPvPDraftSlots()
+					inputLocked = true
+					HideAlly()
 					CloseTargetMenu()
+					ShowWaitingForOpponent()
+					Network:WaitForChild("PvPAction"):FireServer("SubmitMoveSequence", currentPvPMatch, {{Move = pendingSkillName, Limb = trueTarget}})
 					pendingSkillName = nil
 				else
 					inputLocked = true
 					HideAlly()
-
 					CloseTargetMenu()
 
-					if GUI.ActionGrid then
-						for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
-						UIHelpers.CreateLabel(GUI.ActionGrid, "WAITING...", UDim2.new(0, 200, 0, 45), Enum.Font.GothamBold, UIHelpers.Colors.TextMuted, 14)
-					end
+					if GUI.ActionGrid then GUI.ActionGrid.Visible = false end
+					local waitContainer = Instance.new("Frame", GUI.ActionContainer)
+					waitContainer.Name = "WaitContainer"
+					waitContainer.Size = UDim2.new(1, 0, 1, 0)
+					waitContainer.BackgroundTransparency = 1
+					UIHelpers.CreateLabel(waitContainer, "EXECUTING...", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBlack, UIHelpers.Colors.TextMuted, 22)
 
 					Network:WaitForChild("CombatAction"):FireServer("Attack", {SkillName = pendingSkillName, TargetLimb = trueTarget})
 					pendingSkillName = nil
@@ -1172,11 +1064,20 @@ function CombatUI.Initialize(masterScreenGui)
 
 	Network:WaitForChild("PvPUpdate").OnClientEvent:Connect(function(action, matchId, d1, d2, d3, d4, d5, d6, d7, d8, d9)
 		if action == "MatchStarted" then
-			local p1Name, p2Name, p1Id, p2Id, turnEndTime, is3v3 = d1, d2, d3, d4, d5, d6
-			if p1Id == player.UserId or p2Id == player.UserId then
+			local p1Name, p2Name, p1Id, p2Id, turnEndTime, is3v3, t1Ids, t2Ids = d1, d2, d3, d4, d5, d6, d7, d8
+
+			local amIInvolved = false
+			if is3v3 and t1Ids and t2Ids then
+				if table.find(t1Ids, player.UserId) then amIInvolved = true; amIPlayer1 = true
+				elseif table.find(t2Ids, player.UserId) then amIInvolved = true; amIPlayer1 = false end
+			else
+				if p1Id == player.UserId then amIInvolved = true; amIPlayer1 = true
+				elseif p2Id == player.UserId then amIInvolved = true; amIPlayer1 = false end
+			end
+
+			if amIInvolved then
 				currentPvPMatch = matchId
 				isSpectating = false
-				amIPlayer1 = (p1Id == player.UserId)
 				ShowPvPUI(p1Name, p2Name, p1Id, p2Id, turnEndTime, is3v3)
 			end
 		elseif action == "SpectateStarted" then
@@ -1185,13 +1086,10 @@ function CombatUI.Initialize(masterScreenGui)
 			isSpectating = true
 			amIPlayer1 = true
 			ShowPvPUI(p1Name, p2Name, p1Id, p2Id, turnEndTime, false)
-		elseif action == "QTE_Prompt" then
-			local attackerName, skillName = matchId, d1
-			StartQTE(attackerName, skillName)
 		elseif action == "TurnStrike" and currentPvPMatch == matchId then
 			local data = d1
 			UpdatePvPState(data)
-			AppendLog(data.LogMsg, "#FFD700")
+			if data and data.LogMsg then AppendLog(data.LogMsg, "#FFD700") end
 		elseif action == "NextTurnStarted" and currentPvPMatch == matchId then
 			local turnNum, turnEndTime = d1, d2
 			inputLocked = false
@@ -1465,6 +1363,7 @@ function CombatUI.Initialize(masterScreenGui)
 
 				inputLocked = true
 				SnapTargetMenuClosed()
+				DestroyWaitContainer()
 
 				if GUI.ActionGrid then
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
@@ -1503,6 +1402,7 @@ function CombatUI.Initialize(masterScreenGui)
 
 				inputLocked = true
 				SnapTargetMenuClosed()
+				DestroyWaitContainer()
 
 				if GUI.ActionGrid then
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
@@ -1533,6 +1433,7 @@ function CombatUI.Initialize(masterScreenGui)
 
 				inputLocked = true
 				SnapTargetMenuClosed()
+				DestroyWaitContainer()
 
 				if GUI.ActionGrid then
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
@@ -1556,6 +1457,7 @@ function CombatUI.Initialize(masterScreenGui)
 			warn("[AoT UI Combat Engine Error]: " .. tostring(err))
 			if action == "Victory" or action == "Defeat" or action == "PathsDeath" then
 				inputLocked = true
+				DestroyWaitContainer()
 				if GUI and GUI.ActionGrid then
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
 					GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
