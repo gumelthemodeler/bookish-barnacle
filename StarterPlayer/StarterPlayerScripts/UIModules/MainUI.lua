@@ -27,13 +27,13 @@ local CONFIG = {
 	},
 	DockTabs = {
 		{Id = "HOME", Title = "COMMAND CENTER", Icon = "rbxassetid://129528574378357"},
-		{Id = "PROFILE", Title = "OPERATIVE PROFILE", Icon = "rbxassetid://106161709171988"}, 
+		{Id = "PROFILE", Title = "OPERATIVE PROFILE", Icon = "rbxassetid://133872443057434"}, 
 		{Id = "EXPEDITIONS", Title = "COMBAT DEPLOYMENT", Icon = "rbxassetid://115407261158495"},  
 		{Id = "SQUADS", Title = "STRIKE SQUADS COMMAND", Icon = "rbxassetid://111674249930782"}, 
-		{Id = "SUPPLY_FORGE", Title = "MARKET & FORGERY", Icon = "rbxassetid://108619507999123"},
+		{Id = "SUPPLY_FORGE", Title = "MARKET & FORGERY", Icon = "rbxassetid://116215526361894"},
 		{Id = "REGIMENTS", Title = "REGIMENT HEADQUARTERS", Icon = "rbxassetid://74069077964164"},
 		{Id = "BESTIARY", Title = "ABYSSAL BESTIARY", Icon = "rbxassetid://119375458206372"},
-		{Id = "SETTINGS", Title = "SYSTEM SETTINGS", Icon = "rbxassetid://10734900011"} 
+		{Id = "SETTINGS", Title = "SYSTEM SETTINGS", Icon = "rbxassetid://9405931578"} 
 	},
 	Currencies = {
 		{Id = "XP", Title = "XP", Color = "#55FF55"},
