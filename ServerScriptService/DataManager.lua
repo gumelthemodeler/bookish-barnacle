@@ -268,6 +268,53 @@ RemotesFolder.AdminCommand.OnServerEvent:Connect(function(player, command, targe
 
 	local targetPlayer = player
 	if targetName and targetName ~= "" and targetName:lower() ~= "me" then targetPlayer = nil; for _, p in ipairs(Players:GetPlayers()) do if string.find(p.Name:lower(), "^" .. targetName:lower()) then targetPlayer = p; break end end end
+
+	-- [[ NEW: GLOBAL BAN SYSTEM ]]
+	if command == "BanPlayer" then
+		local targetId = nil
+		if targetPlayer then
+			targetId = targetPlayer.UserId
+		else
+			-- Allows banning offline exploiters by typing their exact username
+			local success, id = pcall(function() return Players:GetUserIdFromNameAsync(targetName) end)
+			if success then targetId = id end
+		end
+
+		if targetId then
+			task.spawn(function()
+				-- 1. Obliterate from Leaderboards
+				pcall(function() PrestigeLB:RemoveAsync(tostring(targetId)) end)
+				pcall(function() EloLB:RemoveAsync(tostring(targetId)) end)
+
+				-- 2. Corrupt/Wipe their game save
+				pcall(function() GameDataStore:RemoveAsync(tostring(targetId)) end)
+
+				-- 3. Execute Universe-Wide Ban
+				local banConfig = {
+					UserIds = {targetId},
+					Duration = -1, -- Permanent
+					DisplayReason = "You have been permanently banned and your data has been wiped.",
+					PrivateReason = "Admin Ban Command Executed",
+					ExcludeAltAccounts = true, 
+					ApplyToUniverse = true
+				}
+
+				local success, err = pcall(function()
+					Players:BanAsync(banConfig)
+				end)
+
+				if success then
+					RemotesFolder.NotificationEvent:FireClient(player, "Banned & Wiped User: " .. targetName, "Success")
+				else
+					RemotesFolder.NotificationEvent:FireClient(player, "Ban failed for " .. targetName .. ": " .. tostring(err), "Error")
+				end
+			end)
+		else
+			RemotesFolder.NotificationEvent:FireClient(player, "Could not find a Roblox account named: " .. targetName, "Error")
+		end
+		return
+	end
+
 	if not targetPlayer then return end
 
 	if command == "SetXP" then targetPlayer:SetAttribute("XP", tonumber(args) or 0)
