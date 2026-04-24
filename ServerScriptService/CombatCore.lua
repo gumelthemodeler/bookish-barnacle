@@ -265,34 +265,82 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 	local fDefName = "<font color='#FF5555'>" .. tostring(defender.Name or "Defender") .. "</font>"
 
 	if attacker.Cooldowns then attacker.Cooldowns[skillName] = tonumber(skill.Cooldown) or 0 end
+	if not attacker.BaseMaxHP then attacker.BaseMaxHP = tonumber(attacker.MaxHP) or 100 end
+	if not defender.BaseMaxHP then defender.BaseMaxHP = tonumber(defender.MaxHP) or 100 end
 
-	-- Resolve Instant Non-Damaging Moves
-	if skill.Effect == "Dodge" then
-		if not attacker.Statuses then attacker.Statuses = {} end
-		attacker.Statuses["Dodge"] = 1; attacker.LastSkill = skillName 
-		return fLogName .. " used <b>" .. skillName .. "</b>! Evasive maneuvers engaged.", false, "None", 0
-	elseif skill.Effect == "Block" then
-		if not attacker.Statuses then attacker.Statuses = {} end
-		attacker.Statuses["Block"] = 1; attacker.LastSkill = skillName 
-		return fLogName .. " used <b>" .. skillName .. "</b>! Defensive stance taken.", false, "None", 0
-	elseif skill.Effect == "Rest" or skillName == "Recover" or skillName == "Regroup" then
-		local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.30
-		attacker.HP = math.min(tonumber(attacker.MaxHP) or 100, (tonumber(attacker.HP) or 0) + healAmount); 
-		attacker.Gas = tonumber(attacker.MaxGas) or 100
-		attacker.LastSkill = skillName
-		return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#55FF55'>Recovered HP and Gas.</font>", false, "None", 0
+	local mult = tonumber(skill.Mult) or 1.0
+
+	-- [[ UTILITY & INSTANT MOVES ]]
+	if mult == 0 then
+		if skill.Effect == "CloseGap" or skillName == "Close In" or skillName == "Advance" or skillName == "Charge" then
+			attacker.LastSkill = skillName
+			if attacker.Statuses and attacker.Statuses["Transformed"] then return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#FFAA00'>" .. fLogName .. " charges forward with immense speed!</font>", false, "Heavy", 0
+			else return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#55AAFF'>" .. fLogName .. " uses their ODM gear to close the distance!</font>", false, "None", 0 end
+		elseif skill.Effect == "FallBack" or skillName == "Fall Back" then
+			attacker.LastSkill = skillName
+			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#FFAA55'>" .. fLogName .. " falls back to Long Range!</font>", false, "None", 0
+		elseif skill.Effect == "Dodge" then
+			if not attacker.Statuses then attacker.Statuses = {} end
+			attacker.Statuses["Dodge"] = 1; attacker.LastSkill = skillName 
+			return fLogName .. " used <b>" .. skillName .. "</b>! Evasive maneuvers engaged.", false, "None", 0
+		elseif skill.Effect == "Block" then
+			if not attacker.Statuses then attacker.Statuses = {} end
+			attacker.Statuses["Block"] = 1; attacker.LastSkill = skillName 
+			return fLogName .. " used <b>" .. skillName .. "</b>! Defensive stance taken.", false, "None", 0
+		elseif skill.Effect == "Rest" or skillName == "Recover" or skillName == "Regroup" then
+			local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.30
+			attacker.HP = math.min(tonumber(attacker.MaxHP) or 100, (tonumber(attacker.HP) or 0) + healAmount); 
+			attacker.Gas = tonumber(attacker.MaxGas) or 100; attacker.LastSkill = skillName
+			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#55FF55'>Recovered HP and Gas.</font>", false, "None", 0
+		elseif skill.Effect == "Transform" then
+			if not attacker.Statuses then attacker.Statuses = {} end
+			attacker.Statuses["Transformed"] = 999; attacker.LastSkill = skillName;
+
+			-- TITAN HEALTH POOL LINK BREAKER --
+			local tEnd = tonumber(attacker.PlayerObj:GetAttribute("Titan_Endurance_Val")) or 10
+			local tPot = tonumber(attacker.PlayerObj:GetAttribute("Titan_Potential_Val")) or 10
+			attacker.MaxHP = attacker.BaseMaxHP + ((tEnd + tPot) * 40) 
+			attacker.HP = attacker.MaxHP
+			attacker.TitanEnergy = tonumber(attacker.MaxTitanEnergy) or 100
+
+			return fLogName .. " used <b>" .. skillName .. "</b>! Lightning strikes as " .. fLogName .. " shifts into a Titan! <font color='#55FF55'>[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy", 0
+		elseif skill.Effect == "Eject" then
+			if attacker.Statuses then attacker.Statuses["Transformed"] = nil end
+			attacker.LastSkill = skillName
+			attacker.MaxHP = attacker.BaseMaxHP
+			attacker.HP = math.min(attacker.HP, attacker.MaxHP)
+			return fLogName .. " used <b>" .. skillName .. "</b>! " .. fLogName .. " cuts themselves out of the nape, returning to human form.", false, "None", 0
+		elseif skill.Effect == "TitanRest" or skillName == "Titan Recover" then
+			local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.60
+			attacker.HP = math.min(tonumber(attacker.MaxHP) or 100, (tonumber(attacker.HP) or 0) + healAmount); attacker.LastSkill = skillName
+			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#55FF55'>" .. fLogName .. " uses immense steam to regenerate " .. math.floor(healAmount) .. " HP.</font>", false, "None", 0
+		end
 	end
 
+	-- [[ PVP DAMAGE RESOLUTION ]]
 	local hitsToDo = tonumber(skill.Hits) or 1
 	local hitLogs = {}
 	local didHitAtAll = false
 	local overallShake = "None"
 	local totalDmgDealt = 0
 
+	local isAttackerTransformed = attacker.Statuses and (tonumber(attacker.Statuses.Transformed) or 0) > 0
+	local isDefenderTransformed = defender.Statuses and (tonumber(defender.Statuses.Transformed) or 0) > 0
+
 	local atkSpd = tonumber(attacker.TotalSpeed) or 10
 	local defSpd = tonumber(defender.TotalSpeed) or 10
 	local atkRes = tonumber(attacker.TotalResolve) or 10
 	local defRes = tonumber(defender.TotalResolve) or 10
+
+	-- TITAN STAT OVERRIDES
+	if attacker.IsPlayer and isAttackerTransformed and attacker.PlayerObj then
+		atkSpd = (tonumber(attacker.PlayerObj:GetAttribute("Titan_Speed_Val")) or 10) * 3.0
+		atkRes = tonumber(attacker.PlayerObj:GetAttribute("Titan_Endurance_Val")) or 10
+	end
+	if defender.IsPlayer and isDefenderTransformed and defender.PlayerObj then
+		defSpd = (tonumber(defender.PlayerObj:GetAttribute("Titan_Speed_Val")) or 10) * 3.0
+		defRes = tonumber(defender.PlayerObj:GetAttribute("Titan_Endurance_Val")) or 10
+	end
 
 	for i = 1, hitsToDo do
 		local currentDefHP = tonumber(defender.HP) or 0
@@ -309,6 +357,10 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 		if isDodging then dodgeChance = 100 end
 		if defender.Statuses and (tonumber(defender.Statuses.Immobilized) or 0) > 0 then dodgeChance = 0; isDodging = false end
 
+		-- Titan Dodge Stat (Potential)
+		local tPotential = defender.IsPlayer and isDefenderTransformed and (tonumber(defender.PlayerObj:GetAttribute("Titan_Potential_Val")) or 10) or 0
+		dodgeChance = dodgeChance + (tPotential * 0.25)
+
 		dodgeChance = math.clamp(dodgeChance, 0, 75)
 		if targetLimb == "Nape" or targetLimb == "Head" then dodgeChance += 15 end
 
@@ -322,6 +374,11 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 
 		local critChance = 5 + ((atkRes - defRes) * 0.10)
 		if attacker.AwakenedStats and (tonumber(attacker.AwakenedStats.CritBonus) or 0) > 0 then critChance = critChance + tonumber(attacker.AwakenedStats.CritBonus) end
+
+		-- Titan Crit Stat (Precision)
+		local tPrecision = attacker.IsPlayer and isAttackerTransformed and (tonumber(attacker.PlayerObj:GetAttribute("Titan_Precision_Val")) or 10) or 0
+		critChance = critChance + (tPrecision * 0.25)
+
 		if targetLimb == "Nape" or targetLimb == "Head" then critChance += 25 end
 		critChance = math.clamp(critChance, 5, 75)
 
@@ -329,19 +386,14 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 		local dmgMultValue = (tonumber(skill.Mult) or 1.0) * (isCrit and 1.5 or 1.0)
 
 		local baseDmg = CombatCore.CalculateDamage(attacker, defender, dmgMultValue, targetLimb, nil)
-
-		-- [[ APPLY QTE MITIGATION ]]
 		baseDmg = math.max(1, math.floor(baseDmg * (qteMultiplier or 1.0)))
 
 		local survivalTriggered, hitGate, gateBroken, hpDmg, gateName = CombatCore.TakeDamage(defender, baseDmg, attacker.Style)
 		totalDmgDealt += hpDmg
 
 		local effectLog = ""
-		if qteMultiplier == 0.2 then
-			effectLog = effectLog .. " <font color='#FFD700'><b>[PARRIED!]</b></font>"
-		elseif qteMultiplier == 0.6 then
-			effectLog = effectLog .. " <font color='#AAAAAA'><b>[BLOCKED!]</b></font>"
-		end
+		if qteMultiplier == 0.2 then effectLog = effectLog .. " <font color='#FFD700'><b>[PARRIED!]</b></font>"
+		elseif qteMultiplier == 0.6 then effectLog = effectLog .. " <font color='#AAAAAA'><b>[BLOCKED!]</b></font>" end
 
 		if skill.Effect and skill.Effect ~= "None" and skill.Effect ~= "Block" and skill.Effect ~= "Dodge" and skill.Effect ~= "Rest" then
 			local safeEffect = tostring(skill.Effect)
@@ -389,6 +441,8 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 	local fDefName = "<font color='" .. tostring(defColor or "#FF5555") .. "'>" .. tostring(defName or "Defender") .. "</font>"
 
 	if attacker.Cooldowns then attacker.Cooldowns[skillName] = tonumber(skill.Cooldown) or 0 end
+	if not attacker.BaseMaxHP then attacker.BaseMaxHP = tonumber(attacker.MaxHP) or 100 end
+	if not defender.BaseMaxHP then defender.BaseMaxHP = tonumber(defender.MaxHP) or 100 end
 
 	local defGateHP = tonumber(defender.GateHP) or 0
 	if (skill.Effect == "Dodge" or skill.Effect == "Block" or skillName == "Maneuver" or skillName == "Evasive Maneuver") and defender.GateType == "Steam" and defGateHP > 0 then 
@@ -403,6 +457,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 
 	local mult = tonumber(skill.Mult) or 1.0
 
+	-- [[ UTILITY & INSTANT MOVES ]]
 	if mult == 0 then
 		if skill.Effect == "CloseGap" or skillName == "Close In" or skillName == "Advance" or skillName == "Charge" then
 			attacker.LastSkill = skillName
@@ -461,13 +516,22 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 				return fLogName .. " attempted to use <b>" .. skillName .. "</b>, but their lineage prevents Titan transformation!", false, "None"
 			end
 			if not attacker.Statuses then attacker.Statuses = {} end
-			attacker.Statuses["Transformed"] = 999; attacker.LastSkill = skillName; attacker.HP = tonumber(attacker.MaxHP) or 100
+			attacker.Statuses["Transformed"] = 999; attacker.LastSkill = skillName; 
+
+			-- TITAN HEALTH POOL LINK BREAKER --
+			local tEnd = tonumber(attacker.PlayerObj:GetAttribute("Titan_Endurance_Val")) or 10
+			local tPot = tonumber(attacker.PlayerObj:GetAttribute("Titan_Potential_Val")) or 10
+			attacker.MaxHP = attacker.BaseMaxHP + ((tEnd + tPot) * 40) 
+			attacker.HP = attacker.MaxHP
 			attacker.TitanEnergy = tonumber(attacker.MaxTitanEnergy) or 100
-			return fLogName .. " used <b>" .. skillName .. "</b>! Lightning strikes as " .. fLogName .. " shifts into a Titan! <font color='#55FF55'>[HP & HEAT Restored]</font>", false, "Heavy"
+
+			return fLogName .. " used <b>" .. skillName .. "</b>! Lightning strikes as " .. fLogName .. " shifts into a Titan! <font color='#55FF55'>[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy"
 
 		elseif skill.Effect == "Eject" then
 			if attacker.Statuses then attacker.Statuses["Transformed"] = nil end
 			attacker.LastSkill = skillName
+			attacker.MaxHP = attacker.BaseMaxHP
+			attacker.HP = math.min(attacker.HP, attacker.MaxHP)
 			return fLogName .. " used <b>" .. skillName .. "</b>! " .. fLogName .. " cuts themselves out of the nape, returning to human form.", false, "None"
 
 		elseif skill.Effect == "TitanRest" or skillName == "Titan Recover" then
@@ -477,6 +541,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		end
 	end
 
+	-- [[ PVE DAMAGE RESOLUTION ]]
 	local hitsToDo = tonumber(skill.Hits) or 1; local hitLogs = {}; local didHitAtAll = false; local overallShake = "None"
 
 	local synergyTag = isSequenceCombo and " <font color='#FFD700'>[SYNERGY: " .. lastAtkSkill .. " -> " .. skillName .. "]</font>" or ""
@@ -494,6 +559,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 	local atkRes = tonumber(attacker.TotalResolve) or 10
 	local defRes = tonumber(defender.TotalResolve) or 10
 
+	-- TITAN STAT OVERRIDES
 	if attacker.IsPlayer and isAttackerTransformed and attacker.PlayerObj then
 		atkSpd = (tonumber(attacker.PlayerObj:GetAttribute("Titan_Speed_Val")) or 10) * 3.0
 		atkRes = tonumber(attacker.PlayerObj:GetAttribute("Titan_Endurance_Val")) or 10
