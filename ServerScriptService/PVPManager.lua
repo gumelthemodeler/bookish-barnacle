@@ -20,7 +20,7 @@ local hasPartyMgr, PartyManager = pcall(function() return require(script.Parent:
 local ActiveMatches = {}
 local PvPQueue = {} 
 local MatchCounter = 0
-local TURN_DURATION = 20 
+local TURN_DURATION = 15 
 
 local function CreatePvPCombatant(player)
 	local wpnName = player:GetAttribute("EquippedWeapon") or "None"
@@ -65,23 +65,8 @@ local function CreatePvPCombatant(player)
 		TotalSpeed = (player:GetAttribute("Speed") or 10) + (wpnBonus.Speed or 0) + (accBonus.Speed or 0) + awakenedStats.SpdBonus,
 		TotalResolve = (player:GetAttribute("Resolve") or 10) + (wpnBonus.Resolve or 0) + (accBonus.Resolve or 0),
 		Statuses = {}, Cooldowns = {}, LastSkill = "None", AwakenedStats = awakenedStats, ResolveSurvivals = 0,
-
 		Moves = {}, TargetLimbs = {}, TargetPlayers = {},
-		LimbDamage = { Legs = 0, Arms = 0, Gear = 0, Head = 0 },
-		QTEStatus = "None"
-	}
-end
-
--- [[ STUDIO TESTING FALLBACK ]]
-local function CreateBotCombatant()
-	return {
-		IsPlayer = false, Name = "Abyssal Bot", PlayerObj = nil,
-		Clan = "None", Titan = "None", Style = "None",
-		HP = 2500, MaxHP = 2500, Gas = 500, MaxGas = 500,
-		TitanEnergy = 100, MaxTitanEnergy = 100,
-		TotalStrength = 20, TotalDefense = 15, TotalSpeed = 15, TotalResolve = 25,
-		Statuses = {}, Cooldowns = {}, LastSkill = "None", AwakenedStats = {}, ResolveSurvivals = 0,
-		Moves = {}, TargetLimbs = {}, TargetPlayers = {}, LimbDamage = {Legs=0, Arms=0, Gear=0, Head=0}, QTEStatus = "None"
+		LimbDamage = { Legs = 0, Arms = 0, Gear = 0, Head = 0 }
 	}
 end
 
@@ -117,26 +102,24 @@ local function EndMatch(matchId, winnerTeam)
 			end
 		end
 
-		if not match.IsBotMatch then
-			local t1LeaderId = match.Team1[1].PlayerObj.UserId
-			local t2LeaderId = match.Team2[1].PlayerObj.UserId
+		local t1LeaderId = match.Team1[1].PlayerObj.UserId
+		local t2LeaderId = match.Team2[1].PlayerObj.UserId
 
-			local winnerPot = 0; local loserPot = 0
-			local winningBets = (winnerTeam == "Team1") and (match.Bets[t1LeaderId] or {}) or (match.Bets[t2LeaderId] or {})
-			local losingBets = (winnerTeam == "Team1") and (match.Bets[t2LeaderId] or {}) or (match.Bets[t1LeaderId] or {})
+		local winnerPot = 0; local loserPot = 0
+		local winningBets = (winnerTeam == "Team1") and (match.Bets[t1LeaderId] or {}) or (match.Bets[t2LeaderId] or {})
+		local losingBets = (winnerTeam == "Team1") and (match.Bets[t2LeaderId] or {}) or (match.Bets[t1LeaderId] or {})
 
-			for _, b in pairs(winningBets) do winnerPot += b.Amount end
-			for _, b in pairs(losingBets) do loserPot += b.Amount end
+		for _, b in pairs(winningBets) do winnerPot += b.Amount end
+		for _, b in pairs(losingBets) do loserPot += b.Amount end
 
-			for _, betData in pairs(winningBets) do
-				local spectator = betData.Spectator
-				if spectator and spectator.Parent then
-					local share = betData.Amount / winnerPot
-					local profit = math.floor(loserPot * share)
-					local payout = betData.Amount + profit
-					spectator.leaderstats.Dews.Value += payout
-					Network.NotificationEvent:FireClient(spectator, "You won " .. payout .. " Dews! (Profit: +" .. profit .. ")", "Success")
-				end
+		for _, betData in pairs(winningBets) do
+			local spectator = betData.Spectator
+			if spectator and spectator.Parent then
+				local share = betData.Amount / winnerPot
+				local profit = math.floor(loserPot * share)
+				local payout = betData.Amount + profit
+				spectator.leaderstats.Dews.Value += payout
+				Network.NotificationEvent:FireClient(spectator, "You won " .. payout .. " Dews! (Profit: +" .. profit .. ")", "Success")
 			end
 		end
 	else
@@ -166,7 +149,7 @@ local function StartMatch(team1Players, team2Players, is3v3)
 	print("[PvPManager] MATCH STARTED: T1 VS T2 | ID: " .. matchId .. " | 3v3: " .. tostring(is3v3))
 
 	ActiveMatches[matchId] = {
-		Is3v3 = is3v3, IsBotMatch = false,
+		Is3v3 = is3v3,
 		Team1 = team1Combatants,
 		Team2 = team2Combatants,
 		Turn = 1, State = "WaitingForMoves",
@@ -175,29 +158,7 @@ local function StartMatch(team1Players, team2Players, is3v3)
 	}
 
 	local p1 = team1Players[1]; local p2 = team2Players[1]
-	-- Broadcasts the arrays of IDs so ALL participants get pulled in
 	PvPUpdate:FireAllClients("MatchStarted", matchId, p1.Name, p2.Name, p1.UserId, p2.UserId, ActiveMatches[matchId].TurnEndTime, is3v3, t1Ids, t2Ids)
-end
-
-local function StartBotMatch(player1)
-	MatchCounter += 1
-	local matchId = "Match_" .. MatchCounter
-
-	local t1 = {CreatePvPCombatant(player1)}
-	local bot = CreateBotCombatant()
-	local t2 = {bot}
-
-	print("[PvPManager] STUDIO BOT MATCH STARTED | ID: " .. matchId)
-
-	ActiveMatches[matchId] = {
-		Is3v3 = false, IsBotMatch = true,
-		Team1 = t1, Team2 = t2,
-		Turn = 1, State = "WaitingForMoves",
-		TurnEndTime = os.time() + TURN_DURATION, 
-		Bets = {}
-	}
-
-	PvPUpdate:FireAllClients("MatchStarted", matchId, player1.Name, bot.Name, player1.UserId, -1, ActiveMatches[matchId].TurnEndTime, false, {player1.UserId}, {-1})
 end
 
 task.spawn(function()
@@ -208,14 +169,6 @@ task.spawn(function()
 			local matched = false
 			local waitTime1 = os.time() - q1.JoinTime
 			local eloRange = 150 + (math.floor(waitTime1 / 3) * 100) 
-
-			-- [[ THE FIX: Auto-Bot pop for Studio testing after 5 seconds ]]
-			if RunService:IsStudio() and waitTime1 >= 5 and not q1.IsParty then
-				table.remove(PvPQueue, i)
-				StartBotMatch(q1.Player)
-				matched = true
-				continue
-			end
 
 			for j = i + 1, #PvPQueue do
 				local q2 = PvPQueue[j]
@@ -245,6 +198,7 @@ end
 local function ResolveTurn(matchId)
 	local match = ActiveMatches[matchId]
 	if not match then return end
+	if match.State == "Resolving" then return end 
 	match.State = "Resolving"
 
 	local function TickStatuses(combatant)
@@ -261,7 +215,7 @@ local function ResolveTurn(matchId)
 
 	local function EvaluateLimbDamage(defender, targetLimb, damage)
 		if targetLimb == "Body" then return end
-		defender.LimbDamage[targetLimb] = defender.LimbDamage[targetLimb] + damage
+		defender.LimbDamage[targetLimb] = (defender.LimbDamage[targetLimb] or 0) + damage
 		local maxHp = defender.MaxHP
 
 		if targetLimb == "Legs" and defender.LimbDamage.Legs >= maxHp * 0.20 then
@@ -279,16 +233,6 @@ local function ResolveTurn(matchId)
 	local function ProcessStrike(attacker, defender, skillName, targetLimb)
 		if attacker.HP <= 0 or defender.HP <= 0 then return end
 
-		local dmgMultiplier = 1.0
-		if defender.QTEStatus == "Parry" then
-			dmgMultiplier = 0.2
-			attacker.Statuses["Stun"] = 1 
-			defender.Gas = math.min(defender.MaxGas, defender.Gas + 10)
-		elseif defender.QTEStatus == "Block" then
-			dmgMultiplier = 0.6
-		end
-		defender.QTEStatus = "None" 
-
 		local skill = SkillData.Skills[skillName]
 		if skill then
 			if skill.GasCost then attacker.Gas = math.max(0, attacker.Gas - skill.GasCost) end
@@ -298,13 +242,14 @@ local function ResolveTurn(matchId)
 
 		local logMsg, didHit, shakeType, rawDamage
 		if type(CombatCore.ExecutePvPStrike) == "function" then
-			logMsg, didHit, shakeType, rawDamage = CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, dmgMultiplier)
+			-- [[ THE FIX: Removed QTE Yields completely. Strikes execute instantly with 1.0 Mult. ]]
+			logMsg, didHit, shakeType, rawDamage = CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 1.0)
 		else
 			logMsg, didHit, shakeType = CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, attacker.Name, defender.Name, "#55FF55", "#FF5555")
 			rawDamage = 100 
 		end
 
-		if didHit and rawDamage > 0 then
+		if didHit and rawDamage and rawDamage > 0 then
 			EvaluateLimbDamage(defender, targetLimb, rawDamage)
 		end
 
@@ -318,29 +263,21 @@ local function ResolveTurn(matchId)
 		for _, c in ipairs(match.Team2) do table.insert(cData.T2_States, {Name = c.Name, HP = c.HP, MaxHP = c.MaxHP, Gas = c.Gas, MaxGas = c.MaxGas, Statuses = c.Statuses}) end
 
 		PvPUpdate:FireAllClients("TurnStrike", matchId, cData)
-		task.wait(1.5)
+		task.wait(0.5) 
 	end
 
-	local clashCount = match.Is3v3 and 1 or 3 
+	local activeT1 = {}; for _, c in ipairs(match.Team1) do if c.HP > 0 then table.insert(activeT1, c) end end
+	local activeT2 = {}; for _, c in ipairs(match.Team2) do if c.HP > 0 then table.insert(activeT2, c) end end
 
-	for clashIndex = 1, clashCount do
-		local activeT1 = {}; for _, c in ipairs(match.Team1) do if c.HP > 0 then table.insert(activeT1, c) end end
-		local activeT2 = {}; for _, c in ipairs(match.Team2) do if c.HP > 0 then table.insert(activeT2, c) end end
-		if #activeT1 == 0 or #activeT2 == 0 then break end
-
-		if not match.Is3v3 then
-			PvPUpdate:FireAllClients("TurnStrike", matchId, {LogMsg = "<font color='#AAAAAA'>--- CLASH " .. clashIndex .. " ---</font>", ShakeType = "None"})
-			task.wait(0.5)
-		end
-
+	if #activeT1 > 0 and #activeT2 > 0 then
 		local clashActions = {}
 		for _, c in ipairs(activeT1) do
 			local cSpd = c.TotalSpeed + math.random(1, 15); if c.Statuses and c.Statuses["Crippled"] then cSpd *= 0.5 end
-			table.insert(clashActions, {Attacker = c, Spd = cSpd, Move = c.Moves[clashIndex] or "Basic Slash", Limb = c.TargetLimbs[clashIndex] or "Body", Target = c.TargetPlayers[clashIndex] or activeT2[1].Name})
+			table.insert(clashActions, {Attacker = c, Spd = cSpd, Move = c.Moves[1] or "Basic Slash", Limb = c.TargetLimbs[1] or "Body", Target = c.TargetPlayers[1] or activeT2[1].Name})
 		end
 		for _, c in ipairs(activeT2) do
 			local cSpd = c.TotalSpeed + math.random(1, 15); if c.Statuses and c.Statuses["Crippled"] then cSpd *= 0.5 end
-			table.insert(clashActions, {Attacker = c, Spd = cSpd, Move = c.Moves[clashIndex] or "Basic Slash", Limb = c.TargetLimbs[clashIndex] or "Body", Target = c.TargetPlayers[clashIndex] or activeT1[1].Name})
+			table.insert(clashActions, {Attacker = c, Spd = cSpd, Move = c.Moves[1] or "Basic Slash", Limb = c.TargetLimbs[1] or "Body", Target = c.TargetPlayers[1] or activeT1[1].Name})
 		end
 
 		table.sort(clashActions, function(a, b) return a.Spd > b.Spd end)
@@ -354,22 +291,12 @@ local function ResolveTurn(matchId)
 					if sData.PvPSupport == "Supply Drop" and defender then
 						defender.Gas = math.min(defender.MaxGas, defender.Gas + 30)
 						PvPUpdate:FireAllClients("TurnStrike", matchId, {LogMsg = action.Attacker.Name .. " supplied " .. defender.Name .. " with Gas!", ShakeType = "None"})
-						task.wait(1)
+						task.wait(0.5)
 						continue
 					end
 				end
 
 				if defender and defender.HP > 0 then
-					if defender.IsPlayer then
-						PvPUpdate:FireClient(defender.PlayerObj, "QTE_Prompt", action.Attacker.Name, action.Move)
-						match.State = "WaitingForQTE"
-						local qteTimer = 2.0
-						while match.State == "WaitingForQTE" and qteTimer > 0 do
-							task.wait(0.1)
-							qteTimer -= 0.1
-						end
-					end
-
 					ProcessStrike(action.Attacker, defender, action.Move, action.Limb)
 				end
 			end
@@ -402,16 +329,17 @@ task.spawn(function()
 					return "Basic Slash"
 				end
 
-				local clashLimit = match.Is3v3 and 1 or 3
+				local function GetRandomEnemy(teamArray)
+					local alive = {}
+					for _, c in ipairs(teamArray) do if c.HP > 0 then table.insert(alive, c.Name) end end
+					return #alive > 0 and alive[math.random(1, #alive)] or teamArray[1].Name
+				end
+
 				for _, c in ipairs(match.Team1) do
-					for i = 1, clashLimit do
-						if not c.Moves[i] then c.Moves[i] = GetFallbackMove(c); c.TargetLimbs[i] = "Body"; c.TargetPlayers[i] = match.Team2[1].Name end
-					end
+					if not c.Moves[1] then c.Moves[1] = GetFallbackMove(c); c.TargetLimbs[1] = "Body"; c.TargetPlayers[1] = GetRandomEnemy(match.Team2) end
 				end
 				for _, c in ipairs(match.Team2) do
-					for i = 1, clashLimit do
-						if not c.Moves[i] then c.Moves[i] = GetFallbackMove(c); c.TargetLimbs[i] = "Body"; c.TargetPlayers[i] = match.Team1[1].Name end
-					end
+					if not c.Moves[1] then c.Moves[1] = GetFallbackMove(c); c.TargetLimbs[1] = "Body"; c.TargetPlayers[1] = GetRandomEnemy(match.Team1) end
 				end
 
 				ResolveTurn(matchId)
@@ -465,49 +393,59 @@ PvPAction.OnServerEvent:Connect(function(player, actionType, matchId, data1, dat
 	local match = ActiveMatches[matchId]
 	if not match then return end
 
-	if actionType == "SubmitQTE" and match.State == "WaitingForQTE" then
-		local c = GetCombatantByName(match, player.Name)
-		if c then 
-			c.QTEStatus = data1 
-			match.State = "Resolving" 
-		end 
-		return
-	end
-
 	if actionType == "Surrender" then
 		local surrenderer = GetCombatantByName(match, player.Name)
 		if surrenderer then
 			surrenderer.HP = 0
-			PvPUpdate:FireAllClients("TurnStrike", matchId, {LogMsg = "<font color='#FFAA00'><b>" .. player.Name .. " surrendered!</b></font>", ShakeType = "None"})
-			ResolveTurn(matchId) 
+
+			local cData = {LogMsg = "<font color='#FFAA00'><b>" .. player.Name .. " surrendered!</b></font>", ShakeType = "None", T1_States = {}, T2_States = {}}
+			for _, c in ipairs(match.Team1) do table.insert(cData.T1_States, {Name = c.Name, HP = c.HP, MaxHP = c.MaxHP, Gas = c.Gas, MaxGas = c.MaxGas, Statuses = c.Statuses}) end
+			for _, c in ipairs(match.Team2) do table.insert(cData.T2_States, {Name = c.Name, HP = c.HP, MaxHP = c.MaxHP, Gas = c.Gas, MaxGas = c.MaxGas, Statuses = c.Statuses}) end
+
+			PvPUpdate:FireAllClients("TurnStrike", matchId, cData)
+
+			if not match.Is3v3 then
+				local winner = (surrenderer == match.Team1[1]) and "Team2" or "Team1"
+				EndMatch(matchId, winner)
+			else
+				ResolveTurn(matchId)
+			end
 		end
 		return
 	end
 
+	-- [[ THE FIX: Check if everyone submitted 1 move, then instantly resolve ]]
 	if actionType == "SubmitMoveSequence" and match.State == "WaitingForMoves" then
-		local moveArray = data1 
+		local moveData = data1 
 		local c = GetCombatantByName(match, player.Name)
 
-		if c and type(moveArray) == "table" then
+		if c and type(moveData) == "table" then
 			c.Moves = {}; c.TargetLimbs = {}; c.TargetPlayers = {}
-			local clashLimit = match.Is3v3 and 1 or 3
 
-			for i=1, clashLimit do
-				local md = moveArray[i]
-				if md and (SkillData.Skills[md.Move] or md.Move == "Recover") then
-					table.insert(c.Moves, md.Move)
-					table.insert(c.TargetLimbs, md.Limb or "Body")
-					table.insert(c.TargetPlayers, md.Target or ((c == match.Team1[1]) and match.Team2[1].Name or match.Team1[1].Name))
-				else
-					table.insert(c.Moves, "Basic Slash")
-					table.insert(c.TargetLimbs, "Body")
-					table.insert(c.TargetPlayers, (c == match.Team1[1]) and match.Team2[1].Name or match.Team1[1].Name)
-				end
+			local isTeam1 = false
+			for _, tc in ipairs(match.Team1) do if tc == c then isTeam1 = true break end end
+
+			local function GetRandomEnemy()
+				local enemies = isTeam1 and match.Team2 or match.Team1
+				local alive = {}
+				for _, ec in ipairs(enemies) do if ec.HP > 0 then table.insert(alive, ec.Name) end end
+				return #alive > 0 and alive[math.random(1, #alive)] or enemies[1].Name
+			end
+
+			local md = moveData[1]
+			if md and (SkillData.Skills[md.Move] or md.Move == "Recover" or md.Move == "Transform" or md.Move == "Maneuver" or md.Move == "Advance" or md.Move == "Close In" or md.Move == "Fall Back" or md.Move == "Eject" or md.Move == "Titan Recover") then
+				table.insert(c.Moves, md.Move)
+				table.insert(c.TargetLimbs, md.Limb or "Body")
+				table.insert(c.TargetPlayers, md.Target or GetRandomEnemy())
+			else
+				table.insert(c.Moves, "Basic Slash")
+				table.insert(c.TargetLimbs, "Body")
+				table.insert(c.TargetPlayers, GetRandomEnemy())
 			end
 
 			local allReady = true
-			for _, tc in ipairs(match.Team1) do if tc.HP > 0 and #tc.Moves < clashLimit then allReady = false break end end
-			for _, tc in ipairs(match.Team2) do if tc.HP > 0 and #tc.Moves < clashLimit then allReady = false break end end
+			for _, tc in ipairs(match.Team1) do if tc.HP > 0 and #tc.Moves < 1 then allReady = false break end end
+			for _, tc in ipairs(match.Team2) do if tc.HP > 0 and #tc.Moves < 1 then allReady = false break end end
 
 			if allReady then ResolveTurn(matchId) end
 		end
@@ -535,7 +473,12 @@ Players.PlayerRemoving:Connect(function(player)
 		local c = GetCombatantByName(match, player.Name)
 		if c then
 			c.HP = 0
-			ResolveTurn(matchId)
+			if not match.Is3v3 then
+				local winner = (c == match.Team1[1]) and "Team2" or "Team1"
+				EndMatch(matchId, winner)
+			else
+				ResolveTurn(matchId)
+			end
 		end
 	end
 end)
