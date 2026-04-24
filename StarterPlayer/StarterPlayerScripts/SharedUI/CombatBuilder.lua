@@ -9,11 +9,11 @@ local camera = workspace.CurrentCamera
 
 local function CreateFlatPanel(parent)
 	local frame = Instance.new("Frame", parent)
-	frame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+	frame.BackgroundColor3 = Color3.fromRGB(15, 12, 12)
 	frame.BorderSizePixel = 0
 	local stroke = Instance.new("UIStroke", frame)
-	stroke.Color = Color3.fromRGB(45, 45, 50)
-	stroke.Thickness = 1
+	stroke.Color = Color3.fromRGB(45, 25, 25)
+	stroke.Thickness = 2
 	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	return frame, stroke
 end
@@ -21,19 +21,19 @@ end
 local function CreateFlatBar(parent, title, colorHex, pos, size, alignRight, baseZ, isOverlay)
 	baseZ = baseZ or 1
 	local cColor = Color3.fromHex(colorHex:gsub("#", ""))
-	local shadowColor = Color3.new(cColor.R * 0.4, cColor.G * 0.4, cColor.B * 0.4)
+	local shadowColor = Color3.new(cColor.R * 0.2, cColor.G * 0.2, cColor.B * 0.2)
 
 	local container = Instance.new("Frame", parent)
 	container.Size = size
 	container.Position = pos
-	container.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
+	container.BackgroundColor3 = Color3.fromRGB(10, 8, 8)
 	container.BorderSizePixel = 0
 	container.ZIndex = baseZ
 
 	if isOverlay then container.BackgroundTransparency = 1 end
 
 	local strk = Instance.new("UIStroke", container)
-	strk.Color = Color3.fromRGB(40, 40, 45)
+	strk.Color = Color3.fromRGB(30, 20, 20)
 	strk.Thickness = 1
 	strk.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	if isOverlay then strk.Enabled = false end
@@ -56,7 +56,7 @@ local function CreateFlatBar(parent, title, colorHex, pos, size, alignRight, bas
 	}
 	grad.Rotation = 90
 
-	local txt = UIHelpers.CreateLabel(container, title .. " 100/100", UDim2.new(1, -8, 1, 0), Enum.Font.GothamBold, Color3.fromRGB(240, 240, 240), 11)
+	local txt = UIHelpers.CreateLabel(container, title .. " 100/100", UDim2.new(1, -8, 1, 0), Enum.Font.GothamBold, Color3.fromRGB(240, 230, 220), 11)
 	if alignRight then
 		txt.TextXAlignment = Enum.TextXAlignment.Right
 	else
@@ -82,19 +82,17 @@ function CombatBuilder.Build(masterScreenGui, player)
 	GUI.CombatBackdrop.ZIndex = 98
 	GUI.CombatBackdrop.Active = true
 
-	-- Reverted back to Frame to prevent input hijacking. All scrolling is internal now.
 	GUI.CombatWindow = Instance.new("Frame", masterScreenGui)
 	GUI.CombatWindow.Name = "CombatWindow"
 	GUI.CombatWindow.Size = UDim2.new(0, 1000, 0, 580)
 	GUI.CombatWindow.Position = UDim2.new(0.5, 0, 0.5, 0)
 	GUI.CombatWindow.AnchorPoint = Vector2.new(0.5, 0.5)
-	GUI.CombatWindow.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+	GUI.CombatWindow.BackgroundColor3 = Color3.fromRGB(15, 12, 12)
 	GUI.CombatWindow.Visible = false
 	GUI.CombatWindow.ZIndex = 100
-
 	local cwStroke = Instance.new("UIStroke", GUI.CombatWindow)
-	cwStroke.Color = Color3.fromRGB(45, 45, 50)
-	cwStroke.Thickness = 1
+	cwStroke.Color = Color3.fromRGB(60, 30, 30)
+	cwStroke.Thickness = 2
 
 	GUI.WindowScale = Instance.new("UIScale", GUI.CombatWindow)
 	GUI.WindowScale.Scale = 0
@@ -106,14 +104,14 @@ function CombatBuilder.Build(masterScreenGui, player)
 
 	local Header = Instance.new("Frame", GUI.CombatWindow)
 	Header.Size = UDim2.new(1, 0, 0, 40)
-	Header.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+	Header.BackgroundColor3 = Color3.fromRGB(10, 8, 8)
 	Header.BorderSizePixel = 0
 	local hStroke = Instance.new("UIStroke", Header)
-	hStroke.Color = Color3.fromRGB(40, 40, 45)
+	hStroke.Color = Color3.fromRGB(40, 20, 20)
 	hStroke.Thickness = 1
 	hStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-	GUI.MissionInfoLbl = UIHelpers.CreateLabel(Header, "COMBAT DEPLOYMENT", UDim2.new(1, -20, 1, 0), Enum.Font.GothamBold, UIHelpers.Colors.TextWhite, 14)
+	GUI.MissionInfoLbl = UIHelpers.CreateLabel(Header, "COMBAT DEPLOYMENT", UDim2.new(1, -20, 1, 0), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 14)
 	GUI.MissionInfoLbl.Position = UDim2.new(0, 15, 0, 0)
 	GUI.MissionInfoLbl.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -131,12 +129,13 @@ function CombatBuilder.Build(masterScreenGui, player)
 	GUI.pAvatar = Instance.new("ImageLabel", GUI.PlayerPanel)
 	GUI.pAvatar.Size = UDim2.new(0, 90, 0, 90)
 	GUI.pAvatar.Position = UDim2.new(0, 15, 0, 15)
-	GUI.pAvatar.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+	GUI.pAvatar.BackgroundColor3 = Color3.fromRGB(10, 8, 8)
 	GUI.pAvatar.ZIndex = 2
 	GUI.pAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. player.UserId .. "&w=150&h=150"
 	GUI.pAvatar.ScaleType = Enum.ScaleType.Crop
 	local pAvatarStroke = Instance.new("UIStroke", GUI.pAvatar)
 	pAvatarStroke.Color = Color3.fromRGB(85, 170, 255)
+	pAvatarStroke.Thickness = 2
 	pAvatarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 	GUI.AllyPanel, _ = CreateFlatPanel(GUI.CombatantsFrame)
@@ -147,14 +146,15 @@ function CombatBuilder.Build(masterScreenGui, player)
 	GUI.AllyAvatar = Instance.new("ImageLabel", GUI.AllyPanel)
 	GUI.AllyAvatar.Size = UDim2.new(0, 90, 0, 90)
 	GUI.AllyAvatar.Position = UDim2.new(0, 15, 0, 15)
-	GUI.AllyAvatar.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+	GUI.AllyAvatar.BackgroundColor3 = Color3.fromRGB(10, 8, 8)
 	GUI.AllyAvatar.ScaleType = Enum.ScaleType.Crop
 	GUI.AllyAvatar.ZIndex = 6
 	local allyAvatarStrk = Instance.new("UIStroke", GUI.AllyAvatar)
 	allyAvatarStrk.Color = Color3.fromRGB(85, 255, 255)
+	allyAvatarStrk.Thickness = 2
 	allyAvatarStrk.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-	GUI.AllyNameLbl = UIHelpers.CreateLabel(GUI.AllyPanel, "ALLY NAME", UDim2.new(1, -130, 0, 20), Enum.Font.GothamBold, Color3.fromRGB(85, 255, 255), 15)
+	GUI.AllyNameLbl = UIHelpers.CreateLabel(GUI.AllyPanel, "ALLY NAME", UDim2.new(1, -130, 0, 20), Enum.Font.GothamBlack, Color3.fromRGB(85, 255, 255), 15)
 	GUI.AllyNameLbl.Position = UDim2.new(0, 120, 0, 10)
 	GUI.AllyNameLbl.TextXAlignment = Enum.TextXAlignment.Left
 	GUI.AllyNameLbl.ZIndex = 6
@@ -166,7 +166,7 @@ function CombatBuilder.Build(masterScreenGui, player)
 	GUI.AllyQuoteLbl.TextWrapped = true
 	GUI.AllyQuoteLbl.ZIndex = 6
 
-	GUI.pNameLbl = UIHelpers.CreateLabel(GUI.PlayerPanel, player.Name, UDim2.new(1, -130, 0, 20), Enum.Font.GothamBold, UIHelpers.Colors.TextWhite, 15)
+	GUI.pNameLbl = UIHelpers.CreateLabel(GUI.PlayerPanel, player.Name, UDim2.new(1, -130, 0, 20), Enum.Font.GothamBlack, UIHelpers.Colors.TextWhite, 15)
 	GUI.pNameLbl.Position = UDim2.new(0, 120, 0, 10)
 	GUI.pNameLbl.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -183,7 +183,7 @@ function CombatBuilder.Build(masterScreenGui, player)
 	pStatLayout.FillDirection = Enum.FillDirection.Horizontal
 	pStatLayout.Padding = UDim.new(0, 4)
 
-	local vsLbl = UIHelpers.CreateLabel(GUI.CombatantsFrame, "VS", UDim2.new(0.08, 0, 1, 0), Enum.Font.GothamBlack, Color3.fromRGB(100, 100, 110), 24)
+	local vsLbl = UIHelpers.CreateLabel(GUI.CombatantsFrame, "VS", UDim2.new(0.08, 0, 1, 0), Enum.Font.GothamBlack, Color3.fromRGB(150, 50, 50), 24)
 	vsLbl.Position = UDim2.new(0.46, 0, 0, 0)
 
 	local EnemyPanel, _ = CreateFlatPanel(GUI.CombatantsFrame)
@@ -194,14 +194,15 @@ function CombatBuilder.Build(masterScreenGui, player)
 	GUI.eAvatar.Size = UDim2.new(0, 90, 0, 90)
 	GUI.eAvatar.Position = UDim2.new(1, -15, 0, 15)
 	GUI.eAvatar.AnchorPoint = Vector2.new(1, 0)
-	GUI.eAvatar.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+	GUI.eAvatar.BackgroundColor3 = Color3.fromRGB(10, 8, 8)
 	GUI.eAvatar.Image = "rbxassetid://90132878979603" 
 	GUI.eAvatar.ScaleType = Enum.ScaleType.Crop
 	local eAvatarStroke = Instance.new("UIStroke", GUI.eAvatar)
 	eAvatarStroke.Color = Color3.fromRGB(255, 85, 85)
+	eAvatarStroke.Thickness = 2
 	eAvatarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-	GUI.eNameLbl = UIHelpers.CreateLabel(EnemyPanel, "UNKNOWN ABNORMAL", UDim2.new(1, -130, 0, 20), Enum.Font.GothamBold, Color3.fromRGB(255, 100, 100), 15)
+	GUI.eNameLbl = UIHelpers.CreateLabel(EnemyPanel, "UNKNOWN ABNORMAL", UDim2.new(1, -130, 0, 20), Enum.Font.GothamBlack, Color3.fromRGB(255, 100, 100), 15)
 	GUI.eNameLbl.Position = UDim2.new(0, 15, 0, 10)
 	GUI.eNameLbl.TextXAlignment = Enum.TextXAlignment.Right
 
@@ -236,15 +237,15 @@ function CombatBuilder.Build(masterScreenGui, player)
 	GUI.ExecuteBanner.ZIndex = 151
 
 	local ebStroke = Instance.new("UIStroke", GUI.ExecuteBanner)
-	ebStroke.Color = Color3.fromRGB(100, 0, 0)
-	ebStroke.Thickness = 1
+	ebStroke.Color = Color3.fromRGB(150, 0, 0)
+	ebStroke.Thickness = 2
 	ebStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 	local exGrad = Instance.new("UIGradient", GUI.ExecuteBanner)
 	exGrad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.new(0,0,0)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(60, 5, 5)), ColorSequenceKeypoint.new(1, Color3.new(0,0,0))}
 	exGrad.Transparency = NumberSequence.new{NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.2), NumberSequenceKeypoint.new(0.8, 0.2), NumberSequenceKeypoint.new(1, 1)}
 
-	GUI.ExecuteText = UIHelpers.CreateLabel(GUI.ExecuteBanner, "SEVER", UDim2.new(1, 0, 1, 0), Enum.Font.Garamond, Color3.fromRGB(200, 200, 200), 52)
+	GUI.ExecuteText = UIHelpers.CreateLabel(GUI.ExecuteBanner, "SEVER", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBlack, Color3.fromRGB(200, 200, 200), 52)
 	GUI.ExecuteText.ZIndex = 152
 	local exStroke = Instance.new("UIStroke", GUI.ExecuteText)
 	exStroke.Color = Color3.fromRGB(40, 0, 0)
@@ -305,11 +306,11 @@ function CombatBuilder.Build(masterScreenGui, player)
 	GUI.TargetMenu = Instance.new("Frame", GUI.ActionContainer)
 	GUI.TargetMenu.Size = UDim2.new(1, 0, 1, -10)
 	GUI.TargetMenu.Position = UDim2.new(1, 20, 0, 0) 
-	GUI.TargetMenu.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+	GUI.TargetMenu.BackgroundColor3 = Color3.fromRGB(15, 12, 12)
 	GUI.TargetMenu.Visible = false
 	local tmStroke = Instance.new("UIStroke", GUI.TargetMenu)
-	tmStroke.Color = Color3.fromRGB(40, 40, 45)
-	tmStroke.Thickness = 1
+	tmStroke.Color = Color3.fromRGB(40, 20, 20)
+	tmStroke.Thickness = 2
 	tmStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 	local InfoPanel = Instance.new("Frame", GUI.TargetMenu)
@@ -320,23 +321,21 @@ function CombatBuilder.Build(masterScreenGui, player)
 	GUI.tHoverDesc.TextWrapped = true
 
 	GUI.CancelBtn = Instance.new("TextButton", InfoPanel)
-	GUI.CancelBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+	GUI.CancelBtn.BackgroundColor3 = Color3.fromRGB(22, 15, 15)
 	GUI.CancelBtn.BorderSizePixel = 0
-	GUI.CancelBtn.Font = Enum.Font.GothamBold
-	GUI.CancelBtn.TextSize = 13
+	GUI.CancelBtn.Font = Enum.Font.GothamBlack
+	GUI.CancelBtn.TextSize = 14
 	GUI.CancelBtn.Text = "CANCEL"
 	GUI.CancelBtn.TextColor3 = Color3.fromRGB(255, 85, 85)
-	Instance.new("UICorner", GUI.CancelBtn).CornerRadius = UDim.new(0, 4)
 	local cbStroke = Instance.new("UIStroke", GUI.CancelBtn)
-	cbStroke.Color = Color3.fromRGB(255, 85, 85)
-	cbStroke.Thickness = 1
+	cbStroke.Color = Color3.fromRGB(100, 30, 30)
+	cbStroke.Thickness = 2
 	cbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 	local BodyContainer = Instance.new("Frame", GUI.TargetMenu)
 	BodyContainer.BackgroundTransparency = 1
 	local aspect = Instance.new("UIAspectRatioConstraint", BodyContainer); aspect.AspectRatio = 0.8
 
-	-- [[ THE FIX: Fully dynamic screen fitting ]]
 	local function UpdateLayoutForScreen()
 		local vp = camera.ViewportSize
 		if vp.X == 0 or vp.Y == 0 or not GUI then return end
@@ -346,7 +345,6 @@ function CombatBuilder.Build(masterScreenGui, player)
 			GUI.CombatWindow.Size = UDim2.new(1, 0, 1, 0)
 			GUI.CombatWindow.Position = UDim2.new(0.5, 0, 0.5, 0)
 
-			-- Compact Header & Panels for Landscape
 			if GUI.CombatantsFrame then
 				GUI.CombatantsFrame.Size = UDim2.new(1, -20, 0, 110)
 				GUI.CombatantsFrame.Position = UDim2.new(0, 10, 0, 45)
@@ -360,19 +358,11 @@ function CombatBuilder.Build(masterScreenGui, player)
 				GUI.ActionContainer.Position = UDim2.new(0.4, 10, 0, 160)
 			end
 
-			-- Dynamic Grid Width so buttons NEVER stretch or create wasted space
 			if GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout") then
 				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellSize = UDim2.new(0.48, 0, 0, 40)
 				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellPadding = UDim2.new(0.02, 0, 0, 8)
 			end
 
-			local pvpd = GUI.ActionContainer:FindFirstChild("PvPDraftContainer")
-			if pvpd then
-				pvpd.Size = UDim2.new(1, 0, 0, 50)
-				pvpd.Position = UDim2.new(0, 0, 0, -55)
-			end
-
-			-- Target Menu Repositioning
 			InfoPanel.Size = UDim2.new(0.45, 0, 1, 0)
 			InfoPanel.Position = UDim2.new(0, 0, 0, 0)
 
@@ -415,12 +405,6 @@ function CombatBuilder.Build(masterScreenGui, player)
 				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellPadding = UDim2.new(0, 15, 0, 15)
 			end
 
-			local pvpd = GUI.ActionContainer:FindFirstChild("PvPDraftContainer")
-			if pvpd then
-				pvpd.Size = UDim2.new(1, 0, 0, 70)
-				pvpd.Position = UDim2.new(0, 0, 0, -80)
-			end
-
 			InfoPanel.Size = UDim2.new(0.5, 0, 1, 0)
 			InfoPanel.Position = UDim2.new(0, 0, 0, 0)
 
@@ -451,7 +435,7 @@ function CombatBuilder.Build(masterScreenGui, player)
 	local function BuildLimb(name, targetId, size, pos, hoverText, baseColor)
 		local limb = Instance.new("TextButton", BodyContainer)
 		limb.Size = size; limb.Position = pos
-		limb.BackgroundColor3 = Color3.fromRGB(22, 22, 26) 
+		limb.BackgroundColor3 = Color3.fromRGB(22, 18, 18) 
 		limb.Text = name:upper()
 		limb.Font = Enum.Font.GothamBlack
 		limb.TextColor3 = Color3.fromRGB(255, 255, 255) 
@@ -490,14 +474,13 @@ function CombatBuilder.Build(masterScreenGui, player)
 	BuildLimb("L.Leg", "LLeg", UDim2.new(0.23, 0, 0.32, 0), UDim2.new(0.37, 0, 0.81, 0), "Deals 50% Damage. Inflicts Crippled.", Color3.fromRGB(80, 140, 180))
 	BuildLimb("R.Leg", "RLeg", UDim2.new(0.23, 0, 0.32, 0), UDim2.new(0.63, 0, 0.81, 0), "Deals 50% Damage. Inflicts Crippled.", Color3.fromRGB(80, 140, 180))
 
-	-- VISUAL NOVEL ENGINE ELEMENTS
 	GUI.DialogueBox = Instance.new("Frame", GUI.CombatWindow)
 	GUI.DialogueBox.Size = UDim2.new(1, -40, 0, 200)
 	GUI.DialogueBox.Position = UDim2.new(0, 20, 1, -215)
-	GUI.DialogueBox.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+	GUI.DialogueBox.BackgroundColor3 = Color3.fromRGB(15, 12, 12)
 	GUI.DialogueBox.Visible = false
 	local dbStroke = Instance.new("UIStroke", GUI.DialogueBox)
-	dbStroke.Color = Color3.fromRGB(70, 70, 80)
+	dbStroke.Color = Color3.fromRGB(60, 30, 30)
 	dbStroke.Thickness = 2
 
 	GUI.SpeakerLbl = UIHelpers.CreateLabel(GUI.DialogueBox, "SPEAKER", UDim2.new(1, -20, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 18)
