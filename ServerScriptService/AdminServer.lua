@@ -17,6 +17,13 @@ AdminCommand.OnServerEvent:Connect(function(player, command, targetName, ...)
 		return 
 	end
 
+	local args = {...}
+
+	-- Let DataManager handle offline-capable commands directly
+	if command == "BanPlayer" or command == "GlobalRollback" or command == "GenerateRecovery" then
+		return
+	end
+
 	local target = nil
 	for _, p in ipairs(Players:GetPlayers()) do
 		if string.lower(p.Name) == string.lower(targetName) then
@@ -29,8 +36,6 @@ AdminCommand.OnServerEvent:Connect(function(player, command, targetName, ...)
 		NotificationEvent:FireClient(player, "Target player not found in server.", "Error")
 		return 
 	end
-
-	local args = {...}
 
 	if command == "SetDews" then
 		target.leaderstats.Dews.Value = tonumber(args[1]) or 0
@@ -76,7 +81,6 @@ AdminCommand.OnServerEvent:Connect(function(player, command, targetName, ...)
 		local current = target:GetAttribute("UnlockedTitles") or ""
 		if not string.find(current, "%[" .. title .. "%]") then
 			target:SetAttribute("UnlockedTitles", current .. "[" .. title .. "]")
-			-- Auto-equip it for them
 			target:SetAttribute("EquippedTitle", title)
 		end
 	elseif command == "SetClan" then
@@ -87,7 +91,6 @@ AdminCommand.OnServerEvent:Connect(function(player, command, targetName, ...)
 		local isVip = (string.lower(tostring(args[1])) == "true")
 		target:SetAttribute("HasVIP", isVip)
 	elseif command == "WipePlayer" then
-		-- Hard reset stats
 		target:SetAttribute("XP", 0)
 		target:SetAttribute("TitanXP", 0)
 		target.leaderstats.Dews.Value = 0
