@@ -6,11 +6,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ItemData = require(ReplicatedStorage:WaitForChild("ItemData"))
 local Network = ReplicatedStorage:WaitForChild("Network")
 
-local SellValues = { Common = 10, Uncommon = 25, Rare = 75, Epic = 200, Legendary = 500, Mythical = 1500, Transcendent = 0 }
+-- [ECONOMY PATCH] Heavy squashing of the Auto-Sell matrix. E.g. Mythicals drop from 1,500 to 300 Dews.
+local SellValues = { Common = 2, Uncommon = 5, Rare = 15, Epic = 40, Legendary = 100, Mythical = 300, Transcendent = 0 }
 
 local function GetUniqueSlotCount(plr)
 	local count = 0
-	-- Consumables no longer trigger the Inventory Full logic
 	for iName, _ in pairs(ItemData.Equipment) do
 		if (plr:GetAttribute(iName:gsub("[^%w]", "") .. "Count") or 0) > 0 then count += 1 end
 	end
@@ -26,12 +26,11 @@ function LootManager.GiveOrAutoSellItem(player, itemName, amount)
 	local isProtected = (rarity == "Legendary" or rarity == "Mythical" or rarity == "Transcendent")
 	local isEquipment = ItemData.Equipment[itemName] ~= nil
 
-	-- Applies Double Drops consistently to manual grants to sync with UI notifications
 	local dropMultiplier = player:GetAttribute("HasDoubleDrops") and 2 or 1
 	local finalAmount = amount * dropMultiplier
 
 	if isAutoSellEnabled and isEquipment and not isProtected then
-		local sellValue = (SellValues[rarity] or 10) * finalAmount
+		local sellValue = (SellValues[rarity] or 2) * finalAmount
 		player.leaderstats.Dews.Value += sellValue
 		local NotificationEvent = Network:FindFirstChild("NotificationEvent")
 		if NotificationEvent then
@@ -96,13 +95,12 @@ function LootManager.ProcessDrops(player, enemyDrops, isEndless, currentWave)
 
 				local isAutoSellEnabled = player:GetAttribute("AutoSell_" .. rarity)
 				local isEquipment = ItemData.Equipment[itemName] ~= nil
-
 				local isProtected = (rarity == "Legendary" or rarity == "Mythical" or rarity == "Transcendent")
 
 				if isAutoSellEnabled and isEquipment and not isProtected then
-					autoSoldDewsSettings += (SellValues[rarity] or 10) * dropMultiplier
+					autoSoldDewsSettings += (SellValues[rarity] or 2) * dropMultiplier
 				elseif isEquipment and not isProtected and currentAmt == 0 and currentSlots >= MAX_INVENTORY_CAPACITY then
-					autoSoldDewsCapacity += (SellValues[rarity] or 10) * dropMultiplier
+					autoSoldDewsCapacity += (SellValues[rarity] or 2) * dropMultiplier
 				else
 					local nameTag = (dropMultiplier > 1) and (itemName .. " (x" .. dropMultiplier .. ")") or itemName
 					table.insert(droppedItems, nameTag)
@@ -113,13 +111,8 @@ function LootManager.ProcessDrops(player, enemyDrops, isEndless, currentWave)
 		end
 	end
 
-	if autoSoldDewsSettings > 0 then
-		player.leaderstats.Dews.Value += autoSoldDewsSettings
-	end
-
-	if autoSoldDewsCapacity > 0 then
-		player.leaderstats.Dews.Value += autoSoldDewsCapacity
-	end
+	if autoSoldDewsSettings > 0 then player.leaderstats.Dews.Value += autoSoldDewsSettings end
+	if autoSoldDewsCapacity > 0 then player.leaderstats.Dews.Value += autoSoldDewsCapacity end
 
 	return droppedItems, autoSoldDewsCapacity
 end
