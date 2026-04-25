@@ -32,6 +32,7 @@ local currentPvPMatch = nil
 local isSpectating = false
 local amIPlayer1 = true
 local is3v3Match = false
+local myPvPState = nil
 
 local InstantSkills = {
 	["Maneuver"] = true, ["Recover"] = true, ["Fall Back"] = true, ["Close In"] = true,
@@ -46,7 +47,7 @@ local ddScroll = nil
 local function CreateMinimalButton(parent, text, size, baseColorHex)
 	local btn = Instance.new("TextButton", parent)
 	btn.Size = size
-	btn.BackgroundColor3 = Color3.fromRGB(18, 18, 22) 
+	btn.BackgroundColor3 = Color3.fromRGB(28, 28, 34) 
 	btn.BorderSizePixel = 0
 	btn.AutoButtonColor = false
 	btn.Font = Enum.Font.GothamBlack
@@ -67,12 +68,12 @@ local function CreateMinimalButton(parent, text, size, baseColorHex)
 
 	btn.MouseEnter:Connect(function() 
 		if btn.Active then 
-			TweenService:Create(stroke, TweenInfo.new(0.2), {Color = cColor, Thickness = 3}):Play() 
+			TweenService:Create(stroke, TweenInfo.new(0.2), {Color = cColor}):Play() 
 		end 
 	end)
 	btn.MouseLeave:Connect(function() 
 		if btn.Active then 
-			TweenService:Create(stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(70, 70, 80), Thickness = 2}):Play() 
+			TweenService:Create(stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(70, 70, 80)}):Play() 
 		end 
 	end)
 	return btn
@@ -122,10 +123,11 @@ local function OpenTargetMenu()
 	GUI.TargetMenu.Visible = true
 
 	if isMobile then
-		TweenService:Create(GUI.ActionGrid, TweenInfo.new(0.15, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(-1, -20, 0, 0)}):Play()
-		TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.15, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+		TweenService:Create(GUI.ActionContainer, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(-1, -20, 0, 160)}):Play()
+		TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0.4, 10, 0, 160)}):Play()
 	else
-		GUI.ActionGrid.Visible = false
+		TweenService:Create(GUI.ActionContainer, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 20, 1, 50)}):Play()
+		TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 20, 1, -380)}):Play()
 	end
 end
 
@@ -134,13 +136,15 @@ local function CloseTargetMenu()
 	local isMobile = (camera.ViewportSize.X <= 850) or (camera.ViewportSize.Y > camera.ViewportSize.X)
 
 	if isMobile then
-		TweenService:Create(GUI.ActionGrid, TweenInfo.new(0.15, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
-		local t = TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.15, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(1, 20, 0, 0)})
+		TweenService:Create(GUI.ActionContainer, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0.4, 10, 0, 160)}):Play()
+		local t = TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(1, 20, 0, 160)})
 		t:Play()
-		task.delay(0.15, function() if GUI.TargetMenu.Position.X.Scale == 1 then GUI.TargetMenu.Visible = false end end)
+		task.delay(0.2, function() if GUI.TargetMenu.Position.X.Scale == 1 then GUI.TargetMenu.Visible = false end end)
 	else
-		GUI.ActionGrid.Visible = true
-		GUI.TargetMenu.Visible = false
+		TweenService:Create(GUI.ActionContainer, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 20, 1, -140)}):Play()
+		local t = TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 20, 1, 50)})
+		t:Play()
+		task.delay(0.2, function() if GUI.TargetMenu.Position.Y.Offset == 50 then GUI.TargetMenu.Visible = false end end)
 	end
 end
 
@@ -149,12 +153,12 @@ local function SnapTargetMenuClosed()
 	local isMobile = (camera.ViewportSize.X <= 850) or (camera.ViewportSize.Y > camera.ViewportSize.X)
 
 	if isMobile then
-		GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
-		GUI.TargetMenu.Position = UDim2.new(1, 20, 0, 0)
+		GUI.ActionContainer.Position = UDim2.new(0.4, 10, 0, 160)
+		GUI.TargetMenu.Position = UDim2.new(1, 20, 0, 160)
 	else
-		GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
+		GUI.ActionContainer.Position = UDim2.new(0, 20, 1, -140)
+		GUI.TargetMenu.Position = UDim2.new(0, 20, 1, 50)
 	end
-	GUI.ActionGrid.Visible = true
 	GUI.TargetMenu.Visible = false
 end
 
@@ -257,6 +261,10 @@ local function RenderStatuses(container, combatant)
 				elseif sName == "Stun" then addIcon("STN", Color3.fromRGB(200, 200, 80), Color3.fromRGB(255, 255, 150))
 				elseif sName == "Crippled" then addIcon("CRP", Color3.fromRGB(120, 120, 120), Color3.fromRGB(180, 180, 180))
 				elseif sName == "Weakened" then addIcon("WEK", Color3.fromRGB(150, 150, 50), Color3.fromRGB(200, 200, 100))
+				elseif sName == "Lacerate" then addIcon("LAC", Color3.fromRGB(150, 0, 0), Color3.fromRGB(255, 0, 0))
+				elseif sName == "Confusion" then addIcon("CNF", Color3.fromRGB(150, 150, 0), Color3.fromRGB(255, 255, 0))
+				elseif sName == "Terror" then addIcon("TRR", Color3.fromRGB(50, 0, 50), Color3.fromRGB(100, 0, 100))
+				elseif sName == "CounterStance" then addIcon("CNT", Color3.fromRGB(0, 0, 150), Color3.fromRGB(50, 50, 255))
 				end
 			end
 		end
@@ -334,6 +342,88 @@ local function HideAlly()
 	end
 end
 
+local function GetTitanSkills(titanName)
+	if not titanName or titanName == "None" then return {} end
+	local movesets = {
+		["Attack Titan"] = {"Berserk Rush", "Future Memories"},
+		["Jaw Titan"] = {"Frenzied Thrash", "Agile Leap", "Crushing Bite"},
+		["Cart Titan"] = {"Titan Bite", "Endurance Run", "Panzer Artillery"},
+		["Armored Titan"] = {"Hardened Punch", "Armored Tackle", "Shattering Charge"},
+		["Female Titan"] = {"Crystal Kick", "Nape Guard", "Attraction Scream"}, 
+		["War Hammer Titan"] = {"Hardened Punch", "Crossbow Construct", "War Hammer Spike"},
+		["Beast Titan"] = {"Crushed Boulders", "Pitching Ace", "Titan Roar"},
+		["Colossal Titan"] = {"Brutal Swipe", "Devastating Kick", "Colossal Steam"},
+		["Founding Titan"] = {"Titan Roar", "Coordinate Command"}, 
+		["Founding Female Titan"] = {"Crystal Kick", "Attraction Scream", "Nape Guard", "Coordinate Command"},
+		["Armored Attack Titan"] = {"Berserk Rush", "Armored Tackle", "Shattering Charge"},
+		["War Hammer Attack Titan"] = {"Berserk Rush", "Crossbow Construct", "War Hammer Spike"},
+		["Colossal Jaw Titan"] = {"Crushing Bite", "Devastating Kick", "Colossal Steam"},
+		["Founding Attack Titan"] = {"Berserk Rush", "Future Memories", "Coordinate Command"}
+	}
+	return movesets[titanName] or {}
+end
+
+local function IsSkillValid(player, skillName, isTransformedCheck)
+	local sData = SkillData.Skills[skillName]
+	if not sData then return false end
+
+	local req = tostring(sData.Requirement or "None")
+
+	local universalMoves = { 
+		["Maneuver"]=true, ["Evasive Maneuver"]=true, ["Block"]=true, 
+		["Close In"]=true, ["Fall Back"]=true, ["Advance"]=true, ["Charge"]=true, 
+		["Recover"]=true, ["Retreat"]=true, ["Flee"]=true, ["Transform"]=true,
+		["Basic Slash"]=true, ["Heavy Slash"]=true, ["Flare Gun"]=true, ["Anti-Titan Rifle"]=true
+	}
+
+	if isTransformedCheck then
+		local titanMoves = { ["Eject"]=true, ["Titan Recover"]=true, ["Titan Rest"]=true, ["Cannibalize"]=true, ["Titan Punch"]=true, ["Titan Kick"]=true }
+		local myTitan = player:GetAttribute("Titan") or "None"
+
+		if titanMoves[skillName] then return true end
+
+		local validHybridMoves = GetTitanSkills(myTitan)
+		for _, m in ipairs(validHybridMoves) do
+			if m == skillName then return true end
+		end
+
+		local humanWeapons = {["Basic Slash"]=true, ["Heavy Slash"]=true, ["Flare Gun"]=true, ["Anti-Titan Rifle"]=true}
+		if universalMoves[skillName] and not humanWeapons[skillName] then
+			return true
+		end
+
+		if req == "Transformed" or req == "AnyTitan" or req == myTitan or string.find(myTitan, req, 1, true) then
+			return true
+		end
+
+		return false
+	end
+
+	if universalMoves[skillName] then return true end
+	if req == "None" or req == "ODM" then return true end
+
+	local myClan = player:GetAttribute("Clan") or "None"
+	if myClan ~= "None" then
+		if string.find(myClan, req, 1, true) then return true end
+		if string.find(req, "Awakened", 1, true) then
+			local baseReq = string.gsub(req, "Awakened ", "")
+			if string.find(myClan, "Abyssal " .. baseReq, 1, true) then return true end
+		end
+	end
+
+	if type(ItemData) == "table" and ItemData.Equipment then
+		for iName, iData in pairs(ItemData.Equipment) do
+			if iData.Style == req then
+				local safeNameBase = iName:gsub("[^%w]", "")
+				local count = tonumber(player:GetAttribute(safeNameBase .. "Count")) or tonumber(player:GetAttribute(iName)) or 0
+				if count > 0 then return true end
+			end
+		end
+	end
+
+	return false
+end
+
 local function UpdatePvPSkills()
 	inputLocked = false
 	SnapTargetMenuClosed()
@@ -376,14 +466,68 @@ local function UpdatePvPSkills()
 		end)
 	end
 
+	local isTransformed = myPvPState and myPvPState.Statuses and myPvPState.Statuses["Transformed"]
+
+	if isTransformed then
+		CreateSkillButton("Titan Punch", "TITAN PUNCH", "#FF5555")
+		CreateSkillButton("Titan Kick", "TITAN KICK", "#FF5555")
+	end
+
 	for i = 1, 4 do
 		local skillName = player:GetAttribute("EquippedSkill_" .. i)
-		if not skillName or skillName == "" or skillName == "None" then skillName = "Basic Slash" end
+		if not skillName or skillName == "" or skillName == "None" or not IsSkillValid(player, skillName, isTransformed) then 
+			skillName = isTransformed and "None" or "Basic Slash" 
+		end
+		if isTransformed and (skillName == "Titan Punch" or skillName == "Titan Kick") then continue end
 		CreateSkillButton(skillName)
 	end
 
+	if isTransformed then
+		local myTitan = player:GetAttribute("Titan")
+		if myTitan and myTitan ~= "None" then
+			local titanSkills = GetTitanSkills(myTitan)
+			for _, tSkill in ipairs(titanSkills) do
+				CreateSkillButton(tSkill, "[" .. string.upper(myTitan) .. "] " .. string.upper(tSkill), "#FFD700")
+			end
+		end
+	else
+		local myClan = player:GetAttribute("Clan") or "None"
+		if myClan ~= "None" then
+			local clanSkills = {}
+			for sName, sData in pairs(SkillData.Skills) do
+				if sData.Type == "Style" and sData.Requirement and not string.find(sData.Requirement, "ODM") then
+					local req = tostring(sData.Requirement)
+					if string.find(myClan, req, 1, true) then 
+						table.insert(clanSkills, {Name = sName, Data = sData}) 
+					elseif string.find(req, "Awakened", 1, true) then
+						local baseReq = string.gsub(req, "Awakened ", "")
+						if string.find(myClan, "Abyssal " .. baseReq, 1, true) then
+							table.insert(clanSkills, {Name = sName, Data = sData}) 
+						end
+					end
+				end
+			end
+			table.sort(clanSkills, function(a, b) return (a.Data.Order or 99) < (b.Data.Order or 99) end)
+			for _, cSkill in ipairs(clanSkills) do CreateSkillButton(cSkill.Name, "[" .. string.upper(myClan) .. "] " .. string.upper(cSkill.Name), "#CC44FF") end
+		end
+	end
+
 	CreateSkillButton("Maneuver", "MANEUVER", "#55AAFF")
-	CreateSkillButton("Recover", "RECOVER", "#55FF55")
+
+	if isTransformed then
+		CreateSkillButton("Titan Recover", "TITAN RECOVER", "#55FF55")
+		CreateSkillButton("Cannibalize", "CANNIBALIZE", "#FF5555")
+		CreateSkillButton("Eject", "EJECT", "#FFD700")
+	else
+		CreateSkillButton("Recover", "RECOVER", "#55FF55")
+		local myCurrentClan = player:GetAttribute("Clan") or "None"
+		local isAckerman = string.find(myCurrentClan, "Ackerman", 1, true) ~= nil
+		local hasTitan = player:GetAttribute("Titan") and player:GetAttribute("Titan") ~= "None"
+		if hasTitan and not isAckerman then 
+			CreateSkillButton("Transform", "TRANSFORM", "#FFD700")
+		end
+	end
+
 	CreateSkillButton("Surrender", "SURRENDER", "#FF5555")
 end
 
@@ -392,6 +536,7 @@ local function ShowPvPUI(p1Name, p2Name, p1Id, p2Id, turnEndTime, is3v3)
 	if doomsdayBoard then doomsdayBoard.Visible = false end
 	inDoomsdayLoop = false
 	is3v3Match = is3v3
+	myPvPState = nil 
 
 	SnapTargetMenuClosed()
 	DestroyWaitContainer()
@@ -440,6 +585,8 @@ local function UpdatePvPState(data)
 
 	local me = myTeamStates[1]
 	local en = enTeamStates[1]
+
+	myPvPState = me 
 
 	if me then
 		local myHp = math.max(0, me.HP)
@@ -497,84 +644,6 @@ local function UpdatePvPState(data)
 	end
 end
 
--- ==========================================
--- PVE ENGINE
--- ==========================================
-local function GetTitanSkills(titanName)
-	if not titanName or titanName == "None" then return {} end
-	local movesets = {
-		["Attack Titan"] = {"Berserk Rush", "Future Memories"},
-		["Jaw Titan"] = {"Frenzied Thrash", "Agile Leap", "Crushing Bite"},
-		["Cart Titan"] = {"Titan Bite", "Endurance Run", "Panzer Artillery"},
-		["Armored Titan"] = {"Hardened Punch", "Armored Tackle", "Shattering Charge"},
-		["Female Titan"] = {"Crystal Kick", "Nape Guard", "Attraction Scream"}, 
-		["War Hammer Titan"] = {"Hardened Punch", "Crossbow Construct", "War Hammer Spike"},
-		["Beast Titan"] = {"Crushed Boulders", "Pitching Ace", "Titan Roar"},
-		["Colossal Titan"] = {"Brutal Swipe", "Devastating Kick", "Colossal Steam"},
-		["Founding Titan"] = {"Titan Roar", "Coordinate Command"}, 
-		["Founding Female Titan"] = {"Crystal Kick", "Attraction Scream", "Nape Guard", "Coordinate Command"},
-		["Armored Attack Titan"] = {"Berserk Rush", "Armored Tackle", "Shattering Charge"},
-		["War Hammer Attack Titan"] = {"Berserk Rush", "Crossbow Construct", "War Hammer Spike"},
-		["Colossal Jaw Titan"] = {"Crushing Bite", "Devastating Kick", "Colossal Steam"},
-		["Founding Attack Titan"] = {"Berserk Rush", "Future Memories", "Coordinate Command"}
-	}
-	return movesets[titanName] or {}
-end
-
-local function IsSkillValid(player, skillName, isTransformedCheck)
-	local sData = SkillData.Skills[skillName]
-	if not sData then return false end
-
-	local req = tostring(sData.Requirement or "None")
-
-	local universalMoves = { 
-		["Maneuver"]=true, ["Evasive Maneuver"]=true, ["Block"]=true, 
-		["Close In"]=true, ["Fall Back"]=true, ["Advance"]=true, ["Charge"]=true, 
-		["Recover"]=true, ["Retreat"]=true, ["Flee"]=true, ["Transform"]=true,
-		["Basic Slash"]=true, ["Heavy Slash"]=true, ["Flare Gun"]=true, ["Anti-Titan Rifle"]=true
-	}
-	if universalMoves[skillName] then return true end
-
-	if isTransformedCheck then
-		local myTitan = player:GetAttribute("Titan") or "None"
-		local titanMoves = { ["Eject"]=true, ["Titan Recover"]=true, ["Titan Rest"]=true, ["Cannibalize"]=true, ["Titan Punch"]=true, ["Titan Kick"]=true }
-
-		if req == "Transformed" or req == "AnyTitan" or req == myTitan or string.find(myTitan, req, 1, true) or titanMoves[skillName] then
-			return true
-		end
-
-		local validHybridMoves = GetTitanSkills(myTitan)
-		for _, m in ipairs(validHybridMoves) do
-			if m == skillName then return true end
-		end
-
-		return false
-	end
-
-	if req == "None" or req == "ODM" then return true end
-
-	local myClan = player:GetAttribute("Clan") or "None"
-	if myClan ~= "None" then
-		if string.find(myClan, req, 1, true) then return true end
-		if string.find(req, "Awakened", 1, true) then
-			local baseReq = string.gsub(req, "Awakened ", "")
-			if string.find(myClan, "Abyssal " .. baseReq, 1, true) then return true end
-		end
-	end
-
-	if type(ItemData) == "table" and ItemData.Equipment then
-		for iName, iData in pairs(ItemData.Equipment) do
-			if iData.Style == req then
-				local safeNameBase = iName:gsub("[^%w]", "")
-				local count = tonumber(player:GetAttribute(safeNameBase .. "Count")) or tonumber(player:GetAttribute(iName)) or 0
-				if count > 0 then return true end
-			end
-		end
-	end
-
-	return false
-end
-
 local function UpdatePvESkills()
 	inputLocked = false
 	SnapTargetMenuClosed()
@@ -590,13 +659,13 @@ local function UpdatePvESkills()
 	if currentBattleState and currentBattleState.Context and currentBattleState.Context.Range then currentRange = currentBattleState.Context.Range end
 
 	local enemyTelegraph = currentBattleState and currentBattleState.Enemy and currentBattleState.Enemy.Statuses and currentBattleState.Enemy.Statuses["Telegraphing"]
-
 	local isTransformed = pState and pState.Statuses and pState.Statuses["Transformed"]
 
 	local defaultClose = {"Basic Slash", "Heavy Slash", "None", "None"}
 	local defaultLong = {"Flare Gun", "Anti-Titan Rifle", "None", "None"}
+	local titanFallbacks = {"None", "None", "None", "None"}
 
-	local fallbacks = (currentRange == "Close") and defaultClose or defaultLong
+	local fallbacks = isTransformed and titanFallbacks or ((currentRange == "Close") and defaultClose or defaultLong)
 	local createdSkills = {}
 
 	local function CreateSkillButton(skillName, customLabel, baseColor)
@@ -768,25 +837,19 @@ local function UpdatePvESkills()
 	if isTransformed then
 		CreateSkillButton("Titan Recover", "TITAN RECOVER", "#55FF55")
 		CreateSkillButton("Cannibalize", "CANNIBALIZE", "#FF5555")
+		CreateSkillButton("Eject", "EJECT", "#FFD700")
 	else
 		CreateSkillButton("Recover", "RECOVER", "#55FF55")
+		local myCurrentClan = player:GetAttribute("Clan") or "None"
+		local isAckerman = string.find(myCurrentClan, "Ackerman", 1, true) ~= nil
+		local hasTitan = player:GetAttribute("Titan") and player:GetAttribute("Titan") ~= "None"
+		if hasTitan and not isAckerman then 
+			CreateSkillButton("Transform", "TRANSFORM", "#FFD700")
+		end
 	end
 
 	if currentRange == "Close" then CreateSkillButton("Fall Back", "FALL BACK", "#FFAA55")
 	else CreateSkillButton("Close In", isTransformed and "CHARGE" or "CLOSE IN", "#FFAA55") end
-
-	local myCurrentClan = player:GetAttribute("Clan") or "None"
-	local isAckerman = string.find(myCurrentClan, "Ackerman", 1, true) ~= nil
-	local hasTitan = player:GetAttribute("Titan") and player:GetAttribute("Titan") ~= "None"
-	local canTransform = hasTitan and not isAckerman
-
-	if GUI.pHeatContainer then GUI.pHeatContainer.Visible = canTransform or isTransformed end
-
-	if canTransform and not isTransformed then 
-		CreateSkillButton("Transform", "TRANSFORM", "#FFD700")
-	elseif isTransformed then 
-		CreateSkillButton("Eject", "EJECT", "#FFD700") 
-	end
 
 	CreateSkillButton("Retreat", "FLEE", "#FF5555")
 end
@@ -1005,34 +1068,9 @@ end
 -- INITIALIZATION
 -- ==========================================
 
-local function UpdateActionGridLayout()
-	if not GUI or not GUI.ActionGrid then return end
-	local vp = camera.ViewportSize
-	if vp.X == 0 or vp.Y == 0 then return end
-	local isMobile = (vp.X <= 850) or (vp.Y > vp.X)
-
-	local gridLayout = GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout")
-	if not gridLayout then
-		gridLayout = Instance.new("UIGridLayout", GUI.ActionGrid)
-		gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		gridLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	end
-
-	if isMobile then
-		gridLayout.CellSize = UDim2.new(1, -10, 0, 45)
-		gridLayout.CellPadding = UDim2.new(0, 0, 0, 10)
-	else
-		gridLayout.CellSize = UDim2.new(0.15, 0, 0, 45)
-		gridLayout.CellPadding = UDim2.new(0.016, 0, 0, 10)
-	end
-end
-
 function CombatUI.Initialize(masterScreenGui)
 	MasterGuiRef = masterScreenGui
 	GUI = CombatBuilder.Build(masterScreenGui, player)
-
-	camera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateActionGridLayout)
-	UpdateActionGridLayout()
 
 	GUI.ClickOverlay.MouseButton1Click:Connect(function()
 		if isTypewriting then skipTypewriting = true else ClickSignal:Fire() end
@@ -1061,7 +1099,9 @@ function CombatUI.Initialize(masterScreenGui)
 					local waitContainer = Instance.new("Frame", GUI.ActionContainer)
 					waitContainer.Name = "WaitContainer"
 					waitContainer.Size = UDim2.new(1, 0, 1, 0)
-					waitContainer.BackgroundTransparency = 1
+					waitContainer.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+					waitContainer.BackgroundTransparency = 0.5
+					waitContainer.BorderSizePixel = 0
 					UIHelpers.CreateLabel(waitContainer, "EXECUTING...", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBlack, UIHelpers.Colors.TextMuted, 22)
 
 					Network:WaitForChild("CombatAction"):FireServer("Attack", {SkillName = pendingSkillName, TargetLimb = trueTarget})
@@ -1103,7 +1143,7 @@ function CombatUI.Initialize(masterScreenGui)
 		elseif action == "TurnStrike" and currentPvPMatch == matchId then
 			local data = d1
 			UpdatePvPState(data)
-			if data and data.LogMsg then AppendLog(data.LogMsg, "#FFD700") end
+			if data and data.LogMsg then AppendLog(data.LogMsg) end -- Removed forcing yellow here so unnested tags work
 		elseif action == "NextTurnStarted" and currentPvPMatch == matchId then
 			local turnNum, turnEndTime = d1, d2
 			inputLocked = false
@@ -1320,7 +1360,7 @@ function CombatUI.Initialize(masterScreenGui)
 				end
 
 				if type(data.LogMsg) == "string" and data.LogMsg ~= "" then
-					AppendLog(data.LogMsg, data.IsPlayerAttacking and "#55AAFF" or "#FF5555")
+					AppendLog(data.LogMsg) -- Re-added cleanly to stop coloring interference
 
 					local targetBox = data.IsPlayerAttacking and GUI.eAvatar or GUI.pAvatar
 					if data.AllyIntervention then targetBox = GUI.eAvatar end
@@ -1361,7 +1401,7 @@ function CombatUI.Initialize(masterScreenGui)
 
 				UpdateState(data)
 				AppendLog("<b><font color='#55FF55'>WAVE CLEARED!</font></b>", "#55FF55")
-				if data and type(data.LogMsg) == "string" and data.LogMsg ~= "" then AppendLog(data.LogMsg, "#FFD700") end
+				if data and type(data.LogMsg) == "string" and data.LogMsg ~= "" then AppendLog(data.LogMsg) end
 
 				local animRewards = {}
 				if data and data.XP and data.XP > 0 then table.insert(animRewards, {Text = "+" .. data.XP .. " XP", Color = "#55FF55"}) end
