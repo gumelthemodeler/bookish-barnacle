@@ -16,7 +16,6 @@ local SkillData = require(ReplicatedStorage:WaitForChild("SkillData"))
 local CombatCore = require(script.Parent:WaitForChild("CombatCore"))
 
 local ActiveRaids = {}
--- [[ THE FIX: Lengthened turn duration so players don't feel like the game is playing itself ]]
 local TURN_DURATION = 30
 local AoESkills = { ["Colossal Steam"] = 0.40, ["Titan Roar"] = 0.30, ["Stomp"] = 0.25, ["Crushed Boulders"] = 0.35 }
 
@@ -91,8 +90,9 @@ local function EndRaid(raidId, isVictory)
 
 			if isVictory then
 				local drops = bData.Drops
-				local dews = drops.Dews
-				local xp = drops.XP
+				-- [ECONOMY PATCH] Heavy squash applied directly to raid multiplier bypasses
+				local dews = math.clamp(math.floor((drops.Dews or 0) * 0.1), 0, 5000)
+				local xp = drops.XP or 0
 				local droppedItems = {}
 
 				local isDead = (pData.HP <= 0)
@@ -142,7 +142,6 @@ local function ResolveRaidTurn(raidId)
 				continue
 			end
 
-			-- [[ THE FIX: Extracted "Retreat" and "Flee" OUTSIDE the skill block. It was being bypassed because Flee isn't a combat skill, causing players to just basic-attack instead of fleeing. ]]
 			local skill = SkillData.Skills[actor.Move]
 
 			if actor.Move == "Retreat" or actor.Move == "Flee" or (skill and skill.Effect == "Flee") then
