@@ -456,7 +456,8 @@ local function StartBattle(player, encounterType, requestedPartId)
 				if not ddData.IsActive or ddData.BossHP <= 0 then
 					local b = ActiveBattles[player.UserId]
 					if ddData.BossHP <= 0 then
-						CombatUpdate:FireClient(player, "Victory", {Battle = b, LogMsg = "<font color='#55FF55'>The Doomsday Titan has fallen globally!</font>", XP = 50000, Dews = 500000, Items = {}})
+						-- [ECONOMY PATCH] Severely reduced Doomsday rewards
+						CombatUpdate:FireClient(player, "Victory", {Battle = b, LogMsg = "<font color='#55FF55'>The Doomsday Titan has fallen globally!</font>", XP = 50000, Dews = 50000, Items = {}})
 					else
 						CombatUpdate:FireClient(player, "Fled", {Battle = b, LogMsg = "<font color='#AAAAAA'>The Doomsday Titan vanished into the steam...</font>"})
 					end
@@ -562,6 +563,9 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 			if sqUp.Wealth and sqUp.Wealth > 0 then dewsGain = math.floor(dewsGain * (1.0 + (sqUp.Wealth * 0.05))) end
 		end
 	end
+
+	-- [ECONOMY PATCH] Hard limit and mathematical squash on ALL combat drops
+	dewsGain = math.clamp(math.floor(dewsGain * 0.1), 0, 5000)
 
 	player:SetAttribute("XP", (player:GetAttribute("XP") or 0) + xpGain)
 	player:SetAttribute("TitanXP", (player:GetAttribute("TitanXP") or 0) + xpGain)
@@ -960,7 +964,6 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 		return
 	end
 
-	-- [[ THE FIX: Relocated Retreat Check beneath 'not battle' check to prevent it from hijacking Multiplayer Raids ]]
 	if actionType == "Attack" then
 		local skillName = actionData.SkillName
 		if skillName == "Retreat" or skillName == "Flee" then
