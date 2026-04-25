@@ -1328,7 +1328,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 		local function updateSlot(slotData, titleLbl, addBtn, strk, defaultTitle)
 			if slotData then
 				local tName = slotData.Name
-				local tData = TitanData.Titans[tName]
+				local tData = (type(TitanData) == "table" and TitanData.Titans) and TitanData.Titans[tName] or nil
 				local rarity = tData and tData.Rarity or "Common"
 				local rColor = CONFIG.RarityColors[rarity] or Color3.fromRGB(200,200,200)
 
@@ -1366,31 +1366,34 @@ function SupplyForgeTab.Initialize(parentFrame)
 		for _, c in ipairs(TitanScroll:GetChildren()) do if c:IsA("Frame") or c:IsA("TextButton") then c:Destroy() end end
 
 		local foundAny = false
-		for i = 1, 6 do
-			local tName = player:GetAttribute("Titan_Slot" .. i)
+		local titanSlots = {"Equipped", "1", "2", "3", "4", "5", "6"}
+
+		for _, slotKey in ipairs(titanSlots) do
+			local tName = (slotKey == "Equipped") and player:GetAttribute("Titan") or player:GetAttribute("Titan_Slot" .. slotKey)
 			if tName and tName ~= "" and tName ~= "None" then
-				if (slotId == 1 and selectedOmega and selectedOmega.Slot == i) or (slotId == 2 and selectedAlpha and selectedAlpha.Slot == i) then
+				if (activeSlotIndex == 1 and selectedOmega and selectedOmega.Slot == slotKey) or (activeSlotIndex == 2 and selectedAlpha and selectedAlpha.Slot == slotKey) then
 					continue 
 				end
 
 				foundAny = true
 
 				local rarityColor = Color3.fromRGB(200, 200, 200)
-				if TitanData.Titans[tName] then
+				if type(TitanData) == "table" and TitanData.Titans and TitanData.Titans[tName] then
 					local tRarity = TitanData.Titans[tName].Rarity
 					rarityColor = CONFIG.RarityColors[tRarity] or rarityColor
 				end
 
-				local tBtn, tBtnStroke = CreateSharpButton(TitanScroll, "SLOT " .. i .. ": " .. string.upper(tName), UDim2.new(1, -10, 0, 50), Enum.Font.GothamBlack, 14)
+				local labelText = (slotKey == "Equipped" and "EQUIPPED" or "SLOT " .. slotKey) .. ": " .. string.upper(tName)
+				local tBtn, tBtnStroke = CreateSharpButton(TitanScroll, labelText, UDim2.new(1, -10, 0, 50), Enum.Font.GothamBlack, 14)
 				tBtn.ZIndex = 53
 				tBtn.TextColor3 = rarityColor
 				tBtnStroke.Color = rarityColor
 
 				tBtn.MouseButton1Click:Connect(function()
 					if activeSlotIndex == 1 then
-						selectedAlpha = {Slot = i, Name = tName}
+						selectedAlpha = {Slot = slotKey, Name = tName}
 					else
-						selectedOmega = {Slot = i, Name = tName}
+						selectedOmega = {Slot = slotKey, Name = tName}
 					end
 					PopupOverlay.Visible = false
 					UpdateFusionUI()
