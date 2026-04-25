@@ -175,33 +175,33 @@ local function StartBattle(player, encounterType, requestedPartId)
 
 		local flavorText = waveData.Flavor
 		if not flavorText or flavorText == "" then flavorText = "Prepare to engage " .. (eTemplate.Name or "the enemy") .. "!" end
-		logFlavor = "<font color='#FFD700'>[Mission: " .. (activeMissionData.Name or "Unknown") .. "]</font>\n" .. flavorText
+		logFlavor = "<font color=\"#FFD700\">[Mission: " .. (activeMissionData.Name or "Unknown") .. "]</font>\n" .. flavorText
 
 	elseif encounterType == "EngageDoomsday" then
 		isWorldBoss = true
 		eTemplate = EnemyData.WorldBosses["Doomsday Titan"]
 		if not eTemplate then return end
-		logFlavor = "<font color='#FF3333'>[GLOBAL BOUNTY: THE PRIMORDIAL THREAT]</font>\nYou drop directly into the Doomsday frontline!"
+		logFlavor = "<font color=\"#FF3333\">[GLOBAL BOUNTY: THE PRIMORDIAL THREAT]</font>\nYou drop directly into the Doomsday instance!"
 		targetPart = 1 
 
 	elseif encounterType == "EngageWorldBoss" then
 		isWorldBoss = true
 		eTemplate = EnemyData.WorldBosses[requestedPartId]
 		if not eTemplate then return end
-		logFlavor = "<font color='#FFAA00'>[WORLD EVENT]</font>\n" .. eTemplate.Name .. " has appeared!"
+		logFlavor = "<font color=\"#FFAA00\">[WORLD EVENT]</font>\n" .. eTemplate.Name .. " has appeared!"
 		targetPart = 1 
 
 	elseif encounterType == "EngageNightmare" then
 		isNightmare = true
 		eTemplate = EnemyData.NightmareHunts[requestedPartId]
 		if not eTemplate then return end
-		logFlavor = "<font color='#FF5555'>[NIGHTMARE HUNT]</font>\n" .. eTemplate.Name .. " approaches!"
+		logFlavor = "<font color=\"#FF5555\">[NIGHTMARE HUNT]</font>\n" .. eTemplate.Name .. " approaches!"
 		targetPart = 1 
 
 	elseif encounterType == "EngageRaid" then
 		eTemplate = EnemyData.RaidBosses[requestedPartId]
 		if not eTemplate then return end
-		logFlavor = "<font color='#FF5555'>[RAID BOSS]</font>\n" .. eTemplate.Name .. " blocks your path!"
+		logFlavor = "<font color=\"#FF5555\">[RAID BOSS]</font>\n" .. eTemplate.Name .. " blocks your path!"
 		targetPart = 1
 
 	elseif encounterType == "EngageEndless" then
@@ -210,7 +210,7 @@ local function StartBattle(player, encounterType, requestedPartId)
 		targetPart = math.random(1, maxPart)
 		local partData = EnemyData.Parts[targetPart]
 		eTemplate = GetValidEndlessMob(partData)
-		logFlavor = "<font color='#AA55FF'>[ENDLESS EXPEDITION]</font>\nYou have encountered a " .. eTemplate.Name .. "!"
+		logFlavor = "<font color=\"#AA55FF\">[ENDLESS EXPEDITION]</font>\nYou have encountered a " .. eTemplate.Name .. "!"
 
 		local terrains = {"City", "Forest", "Plains", "Caverns"}
 		local weathers = {"Clear", "Rain", "Night"}
@@ -223,7 +223,7 @@ local function StartBattle(player, encounterType, requestedPartId)
 		targetPart = 1 
 		local maxMemoryIndex = math.min(#EnemyData.PathsMemories, math.max(1, math.ceil(floor / 3)))
 		eTemplate = EnemyData.PathsMemories[math.random(1, maxMemoryIndex)]
-		logFlavor = "<font color='#55FFFF'>[THE PATHS - MEMORY " .. floor .. "]</font>\nA manifestation of " .. eTemplate.Name .. " emerges from the sand..."
+		logFlavor = "<font color=\"#55FFFF\">[THE PATHS - MEMORY " .. floor .. "]</font>\nA manifestation of " .. eTemplate.Name .. " emerges from the sand..."
 		cTerrain = "Plains"
 		cWeather = "Night"
 
@@ -233,7 +233,7 @@ local function StartBattle(player, encounterType, requestedPartId)
 		targetPart = math.min(8, math.ceil(targetFloor / 2))
 		local partData = EnemyData.Parts[targetPart]
 		eTemplate = GetValidEndlessMob(partData)
-		logFlavor = "<font color='#FF5555'>[LABYRINTH FLOOR " .. targetFloor .. "]</font>\nA monstrous " .. eTemplate.Name .. " stalks the corridors!"
+		logFlavor = "<font color=\"#FF5555\">[LABYRINTH FLOOR " .. targetFloor .. "]</font>\nA monstrous " .. eTemplate.Name .. " stalks the corridors!"
 		cTerrain = "Caverns"
 		cWeather = "Night"
 	else
@@ -256,9 +256,9 @@ local function StartBattle(player, encounterType, requestedPartId)
 			["Rain"] = "Heavy rain obscures vision. Both sides lose Accuracy. Fire extinguishes faster.",
 			["Night"] = "The lack of sunlight drastically reduces Pure Titan speed."
 		}
-		logFlavor = logFlavor .. "\n<font color='#AAAAAA'>[" .. string.upper(cTerrain) .. "] " .. envFlavors[cTerrain] .. "</font>"
+		logFlavor = logFlavor .. "\n<font color=\"#AAAAAA\">[" .. string.upper(cTerrain) .. "] " .. envFlavors[cTerrain] .. "</font>"
 		if cWeather ~= "Clear" then
-			logFlavor = logFlavor .. "\n<font color='#5588FF'>[" .. string.upper(cWeather) .. "] " .. weatherFlavors[cWeather] .. "</font>"
+			logFlavor = logFlavor .. "\n<font color=\"#5588FF\">[" .. string.upper(cWeather) .. "] " .. weatherFlavors[cWeather] .. "</font>"
 		end
 	end
 
@@ -342,7 +342,7 @@ local function StartBattle(player, encounterType, requestedPartId)
 	end
 
 	local ctxRange = "Close"
-	if eTemplate.Name:find("Beast Titan") or eTemplate.IsLongRange then ctxRange = "Long"; logFlavor = logFlavor .. "\n<font color='#FF5555'>" .. eTemplate.Name .. " is at LONG RANGE.</font>" end
+	if eTemplate.Name:find("Beast Titan") or eTemplate.IsLongRange then ctxRange = "Long"; logFlavor = logFlavor .. "\n<font color=\"#FF5555\">" .. eTemplate.Name .. " is at LONG RANGE.</font>" end
 
 	local eHP = math.floor((eTemplate.Health or 100) * hpMult)
 	local eGateType = eTemplate.GateType
@@ -355,14 +355,10 @@ local function StartBattle(player, encounterType, requestedPartId)
 	local isDynamicBoss = (encounterType == "EngageWorldBoss" or encounterType == "EngageNightmare" or encounterType == "EngageRaid" or encounterType == "EngageDoomsday")
 	if isDynamicBoss then
 		local groupMult = 1
-		if encounterType == "EngageWorldBoss" or encounterType == "EngageDoomsday" then 
-			groupMult = math.clamp(#Players:GetPlayers(), 1, 15)
-		elseif encounterType == "EngageRaid" then
-			local getPartyFunc = Network:FindFirstChild("GetPlayerParty")
-			if getPartyFunc then
-				local partyData = getPartyFunc:Invoke(player)
-				if partyData and partyData.Members then groupMult = #partyData.Members end
-			end
+		local getPartyFunc = Network:FindFirstChild("GetPlayerParty")
+		if getPartyFunc then
+			local partyData = getPartyFunc:Invoke(player)
+			if partyData and partyData.Members then groupMult = #partyData.Members end
 		end
 
 		local baseDifficulty = 1.0
@@ -390,8 +386,6 @@ local function StartBattle(player, encounterType, requestedPartId)
 		eDef = math.floor(expectedBaseStr * 0.8 * math.pow(baseDifficulty, 0.5)) 
 		eSpd = math.floor(pTotalSpd * 1.1) 
 
-		if encounterType == "EngageDoomsday" then eHP = 500000000 end
-
 		if eGateType == "Steam" then eGateHP = eTemplate.GateHP 
 		elseif eGateType then
 			local gateRatio = (eTemplate.GateHP or 0) / (eTemplate.Health or 100)
@@ -399,7 +393,7 @@ local function StartBattle(player, encounterType, requestedPartId)
 			eGateHP = math.floor(eHP * gateRatio)
 		end
 
-		logFlavor = logFlavor .. "\n<font color='#AAAAAA'>[Dynamic Encounter: Attuned to Group Size " .. groupMult .. "x]</font>"
+		logFlavor = logFlavor .. "\n<font color=\"#AAAAAA\">[Dynamic Encounter: Attuned to Party Size " .. groupMult .. "x]</font>"
 	end
 
 	if isPaths or isLabyrinth then
@@ -407,16 +401,16 @@ local function StartBattle(player, encounterType, requestedPartId)
 		local selectedMutator = mutators[math.random(1, #mutators)]
 		if selectedMutator == "Armored" then
 			eGateType = "Reinforced Skin"; eGateHP = math.floor(eHP * 0.3)
-			logFlavor = logFlavor .. "\n<font color='#AAAAAA'>[MUTATOR: ARMORED] Target has extreme hardening!</font>"
+			logFlavor = logFlavor .. "\n<font color=\"#AAAAAA\">[MUTATOR: ARMORED] Target has extreme hardening!</font>"
 		elseif selectedMutator == "Frenzied" then
 			eSpd = eSpd * 1.5; eStr = eStr * 1.2
-			logFlavor = logFlavor .. "\n<font color='#FF5555'>[MUTATOR: FRENZIED] Target is moving at terrifying speeds!</font>"
+			logFlavor = logFlavor .. "\n<font color=\"#FF5555\">[MUTATOR: FRENZIED] Target is moving at terrifying speeds!</font>"
 		elseif selectedMutator == "Elusive" then
 			enemyAwakenedStats = { DodgeBonus = 15 }
-			logFlavor = logFlavor .. "\n<font color='#55FF55'>[MUTATOR: ELUSIVE] Target is incredibly hard to hit!</font>"
+			logFlavor = logFlavor .. "\n<font color=\"#55FF55\">[MUTATOR: ELUSIVE] Target is incredibly hard to hit!</font>"
 		elseif selectedMutator == "Colossal" then
 			eHP = eHP * 1.5; eStr = eStr * 1.5; eSpd = math.floor(eSpd * 0.5)
-			logFlavor = logFlavor .. "\n<font color='#FFAA00'>[MUTATOR: COLOSSAL] Target is massive and deals lethal damage!</font>"
+			logFlavor = logFlavor .. "\n<font color=\"#FFAA00\">[MUTATOR: COLOSSAL] Target is massive and deals lethal damage!</font>"
 		end
 	end
 
@@ -444,34 +438,6 @@ local function StartBattle(player, encounterType, requestedPartId)
 
 	if eTemplate.IsMinigame then CombatUpdate:FireClient(player, "StartMinigame", { Battle = ActiveBattles[player.UserId], LogMsg = logFlavor, MinigameType = eTemplate.IsMinigame })
 	else CombatUpdate:FireClient(player, "Start", { Battle = ActiveBattles[player.UserId], LogMsg = logFlavor }) end
-
-	if encounterType == "EngageDoomsday" then
-		task.spawn(function()
-			local success, DoomsdayManager = pcall(function() return require(game:GetService("ServerScriptService"):WaitForChild("DoomsdayManager")) end)
-			if not success or type(DoomsdayManager.GetServerData) ~= "function" then return end
-
-			while ActiveBattles[player.UserId] and ActiveBattles[player.UserId].Enemy.IsDoomsdayBoss do
-				local ddData = DoomsdayManager.GetServerData()
-
-				if not ddData.IsActive or ddData.BossHP <= 0 then
-					local b = ActiveBattles[player.UserId]
-					if ddData.BossHP <= 0 then
-						-- [ECONOMY PATCH] Severely reduced Doomsday rewards
-						CombatUpdate:FireClient(player, "Victory", {Battle = b, LogMsg = "<font color='#55FF55'>The Doomsday Titan has fallen globally!</font>", XP = 50000, Dews = 50000, Items = {}})
-					else
-						CombatUpdate:FireClient(player, "Fled", {Battle = b, LogMsg = "<font color='#AAAAAA'>The Doomsday Titan vanished into the steam...</font>"})
-					end
-					ActiveBattles[player.UserId] = nil
-					player:SetAttribute("InCombat", false)
-					break
-				end
-
-				ActiveBattles[player.UserId].Enemy.HP = ddData.BossHP
-				ActiveBattles[player.UserId].Enemy.MaxHP = ddData.MaxHP or 500000000
-				task.wait(2) 
-			end
-		end)
-	end
 end
 
 local function ProcessEnemyDeath(player, battle, dialogueRewards)
@@ -487,7 +453,7 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		battle.Enemy.Drops = b.Drops; battle.Enemy.Skills = b.Skills; battle.Enemy.Statuses = b.Statuses; battle.Enemy.Cooldowns = b.Cooldowns; battle.Enemy.LastSkill = b.LastSkill
 
 		battle.Context.StoredBoss = nil; battle.Context.TurnCount = 0 
-		CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color='#55FF55'>The Summoned Titan falls! The Founder is exposed!</font>", DidHit = false, ShakeType = "Heavy"})
+		CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#55FF55\">The Summoned Titan falls! The Founder is exposed!</font>", DidHit = false, ShakeType = "Heavy"})
 		PlayVFX:FireClient(player, "TitanRoar", "Enemy")
 		task.wait(turnDelay)
 		battle.IsProcessing = false
@@ -564,7 +530,6 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		end
 	end
 
-	-- [ECONOMY PATCH] Hard limit and mathematical squash on ALL combat drops
 	dewsGain = math.clamp(math.floor(dewsGain * 0.1), 0, 5000)
 
 	player:SetAttribute("XP", (player:GetAttribute("XP") or 0) + xpGain)
@@ -580,14 +545,14 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		table.insert(droppedItems, {Name = dialogueRewards.ItemName, Amount = amountGiven})
 	end
 
-	if autoSoldDews > 0 then killMsg = killMsg .. "<br/><font color='#FFD700'>[Inventory Full: Auto-sold new drops for " .. autoSoldDews .. " Dews]</font>" end
+	if autoSoldDews > 0 then killMsg = killMsg .. "\n<font color=\"#FFD700\">[Inventory Full: Auto-sold new drops for " .. autoSoldDews .. " Dews]</font>" end
 
 	if battle.Player.AwakenedStats and battle.Player.AwakenedStats.HealOnKill > 0 then
 		local pMax = tonumber(battle.Player.MaxHP) or 100
 		local pCur = tonumber(battle.Player.HP) or 100
 		local healAmt = math.floor(pMax * battle.Player.AwakenedStats.HealOnKill)
 		battle.Player.HP = math.min(pMax, pCur + healAmt)
-		killMsg = killMsg .. "<br/><font color='#55FF55'>[Awakened: Healed " .. healAmt .. " HP!]</font>"
+		killMsg = killMsg .. "\n<font color=\"#55FF55\">[Awakened: Healed " .. healAmt .. " HP!]</font>"
 		PlayVFX:FireClient(player, "Heal", "Self")
 	end
 
@@ -597,7 +562,7 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		player:SetAttribute("PathDust", (player:GetAttribute("PathDust") or 0) + dustGain)
 		player:SetAttribute("PathsFloor", floor + 1)
 
-		local rewardStr = "<font color='#55FFFF'>Memory Cleared! +" .. dustGain .. " Path Dust</font>"
+		local rewardStr = "<font color=\"#55FFFF\">Memory Cleared! +" .. dustGain .. " Path Dust</font>"
 		local prestige = player.leaderstats.Prestige.Value
 
 		local maxMemoryIndex = math.min(#EnemyData.PathsMemories, math.max(1, math.ceil((floor + 1) / 3)))
@@ -620,25 +585,25 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		local enemyAwakenedStats = nil
 		local mutators = {"Armored", "Frenzied", "Elusive", "Colossal"}
 		local selectedMutator = mutators[math.random(1, #mutators)]
-		local flavorText = "<font color='#55FFFF'>[THE PATHS - MEMORY " .. (floor + 1) .. "]</font>\nA manifestation of " .. nextEnemyTemplate.Name .. " emerges from the sand..."
+		local flavorText = "<font color=\"#55FFFF\">[THE PATHS - MEMORY " .. (floor + 1) .. "]</font>\nA manifestation of " .. nextEnemyTemplate.Name .. " emerges from the sand..."
 
 		if selectedMutator == "Armored" then
 			eGateType = "Reinforced Skin"; eGateHP = math.floor(eHP * 0.3)
-			flavorText = flavorText .. "\n<font color='#AAAAAA'>[MUTATOR: ARMORED] Target has extreme hardening!</font>"
+			flavorText = flavorText .. "\n<font color=\"#AAAAAA\">[MUTATOR: ARMORED] Target has extreme hardening!</font>"
 		elseif selectedMutator == "Frenzied" then
 			eSpd = eSpd * 1.5; eStr = eStr * 1.2
-			flavorText = flavorText .. "\n<font color='#FF5555'>[MUTATOR: FRENZIED] Target is moving at terrifying speeds!</font>"
+			flavorText = flavorText .. "\n<font color=\"#FF5555\">[MUTATOR: FRENZIED] Target is moving at terrifying speeds!</font>"
 		elseif selectedMutator == "Elusive" then
 			enemyAwakenedStats = { DodgeBonus = 15 }
-			flavorText = flavorText .. "\n<font color='#55FF55'>[MUTATOR: ELUSIVE] Target is incredibly hard to hit!</font>"
+			flavorText = flavorText .. "\n<font color=\"#55FF55\">[MUTATOR: ELUSIVE] Target is incredibly hard to hit!</font>"
 		elseif selectedMutator == "Colossal" then
 			eHP = eHP * 1.5; eStr = eStr * 1.5; eSpd = math.floor(eSpd * 0.5)
-			flavorText = flavorText .. "\n<font color='#FFAA00'>[MUTATOR: COLOSSAL] Target is massive and deals lethal damage!</font>"
+			flavorText = flavorText .. "\n<font color=\"#FFAA00\">[MUTATOR: COLOSSAL] Target is massive and deals lethal damage!</font>"
 		end
 
 		if nextEnemyTemplate.Name:find("Beast Titan") or nextEnemyTemplate.IsLongRange then
 			battle.Context.Range = "Long"
-			flavorText = flavorText .. "\n<font color='#FF5555'>" .. nextEnemyTemplate.Name .. " is at LONG RANGE.</font>"
+			flavorText = flavorText .. "\n<font color=\"#FF5555\">" .. nextEnemyTemplate.Name .. " is at LONG RANGE.</font>"
 		else battle.Context.Range = "Close" end
 
 		local eSkills = nextEnemyTemplate.Skills or {"Brutal Swipe"}
@@ -688,12 +653,12 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		local eDef = math.floor(nextEnemyTemplate.Defense * defMult)
 		local eSpd = math.floor(nextEnemyTemplate.Speed * spdMult)
 
-		local flavorText = "<font color='#AA55FF'>[ENDLESS EXPEDITION - WAVE " .. nextWave .. "]</font>\nYou encounter a " .. nextEnemyTemplate.Name .. "!"
+		local flavorText = "<font color=\"#AA55FF\">[ENDLESS EXPEDITION - WAVE " .. nextWave .. "]</font>\nYou encounter a " .. nextEnemyTemplate.Name .. "!"
 
 		battle.Context.Range = "Close"
 		if nextEnemyTemplate.Name:find("Beast Titan") or nextEnemyTemplate.IsLongRange then
 			battle.Context.Range = "Long"
-			flavorText = flavorText .. "\n<font color='#FF5555'>" .. nextEnemyTemplate.Name .. " is at LONG RANGE.</font>"
+			flavorText = flavorText .. "\n<font color=\"#FF5555\">" .. nextEnemyTemplate.Name .. " is at LONG RANGE.</font>"
 		end
 
 		local eSkills = nextEnemyTemplate.Skills or {"Brutal Swipe"}
@@ -761,7 +726,7 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 
 		if nextEnemyTemplate.Name:find("Beast Titan") or nextEnemyTemplate.IsLongRange then
 			battle.Context.Range = "Long"
-			flavorText = flavorText .. "\n<font color='#FF5555'>" .. nextEnemyTemplate.Name .. " is at LONG RANGE.</font>"
+			flavorText = flavorText .. "\n<font color=\"#FF5555\">" .. nextEnemyTemplate.Name .. " is at LONG RANGE.</font>"
 		else
 			battle.Context.Range = "Close"
 		end
@@ -786,15 +751,18 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		battle.Player.Cooldowns = {}; battle.Player.Statuses = {} 
 		local titanRuneLvl = tonumber(player:GetAttribute("Rune_Titan")) or 0
 		local pMaxTitanEnergy = 100 + (titanRuneLvl * 25)
+
+		battle.Player.HP = battle.Player.MaxHP
+
 		battle.Player.Gas = battle.Player.MaxGas; battle.Player.TitanEnergy = math.min(pMaxTitanEnergy, (battle.Player.TitanEnergy or 0) + 30); battle.Player.LastSkill = "None"
 
 		if nextEnemyTemplate.IsMinigame then 
-			CombatUpdate:FireClient(player, "StartMinigame", {Battle = battle, LogMsg = "<font color='#FFD700'>[WAVE " .. battle.Context.CurrentWave .. "]</font>\n" .. flavorText, MinigameType = nextEnemyTemplate.IsMinigame})
+			CombatUpdate:FireClient(player, "StartMinigame", {Battle = battle, LogMsg = "<font color=\"#FFD700\">[WAVE " .. battle.Context.CurrentWave .. "]</font>\n" .. flavorText, MinigameType = nextEnemyTemplate.IsMinigame})
 		else 
 			if wasDialogue then
-				CombatUpdate:FireClient(player, "Start", {Battle = battle, LogMsg = "<font color='#FFD700'>[WAVE " .. battle.Context.CurrentWave .. "]</font>\n" .. flavorText .. killMsg})
+				CombatUpdate:FireClient(player, "Start", {Battle = battle, LogMsg = "<font color=\"#FFD700\">[WAVE " .. battle.Context.CurrentWave .. "]</font>\n" .. flavorText .. killMsg})
 			else
-				CombatUpdate:FireClient(player, "WaveComplete", {Battle = battle, LogMsg = "<font color='#FFD700'>[WAVE " .. battle.Context.CurrentWave .. "]</font>\n" .. flavorText .. killMsg, XP = xpGain, Dews = dewsGain, Items = droppedItems}) 
+				CombatUpdate:FireClient(player, "WaveComplete", {Battle = battle, LogMsg = "<font color=\"#FFD700\">[WAVE " .. battle.Context.CurrentWave .. "]</font>\n" .. flavorText .. killMsg, XP = xpGain, Dews = dewsGain, Items = droppedItems}) 
 			end
 		end
 		battle.IsProcessing = false
@@ -840,24 +808,31 @@ local function IsSkillValid(player, skillName, isTransformedCheck)
 		["Recover"]=true, ["Retreat"]=true, ["Flee"]=true, ["Transform"]=true,
 		["Basic Slash"]=true, ["Heavy Slash"]=true, ["Flare Gun"]=true, ["Anti-Titan Rifle"]=true
 	}
-	if universalMoves[skillName] then return true end
 
 	if isTransformedCheck then
-		local myTitan = player:GetAttribute("Titan") or "None"
 		local titanMoves = { ["Eject"]=true, ["Titan Recover"]=true, ["Titan Rest"]=true, ["Cannibalize"]=true, ["Titan Punch"]=true, ["Titan Kick"]=true }
+		local myTitan = player:GetAttribute("Titan") or "None"
 
-		if req == "Transformed" or req == "AnyTitan" or req == myTitan or string.find(myTitan, req, 1, true) or titanMoves[skillName] then
-			return true
-		end
+		if titanMoves[skillName] then return true end
 
 		local validHybridMoves = GetTitanSkills(myTitan)
 		for _, m in ipairs(validHybridMoves) do
 			if m == skillName then return true end
 		end
 
+		local humanWeapons = {["Basic Slash"]=true, ["Heavy Slash"]=true, ["Flare Gun"]=true, ["Anti-Titan Rifle"]=true}
+		if universalMoves[skillName] and not humanWeapons[skillName] then
+			return true
+		end
+
+		if req == "Transformed" or req == "AnyTitan" or req == myTitan or string.find(myTitan, req, 1, true) then
+			return true
+		end
+
 		return false
 	end
 
+	if universalMoves[skillName] then return true end
 	if req == "None" or req == "ODM" then return true end
 
 	local myClan = player:GetAttribute("Clan") or "None"
@@ -891,7 +866,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 
 	if not battle then 
 		if actionType == "Attack" and not player:GetAttribute("InMultiplayerRaid") then
-			CombatUpdate:FireClient(player, "Fled", {Battle = nil, LogMsg = "<font color='#FF5555'>Battle synchronization lost. Force closing.</font>"})
+			CombatUpdate:FireClient(player, "Fled", {Battle = nil, LogMsg = "<font color=\"#FF5555\">Battle synchronization lost. Force closing.</font>"})
 		end
 		return 
 	end
@@ -923,7 +898,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 				local dmg = math.floor(battle.Enemy.MaxHP * 0.15) 
 				battle.Enemy.HP = math.max(1, battle.Enemy.HP - dmg)
 
-				local winMsg = "<font color='#FFD700'><b>[PERFECT CLASH!]</b></font>\nYou overpowered " .. battle.Enemy.Name .. "'s " .. enemySkill .. " with " .. clashSkill .. "!\nDealt " .. dmg .. " damage and shattered their stance!"
+				local winMsg = "<font color=\"#FFD700\"><b>[PERFECT CLASH!]</b></font>\nYou overpowered " .. battle.Enemy.Name .. "'s " .. enemySkill .. " with " .. clashSkill .. "!\nDealt " .. dmg .. " damage and shattered their stance!"
 				CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = winMsg, DidHit = true, ShakeType = "Heavy"})
 			else
 				battle.Enemy.Statuses["Telegraphing"] = nil
@@ -931,7 +906,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 				local baseDmg = CombatCore.CalculateDamage(battle.Enemy, battle.Player, eSkillMult, "Body", battle.Context)
 				CombatCore.TakeDamage(battle.Player, baseDmg, "Enemy")
 
-				local loseMsg = "<font color='#FF0000'><b>[OVERPOWERED!]</b></font>\nYou were crushed by " .. enemySkill .. "!\nTook " .. baseDmg .. " massive damage!"
+				local loseMsg = "<font color=\"#FF0000\"><b>[OVERPOWERED!]</b></font>\nYou were crushed by " .. enemySkill .. "!\nTook " .. baseDmg .. " massive damage!"
 				CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = loseMsg, DidHit = true, ShakeType = "Heavy"})
 			end
 
@@ -1034,7 +1009,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 		CombatUpdate:FireClient(player, "StartMinigame", {
 			Battle = battle,
 			MinigameType = "Clash",
-			LogMsg = "<font color='#FF0000'><b>[CLASH INITIATED!]</b></font>\nOverpower the enemy's attack!",
+			LogMsg = "<font color=\"#FF0000\"><b>[CLASH INITIATED!]</b></font>\nOverpower the enemy's attack!",
 			ClashSkill = skillName,
 			EnemySkill = enemyTelegraph
 		})
@@ -1071,7 +1046,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 		end
 
 		local success, msg, didHit, shakeType = pcall(function() 
-			return CombatCore.ExecuteStrike(attacker, defender, strikeSkill, aimLimb, attacker.IsPlayer and "You" or attacker.Name, defender.IsPlayer and "you" or defender.Name, attacker.IsPlayer and "#FFFFFF" or "#FF5555", defender.IsPlayer and "#FFFFFF" or "#FF5555", battle.Context) 
+			return CombatCore.ExecuteStrike(attacker, defender, strikeSkill, aimLimb, attacker.IsPlayer and "You" or attacker.Name, defender.IsPlayer and "you" or defender.Name, attacker.IsPlayer and "#FFFFFF" or "#FF5555", battle.Context) 
 		end)
 
 		if success then 
@@ -1089,7 +1064,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 			end
 			task.wait(turnDelay) 
 		else 
-			CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color='#FF0000'>SERVER LOGIC ERROR: " .. tostring(msg) .. "</font>", DidHit = false, ShakeType = "None"}) 
+			CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#FF0000\">SERVER LOGIC ERROR: " .. tostring(msg) .. "</font>", DidHit = false, ShakeType = "None"}) 
 		end
 	end
 
@@ -1135,7 +1110,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 						battle.Enemy.GateHP = battle.Enemy.MaxGateHP
 					end
 
-					local enrageMsg = "<font color='#FF0000'><b>[CRITICAL WARNING]</b></font>\n<font color='#FFAA00'>" .. battle.Enemy.Name .. " roars in absolute fury! All debuffs cleansed! HP Restored to 50%! Armor Regenerated! Damage & Speed massively increased!</font>"
+					local enrageMsg = "<font color=\"#FF0000\"><b>[CRITICAL WARNING]</b></font>\n<font color=\"#FFAA00\">" .. battle.Enemy.Name .. " roars in absolute fury! All debuffs cleansed! HP Restored to 50%! Armor Regenerated! Damage & Speed massively increased!</font>"
 
 					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = enrageMsg, DidHit = false, ShakeType = "Heavy", EnrageTrigger = true})
 					task.wait(turnDelay)
@@ -1162,24 +1137,24 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 			if combatant.IsDoomsdayBoss then
 				battle.Context.DoomsdayTurn = (battle.Context.DoomsdayTurn or 0) + 1
 				local turn = battle.Context.DoomsdayTurn
-				local msg = "<font color='#FF5555'>The Doomsday Titan continues its apocalyptic march... DEAL AS MUCH DAMAGE AS POSSIBLE!</font>"
+				local msg = "<font color=\"#FF5555\">The Doomsday Titan continues its apocalyptic march... DEAL AS MUCH DAMAGE AS POSSIBLE!</font>"
 
 				if turn % 8 == 0 then
 					combatant.GateType = "Steam"
 					combatant.MaxGateHP = 5
 					combatant.GateHP = 5
-					msg = "<font color='#FFAA00'><b>[PHASE SHIFT: STEAM]</b> The Doomsday Titan vents Colossal Steam to repel your attacks!</font>"
+					msg = "<font color=\"#FFAA00\"><b>[PHASE SHIFT: STEAM]</b> The Doomsday Titan vents Colossal Steam to repel your attacks!</font>"
 				elseif turn % 8 == 4 then
 					combatant.GateType = "Reinforced Skin"
 					local newGate = math.floor(battle.Player.TotalStrength * 12) 
 					combatant.MaxGateHP = newGate
 					combatant.GateHP = newGate
-					msg = "<font color='#AAAAAA'><b>[PHASE SHIFT: ARMOR]</b> The Doomsday Titan hardens its skeletal structure! Break it!</font>"
+					msg = "<font color=\"#AAAAAA\"><b>[PHASE SHIFT: ARMOR]</b> The Doomsday Titan hardens its skeletal structure! Break it!</font>"
 				elseif turn % 8 == 1 and turn > 1 then
 					combatant.GateType = nil
 					combatant.MaxGateHP = 0
 					combatant.GateHP = 0
-					msg = "<font color='#55FF55'><b>[PHASE SHIFT: EXPOSED]</b> The Doomsday Titan's defenses drop! Unleash everything!</font>"
+					msg = "<font color=\"#55FF55\"><b>[PHASE SHIFT: EXPOSED]</b> The Doomsday Titan's defenses drop! Unleash everything!</font>"
 				end
 
 				CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = msg, DidHit = false, ShakeType = "Light"})
@@ -1189,16 +1164,16 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 
 			if wasIncapacitated then
 				if combatant.IsBoss and combatant.Statuses and combatant.Statuses["Telegraphing"] then
-					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color='#FF0000'><b>" .. combatant.Name .. " shrugs off the crowd control and continues charging!</b></font>", DidHit = false, ShakeType = "None"})
+					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#FF0000\"><b>" .. combatant.Name .. " shrugs off the crowd control and continues charging!</b></font>", DidHit = false, ShakeType = "None"})
 					task.wait(0.4)
 				else
 					if combatant.Statuses and combatant.Statuses["Telegraphing"] then
 						combatant.Statuses["Telegraphing"] = nil 
-						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color='#55FF55'><b>" .. combatant.Name .. "'s charge up was INTERRUPTED!</b></font>", DidHit = false, ShakeType = "Heavy"})
+						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#55FF55\"><b>" .. combatant.Name .. "'s charge up was INTERRUPTED!</b></font>", DidHit = false, ShakeType = "Heavy"})
 						task.wait(0.4)
 					end
 
-					local denyMsg = combatant.IsPlayer and "<font color='#555555'>You are INCAPACITATED and lost your turn!</font>" or "<font color='#555555'>" .. combatant.Name .. " is INCAPACITATED and lost their turn!</font>"
+					local denyMsg = combatant.IsPlayer and "<font color=\"#555555\">You are INCAPACITATED and lost your turn!</font>" or "<font color=\"#555555\">" .. combatant.Name .. " is INCAPACITATED and lost their turn!</font>"
 					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = denyMsg, DidHit = false, ShakeType = "None"})
 					task.wait(0.4)
 
@@ -1277,9 +1252,9 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 
 						local _, hitGate, gateBroken, actualDmg, gateName = CombatCore.TakeDamage(battle.Enemy, chunkDmg, "Ultrahard Steel Blades")
 
-						local hitMsg = "<font color='#55FFFF'><b>[ALLY INTERVENTION!]</b></font>\n<font color='#55FFFF'>" .. allyName .. "</font> swooped in to assist you!\n<font color='#55FFFF'>" .. allyName .. "</font> used <b>" .. allySkill .. "</b> on " .. battle.Enemy.Name .. " for " .. actualDmg .. " dmg!"
-						if hitGate then hitMsg = hitMsg .. " <font color='#DDDDDD'>[Hit " .. tostring(gateName) .. "!]</font>" end
-						if gateBroken then hitMsg = hitMsg .. " <font color='#FFFFFF'><b>[" .. tostring(gateName):upper() .. " SHATTERED!]</b></font>" end
+						local hitMsg = "<font color=\"#55FFFF\"><b>[ALLY INTERVENTION!]</b></font>\n<font color=\"#55FFFF\">" .. allyName .. "</font> swooped in to assist you!\n<font color=\"#55FFFF\">" .. allyName .. "</font> used <b>" .. allySkill .. "</b> on " .. battle.Enemy.Name .. " for " .. actualDmg .. " dmg!"
+						if hitGate then hitMsg = hitMsg .. " <font color=\"#DDDDDD\">[Hit " .. tostring(gateName) .. "!]</font>" end
+						if gateBroken then hitMsg = hitMsg .. " <font color=\"#FFFFFF\"><b>[" .. tostring(gateName):upper() .. " SHATTERED!]</b></font>" end
 
 						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = hitMsg, DidHit = true, ShakeType = "Heavy", SkillUsed = allySkill, IsPlayerAttacking = true, AllyIntervention = allyName, AllyQuote = allyQuote, AllyUserId = allyUserId})
 						task.wait(turnDelay)
@@ -1288,11 +1263,11 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 
 						if battle.Enemy.Statuses and battle.Enemy.Statuses["Telegraphing"] then
 							battle.Enemy.Statuses["Telegraphing"] = nil 
-							CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color='#55FF55'><b>" .. battle.Enemy.Name .. "'s charge up was INTERRUPTED!</b></font>", DidHit = false, ShakeType = "Heavy"})
+							CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#55FF55\"><b>" .. battle.Enemy.Name .. "'s charge up was INTERRUPTED!</b></font>", DidHit = false, ShakeType = "Heavy"})
 							task.wait(0.4)
 						end
 
-						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color='#AAAAAA'>" .. battle.Enemy.Name .. " is reeling from the surprise attack and loses their turn!</font>", DidHit = false, ShakeType = "None"})
+						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#AAAAAA\">" .. battle.Enemy.Name .. " is reeling from the surprise attack and loses their turn!</font>", DidHit = false, ShakeType = "None"})
 						task.wait(0.4)
 						continue
 					end
@@ -1314,7 +1289,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 
 					if isReady and inRange then
 						if sd and sd.Telegraphed then
-							if combatant.AIPoints >= 3 then 
+							if combatant.AIPoints >= 6 then 
 								table.insert(validAiSkills, s)
 								hasTelegraphed = true
 							end
@@ -1333,7 +1308,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 					aiSkill = combatant.Statuses["Telegraphing"]; combatant.Statuses["Telegraphing"] = nil
 					local sd = SkillData.Skills[aiSkill]
 					if sd and sd.Range and sd.Range ~= "Any" and sd.Range ~= battle.Context.Range then
-						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color='#AAAAAA'>" .. combatant.Name .. " attempted to use <b>" .. aiSkill .. "</b>, but you changed range! The attack missed entirely!</font>", DidHit = false, ShakeType = "None"})
+						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#AAAAAA\">" .. combatant.Name .. " attempted to use <b>" .. aiSkill .. "</b>, but you changed range! The attack missed entirely!</font>", DidHit = false, ShakeType = "None"})
 						task.wait(0.4)
 						continue
 					end
@@ -1357,15 +1332,15 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 						local hintStr = ""
 						if SkillData.Skills[aiSkill].Unavoidable then
 							if SkillData.Skills[aiSkill].Range == "Any" then
-								hintStr = "\n<font color='#FF3333'><b>⚠️ MASSIVE AREA ATTACK! USE A HEAVY SKILL TO CLASH OR 'BLOCK'! ⚠️</b></font>"
+								hintStr = "\n<font color=\"#FF3333\"><b>⚠️ MASSIVE AREA ATTACK! USE A HEAVY SKILL TO CLASH OR 'BLOCK'! ⚠️</b></font>"
 							else
-								hintStr = "\n<font color='#FF3333'><b>⚠️ UNAVOIDABLE CLOSE ATTACK! CLASH, 'FALL BACK', OR 'BLOCK'! ⚠️</b></font>"
+								hintStr = "\n<font color=\"#FF3333\"><b>⚠️ UNAVOIDABLE CLOSE ATTACK! CLASH, 'FALL BACK', OR 'BLOCK'! ⚠️</b></font>"
 							end
 						else
-							hintStr = "\n<font color='#55FF55'>[HINT: USE EVASIVE MANEUVER OR BLOCK!]</font>"
+							hintStr = "\n<font color=\"#55FF55\">[HINT: USE EVASIVE MANEUVER OR BLOCK!]</font>"
 						end
 
-						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<b><font color='#FFAA00'>WARNING: " .. combatant.Name .. " is charging up " .. aiSkill:upper() .. "!</font></b>" .. hintStr, DidHit = false, ShakeType = "Heavy"})
+						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<b><font color=\"#FFAA00\">WARNING: " .. combatant.Name .. " is charging up " .. aiSkill:upper() .. "!</font></b>" .. hintStr, DidHit = false, ShakeType = "Heavy"})
 						PlayVFX:FireClient(player, "TitanRoar", "Enemy")
 						task.wait(0.6)
 						continue
@@ -1373,7 +1348,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 				end
 
 				if aiSkill == "Idle" then
-					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color='#AAAAAA'>" .. combatant.Name .. " stands completely still.</font>", DidHit = false, ShakeType = "None"})
+					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#AAAAAA\">" .. combatant.Name .. " stands completely still.</font>", DidHit = false, ShakeType = "None"})
 					task.wait(0.4)
 				else
 					local aiTargets = {"Body", "Body", "Arms", "Legs", "Nape"}
@@ -1383,7 +1358,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 
 			if battle.Player.Statuses and battle.Player.Statuses["Transformed"] and (tonumber(battle.Player.TitanEnergy) or 0) <= 0 then
 				battle.Player.Statuses["Transformed"] = nil
-				CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color='#FF5555'><b>[HEAT DEPLETED]</b> Your Titan body evaporates into steam! You are forced back into human form!</font>", DidHit = false, ShakeType = "None"})
+				CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#FF5555\"><b>[HEAT DEPLETED]</b> Your Titan body evaporates into steam! You are forced back into human form!</font>", DidHit = false, ShakeType = "None"})
 				task.wait(turnDelay)
 			end
 		end
@@ -1391,7 +1366,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 
 	if not success then
 		warn("[Combat Server Error]: " .. tostring(loopErr))
-		CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color='#FF0000'>SERVER LOGIC ERROR. State safely recovered.</font>", DidHit = false, ShakeType = "None"})
+		CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#FF0000\">SERVER LOGIC ERROR. State safely recovered.</font>", DidHit = false, ShakeType = "None"})
 		task.wait(1.0)
 	end
 
