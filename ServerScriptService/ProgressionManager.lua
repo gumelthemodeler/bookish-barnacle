@@ -175,7 +175,7 @@ UnlockPrestigeNode.OnServerEvent:Connect(function(player, nodeId)
 	if ActivePrestigeTransactions[player.UserId] then return end
 	ActivePrestigeTransactions[player.UserId] = true
 
-	local node = GameData.PrestigeNodes[nodeId]
+	local node = SkillData.PrestigeNodes[nodeId]
 	if not node then ActivePrestigeTransactions[player.UserId] = nil; return end
 
 	if player:GetAttribute("PrestigeNode_" .. nodeId) then
