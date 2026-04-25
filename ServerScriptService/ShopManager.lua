@@ -30,14 +30,16 @@ AbyssalRollEvent.OnServerEvent:Connect(function(player)
 	local dews = ls and ls:FindFirstChild("Dews")
 	local abyssalBlood = player:GetAttribute("AbyssalBloodCount") or 0
 
-	if dews and dews.Value >= 5000000 and abyssalBlood >= 1 then
-		dews.Value -= 5000000
+	-- [ECONOMY PATCH] 5,000,000 -> 250,000
+	if dews and dews.Value >= 250000 and abyssalBlood >= 1 then
+		dews.Value -= 250000
 		player:SetAttribute("AbyssalBloodCount", abyssalBlood - 1)
 
 		local baseClan = string.gsub(currentClan, "Awakened ", "")
 		player:SetAttribute("Clan", "Abyssal " .. baseClan)
 
 		NotificationEvent:FireClient(player, "Your bloodline has transcended.", "Success")
+		--... [Rest of code unchanged]
 
 		task.spawn(function()
 			pcall(function()
