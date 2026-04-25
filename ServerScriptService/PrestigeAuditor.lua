@@ -1,11 +1,9 @@
 -- @ScriptType: Script
-
--- @ScriptType: Script
 -- @ScriptType: Script
 -- ServerScriptService/PrestigeAuditor.lua
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local GameData = require(ReplicatedStorage:WaitForChild("GameData"))
+local SkillData = require(ReplicatedStorage:WaitForChild("SkillData"))
 
 local function AuditPrestigePoints(player)
 	-- Wait for leaderstats to load
@@ -20,7 +18,7 @@ local function AuditPrestigePoints(player)
 
 	-- Calculate how many points the player has already spent
 	local spentPoints = 0
-	for id, nodeData in pairs(GameData.PrestigeNodes) do
+	for id, nodeData in pairs(SkillData.PrestigeNodes) do
 		if player:GetAttribute("PrestigeNode_" .. id) then
 			spentPoints += nodeData.Cost
 		end
