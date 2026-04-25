@@ -84,8 +84,11 @@ local function EndMatch(matchId, winnerTeam)
 				if p and p.Parent and p:FindFirstChild("leaderstats") then
 					local elo = p.leaderstats:FindFirstChild("Elo")
 					if elo then elo.Value = elo.Value + (match.Is3v3 and 35 or 25) end
-					p.leaderstats.Dews.Value += (match.Is3v3 and 5000 or 2500)
-					p:SetAttribute("XP", (p:GetAttribute("XP") or 0) + (match.Is3v3 and 3000 or 1500))
+
+					-- [ECONOMY PATCH] Heavily squashed win-trading Dew exploits
+					p.leaderstats.Dews.Value += (match.Is3v3 and 1000 or 500)
+					p:SetAttribute("XP", (p:GetAttribute("XP") or 0) + (match.Is3v3 and 1000 or 500))
+
 					Network.NotificationEvent:FireClient(p, "Victory! Rank increased.", "Success")
 				end
 			end
@@ -242,7 +245,6 @@ local function ResolveTurn(matchId)
 
 		local logMsg, didHit, shakeType, rawDamage
 		if type(CombatCore.ExecutePvPStrike) == "function" then
-			-- [[ THE FIX: Removed QTE Yields completely. Strikes execute instantly with 1.0 Mult. ]]
 			logMsg, didHit, shakeType, rawDamage = CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 1.0)
 		else
 			logMsg, didHit, shakeType = CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, attacker.Name, defender.Name, "#55FF55", "#FF5555")
@@ -414,7 +416,6 @@ PvPAction.OnServerEvent:Connect(function(player, actionType, matchId, data1, dat
 		return
 	end
 
-	-- [[ THE FIX: Check if everyone submitted 1 move, then instantly resolve ]]
 	if actionType == "SubmitMoveSequence" and match.State == "WaitingForMoves" then
 		local moveData = data1 
 		local c = GetCombatantByName(match, player.Name)
