@@ -9,10 +9,10 @@ local camera = workspace.CurrentCamera
 
 local function CreateFlatPanel(parent)
 	local frame = Instance.new("Frame", parent)
-	frame.BackgroundColor3 = Color3.fromRGB(18, 18, 22) -- Clean grey background
+	frame.BackgroundColor3 = Color3.fromRGB(18, 18, 22) 
 	frame.BorderSizePixel = 0
 	local stroke = Instance.new("UIStroke", frame)
-	stroke.Color = Color3.fromRGB(70, 70, 80) -- Sharp grey border
+	stroke.Color = Color3.fromRGB(70, 70, 80) 
 	stroke.Thickness = 2
 	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	return frame, stroke
@@ -262,7 +262,7 @@ function CombatBuilder.Build(masterScreenGui, player)
 
 	-- LOG AREA
 	GUI.LogContainer, _ = CreateFlatPanel(GUI.CombatWindow)
-	GUI.LogContainer.Size = UDim2.new(1, -40, 0, 180) -- Default for PC (Shorter log)
+	GUI.LogContainer.Size = UDim2.new(1, -40, 0, 180) 
 	GUI.LogContainer.Position = UDim2.new(0, 20, 0, 210)
 
 	GUI.LogScroll = Instance.new("ScrollingFrame", GUI.LogContainer)
@@ -282,10 +282,9 @@ function CombatBuilder.Build(masterScreenGui, player)
 
 	-- ACTION AREA
 	GUI.ActionContainer = Instance.new("Frame", GUI.CombatWindow)
-	GUI.ActionContainer.Size = UDim2.new(1, -40, 0, 120) -- Default for PC (Horizontal bottom block)
+	GUI.ActionContainer.Size = UDim2.new(1, -40, 0, 120)
 	GUI.ActionContainer.Position = UDim2.new(0, 20, 1, -140)
 	GUI.ActionContainer.BackgroundTransparency = 1
-	GUI.ActionContainer.ClipsDescendants = false -- Critical: Let's the target menu pop out above it!
 
 	GUI.ActionGrid = Instance.new("ScrollingFrame", GUI.ActionContainer)
 	GUI.ActionGrid.Size = UDim2.new(1, 0, 1, 0)
@@ -303,11 +302,11 @@ function CombatBuilder.Build(masterScreenGui, player)
 		GUI.ActionGrid.CanvasSize = UDim2.new(0, 0, 0, acLayout.AbsoluteContentSize.Y + 10)
 	end)
 
-	-- TARGET MENU
-	GUI.TargetMenu = Instance.new("Frame", GUI.ActionContainer)
-	GUI.TargetMenu.Size = UDim2.new(0, 450, 0, 240)
-	GUI.TargetMenu.Position = UDim2.new(0.5, 0, 0, -20) 
-	GUI.TargetMenu.AnchorPoint = Vector2.new(0.5, 1) -- Anchors at bottom center to hover over buttons natively
+	-- TARGET MENU (Moved up to CombatWindow directly to allow MASSIVE scaling)
+	GUI.TargetMenu = Instance.new("Frame", GUI.CombatWindow)
+	GUI.TargetMenu.Size = UDim2.new(1, -40, 0, 360) 
+	GUI.TargetMenu.Position = UDim2.new(0, 20, 1, 50) -- Hidden off bottom
+	GUI.TargetMenu.AnchorPoint = Vector2.new(0, 0)
 	GUI.TargetMenu.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 	GUI.TargetMenu.Visible = false
 	GUI.TargetMenu.ZIndex = 50 
@@ -320,15 +319,15 @@ function CombatBuilder.Build(masterScreenGui, player)
 	local InfoPanel = Instance.new("Frame", GUI.TargetMenu)
 	InfoPanel.BackgroundTransparency = 1
 
-	GUI.tHoverTitle = UIHelpers.CreateLabel(InfoPanel, "SELECT TARGET", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 20)
-	GUI.tHoverDesc = UIHelpers.CreateLabel(InfoPanel, "Hover over a limb to view its tactical effect.", UDim2.new(1, 0, 0, 60), Enum.Font.GothamMedium, Color3.fromRGB(180, 180, 180), 13)
+	GUI.tHoverTitle = UIHelpers.CreateLabel(InfoPanel, "SELECT TARGET", UDim2.new(1, -40, 0, 40), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 24)
+	GUI.tHoverDesc = UIHelpers.CreateLabel(InfoPanel, "Hover over a limb to view its tactical effect.", UDim2.new(1, -40, 0, 80), Enum.Font.GothamMedium, Color3.fromRGB(180, 180, 180), 14)
 	GUI.tHoverDesc.TextWrapped = true
 
 	GUI.CancelBtn = Instance.new("TextButton", InfoPanel)
 	GUI.CancelBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
 	GUI.CancelBtn.BorderSizePixel = 0
 	GUI.CancelBtn.Font = Enum.Font.GothamBlack
-	GUI.CancelBtn.TextSize = 14
+	GUI.CancelBtn.TextSize = 16
 	GUI.CancelBtn.Text = "CANCEL"
 	GUI.CancelBtn.TextColor3 = Color3.fromRGB(255, 85, 85)
 	local cbStroke = Instance.new("UIStroke", GUI.CancelBtn)
@@ -367,9 +366,9 @@ function CombatBuilder.Build(masterScreenGui, player)
 				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellPadding = UDim2.new(0, 0, 0, 10)
 			end
 
-			-- On mobile, TargetMenu matches ActionContainer and slides horizontally from the right
-			GUI.TargetMenu.Size = UDim2.new(1, 0, 1, 0)
-			GUI.TargetMenu.Position = UDim2.new(1, 20, 0, 0) 
+			-- Mobile Target Menu layout
+			GUI.TargetMenu.Size = UDim2.new(0.6, -20, 1, -165)
+			GUI.TargetMenu.Position = UDim2.new(1, 20, 0, 160) 
 			GUI.TargetMenu.AnchorPoint = Vector2.new(0, 0)
 
 			InfoPanel.Size = UDim2.new(0.45, 0, 1, 0)
@@ -393,6 +392,7 @@ function CombatBuilder.Build(masterScreenGui, player)
 			BodyContainer.Position = UDim2.new(0.75, 0, 0.5, 0)
 			BodyContainer.AnchorPoint = Vector2.new(0.5, 0.5)
 		else
+			-- PC Layout
 			GUI.CombatWindow.Size = UDim2.new(0, 1000, 0, 580)
 			GUI.CombatWindow.Position = UDim2.new(0.5, 0, 0.5, 0)
 
@@ -401,11 +401,11 @@ function CombatBuilder.Build(masterScreenGui, player)
 				GUI.CombatantsFrame.Position = UDim2.new(0, 20, 0, 20)
 			end
 			if GUI.LogContainer then
-				GUI.LogContainer.Size = UDim2.new(1, -40, 0, 180) -- Shorter log spanning full width
-				GUI.LogContainer.Position = UDim2.new(0, 20, 0, 210)
+				GUI.LogContainer.Size = UDim2.new(1, -40, 0, 180) 
+				GUI.LogContainer.Position = UDim2.new(0, 20, 0, 170)
 			end
 			if GUI.ActionContainer then
-				GUI.ActionContainer.Size = UDim2.new(1, -40, 0, 120) -- Horizontal strip at bottom
+				GUI.ActionContainer.Size = UDim2.new(1, -40, 0, 120) 
 				GUI.ActionContainer.Position = UDim2.new(0, 20, 1, -140)
 			end
 
@@ -414,30 +414,30 @@ function CombatBuilder.Build(masterScreenGui, player)
 				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellPadding = UDim2.new(0.016, 0, 0, 10)
 			end
 
-			-- On PC, TargetMenu pops right OUT of the short action bar as a centered overlay. 
-			GUI.TargetMenu.Size = UDim2.new(0, 450, 0, 240)
-			GUI.TargetMenu.Position = UDim2.new(0.5, 0, 0, -10)
-			GUI.TargetMenu.AnchorPoint = Vector2.new(0.5, 1)
+			-- Massive PC Target Menu
+			GUI.TargetMenu.Size = UDim2.new(1, -40, 0, 370)
+			GUI.TargetMenu.Position = UDim2.new(0, 20, 1, 50) 
+			GUI.TargetMenu.AnchorPoint = Vector2.new(0, 0)
 
-			InfoPanel.Size = UDim2.new(0.5, 0, 1, 0)
+			InfoPanel.Size = UDim2.new(0.4, 0, 1, 0)
 			InfoPanel.Position = UDim2.new(0, 0, 0, 0)
 
-			GUI.tHoverTitle.Size = UDim2.new(1, -20, 0, 30)
-			GUI.tHoverTitle.Position = UDim2.new(0, 30, 0, 20)
-			GUI.tHoverTitle.TextSize = 20
+			GUI.tHoverTitle.Size = UDim2.new(1, -40, 0, 40)
+			GUI.tHoverTitle.Position = UDim2.new(0, 40, 0, 40)
+			GUI.tHoverTitle.TextSize = 24
 			GUI.tHoverTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-			GUI.tHoverDesc.Size = UDim2.new(1, -20, 0, 60)
-			GUI.tHoverDesc.Position = UDim2.new(0, 30, 0, 60)
-			GUI.tHoverDesc.TextSize = 13
+			GUI.tHoverDesc.Size = UDim2.new(1, -40, 0, 80)
+			GUI.tHoverDesc.Position = UDim2.new(0, 40, 0, 90)
+			GUI.tHoverDesc.TextSize = 14
 			GUI.tHoverDesc.TextXAlignment = Enum.TextXAlignment.Left
 
-			GUI.CancelBtn.Size = UDim2.new(0, 150, 0, 40)
-			GUI.CancelBtn.Position = UDim2.new(0, 30, 1, -60)
+			GUI.CancelBtn.Size = UDim2.new(0, 180, 0, 45)
+			GUI.CancelBtn.Position = UDim2.new(0, 40, 1, -80)
 			GUI.CancelBtn.AnchorPoint = Vector2.new(0, 0)
 
-			BodyContainer.Size = UDim2.new(0, 160, 0, 200) 
-			BodyContainer.Position = UDim2.new(0.8, 0, 0.5, 0)
+			BodyContainer.Size = UDim2.new(0, 240, 0, 300) 
+			BodyContainer.Position = UDim2.new(0.75, 0, 0.5, 0)
 			BodyContainer.AnchorPoint = Vector2.new(0.5, 0.5)
 		end
 	end
@@ -449,13 +449,17 @@ function CombatBuilder.Build(masterScreenGui, player)
 	local function BuildLimb(name, targetId, size, pos, hoverText, baseColor)
 		local limb = Instance.new("TextButton", BodyContainer)
 		limb.Size = size; limb.Position = pos
-		limb.BackgroundColor3 = Color3.fromRGB(22, 18, 18) 
+		limb.BackgroundColor3 = Color3.fromRGB(22, 18, 22) 
 		limb.Text = name:upper()
 		limb.Font = Enum.Font.GothamBlack
 		limb.TextColor3 = Color3.fromRGB(255, 255, 255) 
-		limb.TextSize = 10
+		limb.TextScaled = true
 		limb.AutoButtonColor = false
 		limb.AnchorPoint = Vector2.new(0.5, 0.5)
+
+		local tsc = Instance.new("UITextSizeConstraint", limb)
+		tsc.MaxTextSize = 16 -- Increased max size to look better scaled up
+		tsc.MinTextSize = 6
 
 		local strk = Instance.new("UIStroke", limb)
 		strk.Color = baseColor 
