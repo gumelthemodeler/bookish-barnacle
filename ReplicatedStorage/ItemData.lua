@@ -43,18 +43,15 @@ ItemData.Consumables = {
 	["Standard Titan Serum"] = { Rarity = "Rare", Cost = 5000, Desc = "Used in the Inherit tab to roll for a Titan." },
 	["Spinal Fluid Syringe"] = { Rarity = "Legendary", Cost = 25000, Desc = "Premium item. Guarantees a Legendary or Mythical Titan." },
 	["Clan Blood Vial"] = { Rarity = "Epic", Cost = 10000, Desc = "Used to roll for Clan Lineages." },
-
-	-- [[ THE FIX: Added Legendary Clan Vial ]]
 	["Legendary Clan Vial"] = { Rarity = "Legendary", Cost = 25000, Desc = "Premium item. Guarantees a Legendary or Mythical Clan Lineage." },
 
 	["Ancestral Awakening Serum"] = { Rarity = "Mythical", Cost = 150000, Action = "AwakenClan", Desc = "Awakens the true power of your current lineage. Only works on major clans." },
 	["Ymir's Clay Fragment"] = { Rarity = "Mythical", Cost = 150000, Action = "AwakenTitan", Desc = "Allows the Attack Titan to reach the Coordinate." },
-	["Titan Hardening Extract"] = { Rarity = "Legendary", Cost = 75000, IsMaterial = true, Desc = "(Obtained in the Supply Shop) Used in the Forge to Awaken max-tier weapons with random Substats." },
+	["Titan Hardening Extract"] = { Rarity = "Legendary", Cost = 75000, IsMaterial = true, Desc = "(Obtained in the Supply Shop) Used in the Forge to Awaken max-tier weapons with random Substats. Also used for True Prestige." },
 
 	["Iron Bamboo Heart"] = { Rarity = "Epic", Cost = 3000, IsMaterial = true, Desc = "A rare material extracted from the Titan Forest via Expeditions. Used for complex forging." },
 	["Glowing Titan Crystal"] = { Rarity = "Legendary", Cost = 10000, IsMaterial = true, Desc = "A dense energy crystal found deep in Expeditions. Highly sought after by Hange." },
 	["Abyssal Blood"] = { Rarity = "Mythical", Cost = 50000, IsMaterial = true, Desc = "A terrifying black liquid dropped only by Nightmare Bosses. Used to forge Cursed gear." },
-
 	["Coordinate Shard"] = { Rarity = "Mythical", Cost = 250000, IsMaterial = true, Desc = "A literal fragment of the Paths. One of the rarest materials in existence." },
 
 	["Iron Bamboo Extract"] = { Rarity = "Epic", Cost = 8000, Action = "Consume", Buff = "Damage", Duration = 900, Desc = "Increases all damage dealt by 50% for 15 minutes." },
@@ -118,35 +115,42 @@ ItemData.Consumables = {
 }
 
 ItemData.ForgeRecipes = {
-	["Garrison Standard Blades"] = { Result = "Garrison Standard Blades", ReqItems = {["Cadet Training Blade"] = 3}, DewCost = 1500 },
-	["Ultrahard Steel Blades"] = { Result = "Ultrahard Steel Blades", ReqItems = {["Garrison Standard Blades"] = 3, ["Iron Bamboo Heart"] = 1}, DewCost = 4500 },
-	["Veteran Scout Blades"] = { Result = "Veteran Scout Blades", ReqItems = {["Ultrahard Steel Blades"] = 3, ["Glowing Titan Crystal"] = 1}, DewCost = 25000 },
-	["Iceburst Steel Blades"] = { Result = "Iceburst Steel Blades", ReqItems = {["Veteran Scout Blades"] = 3, ["Glowing Titan Crystal"] = 5}, DewCost = 100000 },
+	-- [[ STANDARD & RARE GEAR ]]
+	["Garrison Standard Blades"] = { Result = "Garrison Standard Blades", ReqItems = {["Cadet Training Blade"] = 3}, DewCost = 500 },
+	["Ultrahard Steel Blades"] = { Result = "Ultrahard Steel Blades", ReqItems = {["Garrison Standard Blades"] = 3, ["Iron Bamboo Heart"] = 1}, DewCost = 1500 },
+	["Veteran Scout Blades"] = { Result = "Veteran Scout Blades", ReqItems = {["Ultrahard Steel Blades"] = 3, ["Glowing Titan Crystal"] = 1}, DewCost = 5000 },
+	["Iceburst Steel Blades"] = { Result = "Iceburst Steel Blades", ReqItems = {["Veteran Scout Blades"] = 3, ["Glowing Titan Crystal"] = 5, ["Titan Hardening Extract"] = 2}, DewCost = 25000 },
 
-	["Anti-Personnel Pistols"] = { Result = "Anti-Personnel Pistols", ReqItems = {["Marleyan Rifle"] = 3}, DewCost = 5000 },
-	["Titan-Killer Artillery"] = { Result = "Titan-Killer Artillery", ReqItems = {["Anti-Personnel Pistols"] = 4, ["Glowing Titan Crystal"] = 2}, DewCost = 35000 },
-	["Kenny's Custom Pistols"] = { Result = "Kenny's Custom Pistols", ReqItems = {["Titan-Killer Artillery"] = 2, ["Coordinate Shard"] = 1}, DewCost = 150000 },
+	["Anti-Personnel Pistols"] = { Result = "Anti-Personnel Pistols", ReqItems = {["Marleyan Rifle"] = 3}, DewCost = 1500 },
+	["Titan-Killer Artillery"] = { Result = "Titan-Killer Artillery", ReqItems = {["Anti-Personnel Pistols"] = 4, ["Glowing Titan Crystal"] = 2}, DewCost = 10000 },
+	["Kenny's Custom Pistols"] = { Result = "Kenny's Custom Pistols", ReqItems = {["Titan-Killer Artillery"] = 2, ["Coordinate Shard"] = 1, ["Titan Hardening Extract"] = 3}, DewCost = 45000 },
 
-	["Spinal Fluid Syringe"] = { Result = "Spinal Fluid Syringe", ReqItems = {["Standard Titan Serum"] = 10, ["Glowing Titan Crystal"] = 3}, DewCost = 500000 },
-	["Ymir's Clay Fragment"] = { Result = "Ymir's Clay Fragment", ReqItems = {["Spinal Fluid Syringe"] = 10, ["Coordinate Shard"] = 3}, DewCost = 2500000 },
-	["Ancestral Awakening Serum"] = { Result = "Ancestral Awakening Serum", ReqItems = {["Titan Hardening Extract"] = 5, ["Coordinate Shard"] = 1}, DewCost = 1000000 },
+	["Prototype Thunder Spear"] = { Result = "Prototype Thunder Spear", ReqItems = {["Marleyan Rifle"] = 2, ["Iron Bamboo Heart"] = 3}, DewCost = 3500 },
+	["Thunder Spear"] = { Result = "Thunder Spear", ReqItems = {["Prototype Thunder Spear"] = 2, ["Glowing Titan Crystal"] = 2}, DewCost = 8000 },
 
-	["Scout's Clover"] = { Result = "Scout's Clover", ReqItems = {["Iron Bamboo Heart"] = 2}, DewCost = 5000 },
-	["Ymir's Blessing"] = { Result = "Ymir's Blessing", ReqItems = {["Glowing Titan Crystal"] = 2, ["Standard Titan Serum"] = 1}, DewCost = 25000 },
-	["Tears of the Founder"] = { Result = "Tears of the Founder", ReqItems = {["Coordinate Shard"] = 1, ["Spinal Fluid Syringe"] = 1}, DewCost = 100000 },
+	-- [[ CONSUMABLES & PATHS ARTIFACTS ]]
+	["Spinal Fluid Syringe"] = { Result = "Spinal Fluid Syringe", ReqItems = {["Standard Titan Serum"] = 10, ["Glowing Titan Crystal"] = 3}, DewCost = 25000 },
+	["Ymir's Clay Fragment"] = { Result = "Ymir's Clay Fragment", ReqItems = {["Spinal Fluid Syringe"] = 5, ["Coordinate Shard"] = 3, ["Titan Hardening Extract"] = 2}, DewCost = 75000 },
+	["Ancestral Awakening Serum"] = { Result = "Ancestral Awakening Serum", ReqItems = {["Titan Hardening Extract"] = 5, ["Coordinate Shard"] = 2, ["Abyssal Blood"] = 1}, DewCost = 75000 },
 
-	["Blade of the Frenzied"] = { Result = "Blade of the Frenzied", ReqItems = {["Iceburst Steel Blades"] = 1, ["Abyssal Blood"] = 3}, DewCost = 5000000 },
-	["Abyssal Thunder Spear"] = { Result = "Abyssal Thunder Spear", ReqItems = {["Thunder Spear"] = 5, ["Abyssal Blood"] = 3}, DewCost = 5000000 },
-	["Shroud of the Doomed"] = { Result = "Shroud of the Doomed", ReqItems = {["Commander's Bolo Tie"] = 5, ["Abyssal Blood"] = 3}, DewCost = 5000000 },
+	["Scout's Clover"] = { Result = "Scout's Clover", ReqItems = {["Iron Bamboo Heart"] = 2}, DewCost = 1500 },
+	["Ymir's Blessing"] = { Result = "Ymir's Blessing", ReqItems = {["Glowing Titan Crystal"] = 2, ["Standard Titan Serum"] = 1}, DewCost = 5000 },
+	["Tears of the Founder"] = { Result = "Tears of the Founder", ReqItems = {["Coordinate Shard"] = 1, ["Spinal Fluid Syringe"] = 1, ["Abyssal Blood"] = 1}, DewCost = 25000 },
 
-	["Itemized Abyssal Yeager"] = { Result = "Itemized Abyssal Yeager", ReqItems = {["Itemized Awakened Yeager"] = 1, ["Abyssal Blood"] = 5, ["Coordinate Shard"] = 1}, DewCost = 5000000 },
-	["Itemized Abyssal Tybur"] = { Result = "Itemized Abyssal Tybur", ReqItems = {["Itemized Awakened Tybur"] = 1, ["Abyssal Blood"] = 5, ["Coordinate Shard"] = 1}, DewCost = 5000000 },
-	["Itemized Abyssal Ackerman"] = { Result = "Itemized Abyssal Ackerman", ReqItems = {["Itemized Awakened Ackerman"] = 1, ["Abyssal Blood"] = 5, ["Coordinate Shard"] = 1}, DewCost = 5000000 },
-	["Itemized Abyssal Galliard"] = { Result = "Itemized Abyssal Galliard", ReqItems = {["Itemized Awakened Galliard"] = 1, ["Abyssal Blood"] = 5, ["Coordinate Shard"] = 1}, DewCost = 5000000 },
-	["Itemized Abyssal Braun"] = { Result = "Itemized Abyssal Braun", ReqItems = {["Itemized Awakened Braun"] = 1, ["Abyssal Blood"] = 5, ["Coordinate Shard"] = 1}, DewCost = 5000000 },
-	["Itemized Abyssal Reiss"] = { Result = "Itemized Abyssal Reiss", ReqItems = {["Itemized Awakened Reiss"] = 1, ["Abyssal Blood"] = 5, ["Coordinate Shard"] = 1}, DewCost = 5000000 },
+	-- [[ ENDGAME / CURSED TRANSCENDENT GEAR ]]
+	["Blade of the Frenzied"] = { Result = "Blade of the Frenzied", ReqItems = {["Iceburst Steel Blades"] = 1, ["Abyssal Blood"] = 5, ["Coordinate Shard"] = 2}, DewCost = 150000 },
+	["Abyssal Thunder Spear"] = { Result = "Abyssal Thunder Spear", ReqItems = {["Thunder Spear"] = 3, ["Abyssal Blood"] = 5, ["Coordinate Shard"] = 2}, DewCost = 150000 },
+	["Shroud of the Doomed"] = { Result = "Shroud of the Doomed", ReqItems = {["Commander's Bolo Tie"] = 2, ["Abyssal Blood"] = 5, ["Coordinate Shard"] = 2}, DewCost = 150000 },
 
-	["Fritz Clan Serum"] = { Result = "Fritz Clan Serum", ReqItems = {["Ymir's Clay Fragment"] = 1}, SpecialType = "AbyssalClanRequirement", AbyssalClanCount = 2, DewCost = 2500000 }
+	-- [[ ABYSSAL LINEAGES ]]
+	["Itemized Abyssal Yeager"] = { Result = "Itemized Abyssal Yeager", ReqItems = {["Itemized Awakened Yeager"] = 1, ["Abyssal Blood"] = 8, ["Coordinate Shard"] = 3}, DewCost = 150000 },
+	["Itemized Abyssal Tybur"] = { Result = "Itemized Abyssal Tybur", ReqItems = {["Itemized Awakened Tybur"] = 1, ["Abyssal Blood"] = 8, ["Coordinate Shard"] = 3}, DewCost = 150000 },
+	["Itemized Abyssal Ackerman"] = { Result = "Itemized Abyssal Ackerman", ReqItems = {["Itemized Awakened Ackerman"] = 1, ["Abyssal Blood"] = 8, ["Coordinate Shard"] = 3}, DewCost = 150000 },
+	["Itemized Abyssal Galliard"] = { Result = "Itemized Abyssal Galliard", ReqItems = {["Itemized Awakened Galliard"] = 1, ["Abyssal Blood"] = 8, ["Coordinate Shard"] = 3}, DewCost = 150000 },
+	["Itemized Abyssal Braun"] = { Result = "Itemized Abyssal Braun", ReqItems = {["Itemized Awakened Braun"] = 1, ["Abyssal Blood"] = 8, ["Coordinate Shard"] = 3}, DewCost = 150000 },
+	["Itemized Abyssal Reiss"] = { Result = "Itemized Abyssal Reiss", ReqItems = {["Itemized Awakened Reiss"] = 1, ["Abyssal Blood"] = 8, ["Coordinate Shard"] = 3}, DewCost = 150000 },
+
+	["Fritz Clan Serum"] = { Result = "Fritz Clan Serum", ReqItems = {["Ymir's Clay Fragment"] = 2, ["Coordinate Shard"] = 5}, SpecialType = "AbyssalClanRequirement", AbyssalClanCount = 3, DewCost = 250000 }
 }
 
 ItemData.Sets = {
@@ -193,7 +197,6 @@ ItemData.Products = {
 	{ ID = 3557938597, Name = "1x Clan Vial", Desc = "Grants one Clan Blood Vial.", Reward = "Item", ItemName = "Clan Blood Vial", Amount = 1 },
 	{ ID = 3557938636, Name = "5x Clan Vials", Desc = "Grants five Clan Blood Vials.", Reward = "Item", ItemName = "Clan Blood Vial", Amount = 5 },
 
-	-- [[ THE FIX: Added Legendary Clan Vial ]]
 	{ ID = 3557938637, Name = "1x Leg. Clan Vial", Desc = "Grants one Legendary Clan Vial.", Reward = "Item", ItemName = "Legendary Clan Vial", Amount = 1 },
 
 	{ ID = 3562817556, Name = "Gift: Auto Train", Desc = "Grants a tradable Auto Train pass.", Reward = "Item", ItemName = "Auto Train (Gift)", Amount = 1 },
