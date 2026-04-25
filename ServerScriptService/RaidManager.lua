@@ -90,7 +90,6 @@ local function EndRaid(raidId, isVictory)
 
 			if isVictory then
 				local drops = bData.Drops
-				-- [ECONOMY PATCH] Heavy squash applied directly to raid multiplier bypasses
 				local dews = math.clamp(math.floor((drops.Dews or 0) * 0.1), 0, 5000)
 				local xp = drops.XP or 0
 				local droppedItems = {}
@@ -239,12 +238,39 @@ local function ResolveRaidTurn(raidId)
 				task.wait(0.4)
 			end
 		else
+			if not raid.Boss.AIPoints then raid.Boss.AIPoints = 0 end
+			raid.Boss.AIPoints += 1
+
 			local bSkills = raid.Boss.Skills
-			local chosenSkill = bSkills[math.random(1, #bSkills)]
+			local chosenSkill = nil
 
 			if raid.Boss.Statuses["Telegraphing"] then
 				chosenSkill = raid.Boss.Statuses["Telegraphing"]; raid.Boss.Statuses["Telegraphing"] = nil
 			else
+				local validSkills = {}
+				local hasTelegraphed = false
+
+				for _, s in ipairs(bSkills) do
+					local checkSkill = SkillData.Skills[s]
+					if checkSkill and checkSkill.Telegraphed then
+						if raid.Boss.AIPoints >= 5 then 
+							table.insert(validSkills, s)
+							hasTelegraphed = true
+						end
+					else
+						table.insert(validSkills, s)
+					end
+				end
+
+				if hasTelegraphed then
+					for _, s in ipairs(validSkills) do
+						if SkillData.Skills[s].Telegraphed then chosenSkill = s break end
+					end
+					raid.Boss.AIPoints = 0
+				else
+					chosenSkill = validSkills[math.random(1, #validSkills)]
+				end
+
 				local checkSkill = SkillData.Skills[chosenSkill]
 				if checkSkill and checkSkill.Telegraphed then
 					raid.Boss.Statuses["Telegraphing"] = chosenSkill
