@@ -5,6 +5,7 @@ local HeroMenu = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Network = ReplicatedStorage:WaitForChild("Network")
 
 local SharedUI = script.Parent.Parent:WaitForChild("SharedUI")
@@ -89,6 +90,23 @@ local function CreateSharpButton(parent, text, size, font, textSize)
 	btn.MouseEnter:Connect(function() stroke.Color = Color3.fromRGB(225, 185, 60); btn.TextColor3 = Color3.fromRGB(225, 185, 60) end)
 	btn.MouseLeave:Connect(function() stroke.Color = Color3.fromRGB(70, 70, 80); btn.TextColor3 = Color3.fromRGB(245, 245, 245) end)
 	return btn, stroke
+end
+
+local function DrawLine(parent, p1, p2)
+	local distance = (p2 - p1).Magnitude
+	local center = (p1 + p2) / 2
+	local angle = math.deg(math.atan2(p2.Y - p1.Y, p2.X - p1.X))
+
+	local line = Instance.new("Frame")
+	line.Size = UDim2.new(0, distance, 0, 6)
+	line.Position = UDim2.new(0, center.X, 0, center.Y)
+	line.AnchorPoint = Vector2.new(0.5, 0.5)
+	line.Rotation = angle
+	line.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+	line.BorderSizePixel = 0
+	line.ZIndex = 1
+	line.Parent = parent
+	return line
 end
 
 local Suffixes = {"", "K", "M", "B", "T", "Qa", "Qi", "Sx"}
@@ -1127,41 +1145,16 @@ local function BuildSkillsTab(parentFrame)
 end
 
 -- ==========================================
--- PRESTIGE TAB
+-- PRESTIGE TAB (Fully Native Web Integration)
 -- ==========================================
 local function BuildPrestigeTab(parentFrame)
-	local SelectedNodeId = nil
-	local NodeGuis = {}
-	local drawnLines = {}
+	local MainContainer = Instance.new("Frame", parentFrame)
+	MainContainer.Size = UDim2.new(1, 0, 1, 0)
+	MainContainer.BackgroundTransparency = 1
 
-	local function CreateStatCard(parent, title, valueStr, themeColorHex)
-		local card, stroke = CreateGrimPanel(parent); card.Size = UDim2.new(0, 160, 1, 0); stroke.Color = Color3.fromHex(themeColorHex:gsub("#", "")); stroke.Transparency = 0.5
-		local tLbl = CreateSharpLabel(card, string.upper(title), UDim2.new(1, 0, 0, 20), Enum.Font.GothamBold, UIHelpers.Colors.TextMuted, 12); tLbl.Position = UDim2.new(0, 0, 0, 5)
-		local vLbl = CreateSharpLabel(card, valueStr, UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, Color3.fromHex(themeColorHex:gsub("#", "")), 22); vLbl.Position = UDim2.new(0, 0, 0, 25)
-		return card
-	end
-
-	local MainScroll = Instance.new("ScrollingFrame", parentFrame)
-	MainScroll.Size = UDim2.new(1, 0, 1, 0)
-	MainScroll.BackgroundTransparency = 1
-	MainScroll.ScrollBarThickness = 6
-	MainScroll.BorderSizePixel = 0
-
-	local mLayout = Instance.new("UIListLayout", MainScroll)
-	mLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	mLayout.Padding = UDim.new(0, 15)
-	mLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-	mLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		MainScroll.CanvasSize = UDim2.new(0, 0, 0, mLayout.AbsoluteContentSize.Y + 35)
-	end)
-
-	local mPad = Instance.new("UIPadding", MainScroll)
-	mPad.PaddingTop = UDim.new(0, 15); mPad.PaddingBottom = UDim.new(0, 20)
-
-	local LeftPanel = CreateGrimPanel(MainScroll)
-	LeftPanel.Size = UDim2.new(0.35, 0, 0, 520)
-	LeftPanel.LayoutOrder = 1
+	local LeftPanel = CreateGrimPanel(MainContainer)
+	LeftPanel.AnchorPoint = Vector2.new(0, 0)
+	LeftPanel.Position = UDim2.new(0, 15, 0, 15)
 
 	local ATitle = CreateSharpLabel(LeftPanel, "PRESTIGE ASCENSION", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 20)
 	ATitle.Position = UDim2.new(0, 0, 0, 15)
@@ -1180,38 +1173,89 @@ local function BuildPrestigeTab(parentFrame)
 	local AscendBtn, aStroke = CreateSharpButton(LeftPanel, "ASCEND", UDim2.new(0.8, 0, 0, 45), Enum.Font.GothamBlack, 16)
 	AscendBtn.Position = UDim2.new(0.5, 0, 1, -15); AscendBtn.AnchorPoint = Vector2.new(0.5, 1); AscendBtn.BackgroundColor3 = Color3.fromRGB(100, 20, 20); AscendBtn.TextColor3 = Color3.fromRGB(255, 200, 200); aStroke.Color = Color3.fromRGB(255, 50, 50)
 
-	local RightPanel = Instance.new("Frame", MainScroll)
-	RightPanel.Size = UDim2.new(0.65, -15, 0, 520)
+	local function UpdateLeftPanelUI()
+		local ls = player:FindFirstChild("leaderstats")
+		local pLevel = ls and ls:FindFirstChild("Prestige") and ls.Prestige.Value or 0
+		local nextLevel = pLevel + 1
+		ASub.Text = "TIER " .. pLevel .. " ➔ TIER " .. nextLevel
+		AscendBtn.Text = "ASCEND TO TIER " .. nextLevel
+	end
+
+	AscendBtn.MouseButton1Click:Connect(function()
+		local ls = player:FindFirstChild("leaderstats")
+		local currentTier = ls and ls:FindFirstChild("Prestige") and ls.Prestige.Value or 0
+
+		local confirm = Network:WaitForChild("PrestigeAction"):InvokeServer()
+		if confirm then 
+			if NotificationManager and type(NotificationManager.Show) == "function" then NotificationManager.Show("ASCENDED TO PRESTIGE TIER " .. (currentTier + 1) .. "!", "Success") end
+			task.wait(1); UpdateLeftPanelUI()
+		else
+			if NotificationManager and type(NotificationManager.Show) == "function" then NotificationManager.Show("You must clear Chapter 8 with maxed stats to Ascend!", "Error") end
+		end
+	end)
+
+	player.AttributeChanged:Connect(function(attr) if string.find(attr, "Prestige") then UpdateLeftPanelUI() end end)
+	task.spawn(function() local ls = player:WaitForChild("leaderstats", 10); if ls and ls:FindFirstChild("Prestige") then ls.Prestige.Changed:Connect(UpdateLeftPanelUI) end end)
+	UpdateLeftPanelUI()
+
+	-- [[ DYNAMIC PRESTIGE WEB UI START ]] --
+	local RightPanel = Instance.new("Frame", MainContainer)
+	RightPanel.AnchorPoint = Vector2.new(1, 0)
+	RightPanel.Position = UDim2.new(1, -15, 0, 15)
 	RightPanel.BackgroundTransparency = 1
-	RightPanel.LayoutOrder = 2
 
-	local PointsLabel = CreateSharpLabel(RightPanel, "AVAILABLE POINTS: 0", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, Color3.fromRGB(150, 255, 150), 20)
-	PointsLabel.Position = UDim2.new(0, 0, 0, 0)
+	local TopHeader = Instance.new("Frame", RightPanel)
+	TopHeader.Size = UDim2.new(1, 0, 0, 35)
+	TopHeader.BackgroundTransparency = 1
 
-	local TreeContainer = Instance.new("Frame", RightPanel)
-	TreeContainer.Size = UDim2.new(1, 0, 1, -195)
-	TreeContainer.Position = UDim2.new(0, 0, 0, 40)
-	TreeContainer.BackgroundColor3 = Color3.fromRGB(10, 10, 14); TreeContainer.BorderSizePixel = 2; TreeContainer.BorderColor3 = UIHelpers.Colors.BorderMuted; TreeContainer.ClipsDescendants = true 
+	local PointsLabel = CreateSharpLabel(TopHeader, "AVAILABLE POINTS: 0", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 20)
+	PointsLabel.TextXAlignment = Enum.TextXAlignment.Left
+	PointsLabel.Position = UDim2.new(0, 10, 0, 0)
 
-	local gridTexture = Instance.new("ImageLabel", TreeContainer)
-	gridTexture.Size = UDim2.new(1, 0, 1, 0); gridTexture.BackgroundTransparency = 1; gridTexture.Image = "rbxassetid://6078235439"; gridTexture.ImageTransparency = 0.95; gridTexture.ScaleType = Enum.ScaleType.Tile; gridTexture.TileSize = UDim2.new(0, 150, 0, 150); gridTexture.ZIndex = 0
+	local CanvasContainer = Instance.new("CanvasGroup", RightPanel)
+	CanvasContainer.Size = UDim2.new(1, 0, 1, -185)
+	CanvasContainer.Position = UDim2.new(0, 0, 0, 40)
+	CanvasContainer.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+	CanvasContainer.BorderSizePixel = 0
+	local cgStroke = Instance.new("UIStroke", CanvasContainer)
+	cgStroke.Color = UIHelpers.Colors.BorderMuted
+	cgStroke.Thickness = 2
 
-	local DetailPanel = CreateGrimPanel(RightPanel)
-	DetailPanel.Size = UDim2.new(1, 0, 0, 140)
-	DetailPanel.Position = UDim2.new(0, 0, 1, -145)
+	local Canvas = Instance.new("Frame", CanvasContainer)
+	Canvas.Size = UDim2.new(3, 0, 3, 0) 
+	Canvas.Position = UDim2.new(-1, 0, -1, 0) 
+	Canvas.BackgroundTransparency = 1
+
+	local CanvasScale = Instance.new("UIScale", Canvas)
+	CanvasScale.Scale = 1
+
+	local gridTexture = Instance.new("ImageLabel", Canvas)
+	gridTexture.Size = UDim2.new(1, 0, 1, 0)
+	gridTexture.BackgroundTransparency = 1
+	gridTexture.Image = "rbxassetid://6078235439"
+	gridTexture.ImageTransparency = 0.95
+	gridTexture.ScaleType = Enum.ScaleType.Tile
+	gridTexture.TileSize = UDim2.new(0, 150, 0, 150)
+	gridTexture.ZIndex = 0
+
+	local linesContainer = Instance.new("Folder", Canvas)
+	linesContainer.Name = "Lines"
+
+	local DetailPanel = Instance.new("Frame", RightPanel)
+	DetailPanel.Size = UDim2.new(1, 0, 0, 135)
+	DetailPanel.Position = UDim2.new(0, 0, 1, -135)
+	DetailPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+	DetailPanel.BorderSizePixel = 0
 	DetailPanel.Visible = false
+	local dpStroke = Instance.new("UIStroke", DetailPanel)
+	dpStroke.Color = Color3.fromRGB(70, 70, 80)
+	dpStroke.Thickness = 2
 
 	local DTitle = CreateSharpLabel(DetailPanel, "", UDim2.new(1, -20, 0, 35), Enum.Font.GothamBlack, UIHelpers.Colors.TextWhite, 20)
 	DTitle.Position = UDim2.new(0, 15, 0, 10); DTitle.TextXAlignment = Enum.TextXAlignment.Left
 
 	local DDesc = CreateSharpLabel(DetailPanel, "", UDim2.new(0.6, 0, 0, 50), Enum.Font.GothamMedium, UIHelpers.Colors.TextMuted, 12)
 	DDesc.Position = UDim2.new(0, 15, 0, 45); DDesc.TextWrapped = true; DDesc.TextXAlignment = Enum.TextXAlignment.Left; DDesc.TextYAlignment = Enum.TextYAlignment.Top
-
-	local StatCardContainer = Instance.new("Frame", DetailPanel)
-	StatCardContainer.Size = UDim2.new(0.35, 0, 0, 60)
-	StatCardContainer.Position = UDim2.new(0.65, 0, 0, 35)
-	StatCardContainer.BackgroundTransparency = 1
-	local scLayout = Instance.new("UIListLayout", StatCardContainer); scLayout.FillDirection = Enum.FillDirection.Horizontal; scLayout.Padding = UDim.new(0, 10)
 
 	local DCost = CreateSharpLabel(DetailPanel, "", UDim2.new(0.3, 0, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 16)
 	DCost.Position = UDim2.new(1, -15, 1, -35); DCost.AnchorPoint = Vector2.new(1, 0); DCost.TextXAlignment = Enum.TextXAlignment.Right
@@ -1222,110 +1266,236 @@ local function BuildPrestigeTab(parentFrame)
 	local UnlockBtn, UBtnStroke = CreateSharpButton(DetailPanel, "UNLOCK", UDim2.new(0.3, 0, 0, 40), Enum.Font.GothamBlack, 14)
 	UnlockBtn.Position = UDim2.new(1, -15, 1, -45); UnlockBtn.AnchorPoint = Vector2.new(1, 1)
 
-	UnlockBtn.MouseButton1Click:Connect(function() if SelectedNodeId then Network:WaitForChild("UnlockPrestigeNode"):FireServer(SelectedNodeId) end end)
+	local selectedNode = nil
+	local generatedNodes = {}
+	local nodeLines = {}
 
-	local function UpdateUI()
-		local ls = player:FindFirstChild("leaderstats")
-		local pLevel = ls and ls:FindFirstChild("Prestige") and ls.Prestige.Value or 0
-		local nextLevel = pLevel + 1
-		ASub.Text = "TIER " .. pLevel .. " ➔ TIER " .. nextLevel
-		AscendBtn.Text = "ASCEND TO TIER " .. nextLevel
+	for id, nodeData in pairs(type(GameData) == "table" and GameData.PrestigeNodes or {}) do
+		local nodeBase = Instance.new("TextButton", Canvas)
+		nodeBase.Name = id
+		nodeBase.Size = UDim2.new(0, 44, 0, 44)
+		nodeBase.Position = nodeData.Pos
+		nodeBase.AnchorPoint = Vector2.new(0.5, 0.5)
+		nodeBase.Rotation = 45 
+		nodeBase.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+		nodeBase.BorderColor3 = Color3.fromRGB(50, 50, 60)
+		nodeBase.BorderSizePixel = 3
+		nodeBase.ZIndex = 3
+		nodeBase.Text = "" 
 
-		local pts = player:GetAttribute("PrestigePoints") or 0; if PointsLabel then PointsLabel.Text = "AVAILABLE POINTS: " .. pts end
-		for id, gui in pairs(NodeGuis) do
+		local nodeText = CreateSharpLabel(nodeBase, tostring(nodeData.Cost or 1), UDim2.new(2, 0, 2, 0), Enum.Font.GothamBlack, Color3.fromRGB(160, 160, 160), 14)
+		nodeText.AnchorPoint = Vector2.new(0.5, 0.5)
+		nodeText.Position = UDim2.new(0.5, 0, 0.5, 0)
+		nodeText.Rotation = -45
+		nodeText.ZIndex = 4
+
+		if (nodeData.Cost or 0) == 0 then
+			nodeText.Text = "★"
+			nodeText.TextColor3 = UIHelpers.Colors.Gold
+		end
+
+		local glow = Instance.new("ImageLabel", nodeBase)
+		glow.Size = UDim2.new(3.5, 0, 3.5, 0)
+		glow.Position = UDim2.new(0.5, 0, 0.5, 0)
+		glow.AnchorPoint = Vector2.new(0.5, 0.5)
+		glow.BackgroundTransparency = 1
+		glow.Image = "rbxassetid://2001828033" 
+		glow.ImageColor3 = Color3.fromRGB(150, 50, 50)
+		glow.ImageTransparency = 0.8
+		glow.Rotation = -45 
+		glow.ZIndex = 2
+
+		generatedNodes[id] = { Base = nodeBase, Glow = glow, Text = nodeText, NodeColor = nodeData.Color or "#FFFFFF" }
+
+		nodeBase.MouseButton1Click:Connect(function()
+			selectedNode = id
+			DetailPanel.Visible = true
+			DTitle.Text = nodeData.Name
+			DTitle.TextColor3 = Color3.fromHex((nodeData.Color or "#FFFFFF"):gsub("#", ""))
+			DDesc.Text = nodeData.Desc or ""
+			DCost.Text = "COST: " .. (nodeData.Cost or 1) .. " PTS"
+
 			local isOwned = player:GetAttribute("PrestigeNode_" .. id)
-			local node = type(GameData) == "table" and GameData.PrestigeNodes and GameData.PrestigeNodes[id] or nil
-			if not node then continue end
-			local hasReq = node.Req == nil or player:GetAttribute("PrestigeNode_" .. node.Req)
+			local hasReq = (not nodeData.Req) or player:GetAttribute("PrestigeNode_" .. nodeData.Req)
 
-			if isOwned then
-				gui.Btn.BorderColor3 = gui.BaseColor; gui.Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35); gui.Icon.TextColor3 = gui.BaseColor; gui.Glow.ImageColor3 = gui.BaseColor; gui.Glow.ImageTransparency = 0.4
-				if gui.Line then gui.Line.BackgroundColor3 = gui.BaseColor; gui.Line.ZIndex = 2 end
-			elseif hasReq then
-				gui.Btn.BorderColor3 = UIHelpers.Colors.TextWhite; gui.Btn.BackgroundColor3 = UIHelpers.Colors.Background; gui.Icon.TextColor3 = UIHelpers.Colors.TextWhite; gui.Glow.ImageColor3 = UIHelpers.Colors.TextWhite; gui.Glow.ImageTransparency = 0.85
-				if gui.Line then gui.Line.BackgroundColor3 = UIHelpers.Colors.BorderMuted; gui.Line.ZIndex = 1 end
-			else
-				gui.Btn.BorderColor3 = UIHelpers.Colors.BorderMuted; gui.Btn.BackgroundColor3 = UIHelpers.Colors.Background; gui.Icon.TextColor3 = UIHelpers.Colors.BorderMuted; gui.Glow.ImageTransparency = 1
-				if gui.Line then gui.Line.BackgroundColor3 = UIHelpers.Colors.BorderMuted; gui.Line.ZIndex = 1 end
+			if isOwned then 
+				DReq.Text = "OWNED"
+				DReq.TextColor3 = Color3.fromRGB(100, 255, 100)
+				UnlockBtn.Text = "OWNED"
+				UnlockBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+				UBtnStroke.Color = UIHelpers.Colors.BorderMuted
+			elseif not hasReq then 
+				DReq.Text = "REQUIRES: " .. (GameData.PrestigeNodes[nodeData.Req] and GameData.PrestigeNodes[nodeData.Req].Name or nodeData.Req)
+				DReq.TextColor3 = UIHelpers.Colors.Border
+				UnlockBtn.Text = "LOCKED"
+				UnlockBtn.TextColor3 = UIHelpers.Colors.Border
+				UBtnStroke.Color = UIHelpers.Colors.Border
+			else 
+				DReq.Text = "AVAILABLE TO UNLOCK"
+				DReq.TextColor3 = UIHelpers.Colors.TextWhite
+				UnlockBtn.Text = "UNLOCK"
+				UnlockBtn.TextColor3 = Color3.fromHex((nodeData.Color or "#FFFFFF"):gsub("#", ""))
+				UBtnStroke.Color = Color3.fromHex((nodeData.Color or "#FFFFFF"):gsub("#", ""))
 			end
-		end
-
-		if SelectedNodeId and DetailPanel.Visible and type(GameData) == "table" and GameData.PrestigeNodes then
-			local node = GameData.PrestigeNodes[SelectedNodeId]; local isOwned = player:GetAttribute("PrestigeNode_" .. SelectedNodeId); local hasReq = node.Req == nil or player:GetAttribute("PrestigeNode_" .. node.Req)
-			if isOwned then DReq.Text = "OWNED"; DReq.TextColor3 = Color3.fromRGB(100, 255, 100); UnlockBtn.Text = "OWNED"; UnlockBtn.TextColor3 = Color3.fromRGB(150, 150, 150); UBtnStroke.Color = UIHelpers.Colors.BorderMuted; UnlockBtn.Active = false
-			elseif not hasReq then DReq.Text = "REQUIRES: " .. GameData.PrestigeNodes[node.Req].Name; DReq.TextColor3 = UIHelpers.Colors.Border; UnlockBtn.Text = "LOCKED"; UnlockBtn.TextColor3 = UIHelpers.Colors.Border; UBtnStroke.Color = UIHelpers.Colors.Border; UnlockBtn.Active = false
-			else DReq.Text = "AVAILABLE TO UNLOCK"; DReq.TextColor3 = UIHelpers.Colors.TextWhite; UnlockBtn.Text = "UNLOCK"; UnlockBtn.TextColor3 = Color3.fromHex(node.Color:gsub("#", "")); UBtnStroke.Color = Color3.fromHex(node.Color:gsub("#", "")); UnlockBtn.Active = true end
-		end
+		end)
 	end
 
-	AscendBtn.MouseButton1Click:Connect(function()
-		local ls = player:FindFirstChild("leaderstats")
-		local currentTier = ls and ls:FindFirstChild("Prestige") and ls.Prestige.Value or 0
-
-		local confirm = Network:WaitForChild("PrestigeAction"):InvokeServer()
-		if confirm then 
-			if NotificationManager and type(NotificationManager.Show) == "function" then NotificationManager.Show("ASCENDED TO PRESTIGE TIER " .. (currentTier + 1) .. "!", "Success") end
-			task.wait(1); UpdateUI()
-		else
-			if NotificationManager and type(NotificationManager.Show) == "function" then NotificationManager.Show("You must clear Chapter 8 with maxed stats to Ascend!", "Error") end
+	UnlockBtn.MouseButton1Click:Connect(function()
+		if selectedNode and UnlockBtn.Text == "UNLOCK" then 
+			Network:WaitForChild("UnlockPrestigeNode"):FireServer(selectedNode)
 		end
 	end)
 
-	if type(GameData) == "table" and GameData.PrestigeNodes then
-		for id, node in pairs(GameData.PrestigeNodes) do
-			local btn = Instance.new("TextButton", TreeContainer)
-			btn.Size = UDim2.new(0, 44, 0, 44); btn.AnchorPoint = Vector2.new(0.5, 0.5); btn.Text = ""; btn.ZIndex = 3; btn.BackgroundColor3 = UIHelpers.Colors.Background; btn.BorderSizePixel = 2; btn.BorderColor3 = UIHelpers.Colors.BorderMuted; btn.Rotation = 45 
+	local dragging = false
+	local dragInput
+	local dragStart
+	local startPos
 
-			local glow = Instance.new("ImageLabel", btn)
-			glow.Size = UDim2.new(2.8, 0, 2.8, 0); glow.Position = UDim2.new(0.5, 0, 0.5, 0); glow.AnchorPoint = Vector2.new(0.5, 0.5); glow.BackgroundTransparency = 1; glow.Image = "rbxassetid://2001828033"; glow.ZIndex = 0
+	CanvasContainer.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = Canvas.Position
 
-			local iconLbl = CreateSharpLabel(btn, "", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBlack, UIHelpers.Colors.TextMuted, 18)
-			iconLbl.ZIndex = 6; iconLbl.Rotation = -45 
-			local num = id:match("%d+"); if num then iconLbl.Text = num else iconLbl.Text = "★" end
-
-			btn.MouseButton1Click:Connect(function()
-				SelectedNodeId = id; DetailPanel.Visible = true; DTitle.Text = node.Name; DTitle.TextColor3 = Color3.fromHex(node.Color:gsub("#", "")); DDesc.Text = node.Desc; DCost.Text = node.Cost .. " PTS"
-				for _, c in ipairs(StatCardContainer:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
-				if node.BuffType == "FlatStat" then
-					local cleanStatName = node.BuffStat:gsub("_Val", ""):gsub("_", " "); CreateStatCard(StatCardContainer, cleanStatName, "+" .. node.BuffValue, node.Color)
-				elseif node.BuffType == "Special" then
-					if node.BuffStat == "DodgeBonus" then CreateStatCard(StatCardContainer, "Dodge Chance", "+" .. node.BuffValue .. "%", node.Color)
-					elseif node.BuffStat == "DmgMult" then CreateStatCard(StatCardContainer, "Total DMG", "+" .. (node.BuffValue*100) .. "%", node.Color)
-					elseif node.BuffStat == "CritBonus" then CreateStatCard(StatCardContainer, "Crit Chance", "+" .. node.BuffValue .. "%", node.Color)
-					elseif node.BuffStat == "IgnoreArmor" then CreateStatCard(StatCardContainer, "Armor Pen", "+" .. (node.BuffValue*100) .. "%", node.Color)
-					else CreateStatCard(StatCardContainer, "Passive", "UNLOCKED", node.Color) end
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
 				end
-				UpdateUI()
 			end)
-			NodeGuis[id] = { Btn = btn, Icon = iconLbl, Glow = glow, BaseColor = Color3.fromHex(node.Color:gsub("#", "")) }
 		end
-	end
+	end)
 
-	local function RenderLinesAndNodes()
-		if not TreeContainer then return end
-		local w = TreeContainer.AbsoluteSize.X; local h = TreeContainer.AbsoluteSize.Y; if w == 0 or h == 0 then return end
-		if type(GameData) == "table" and GameData.PrestigeNodes then
-			for id, node in pairs(GameData.PrestigeNodes) do
-				local gui = NodeGuis[id]; if gui and gui.Btn then gui.Btn.Position = node.Pos end
-				if node.Req and GameData.PrestigeNodes[node.Req] then
-					local reqNode = GameData.PrestigeNodes[node.Req]
-					local p1 = Vector2.new(node.Pos.X.Scale * w + node.Pos.X.Offset, node.Pos.Y.Scale * h + node.Pos.Y.Offset)
-					local p2 = Vector2.new(reqNode.Pos.X.Scale * w + reqNode.Pos.X.Offset, reqNode.Pos.Y.Scale * h + reqNode.Pos.Y.Offset)
-					local line = drawnLines[id]
-					if not line then line = Instance.new("Frame", TreeContainer); line.AnchorPoint = Vector2.new(0.5, 0.5); line.BorderSizePixel = 0; line.ZIndex = 1; drawnLines[id] = line; if gui then gui.Line = line end end
-					local dist = (p2 - p1).Magnitude; local center = (p1 + p2) / 2; local angle = math.atan2(p2.Y - p1.Y, p2.X - p1.X)
-					line.Position = UDim2.new(0, center.X, 0, center.Y); line.Size = UDim2.new(0, dist, 0, 4); line.Rotation = math.deg(angle)
+	CanvasContainer.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			dragInput = input
+		elseif input.UserInputType == Enum.UserInputType.MouseWheel then
+			local newScale = math.clamp(CanvasScale.Scale + (input.Position.Z * 0.15), 0.3, 2.5)
+			CanvasScale.Scale = newScale
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			local delta = input.Position - dragStart
+			Canvas.Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + (delta.X / CanvasScale.Scale),
+				startPos.Y.Scale, startPos.Y.Offset + (delta.Y / CanvasScale.Scale)
+			)
+		end
+	end)
+
+	task.defer(function()
+		local canvasSize = Canvas.AbsoluteSize
+		if canvasSize.X == 0 then canvasSize = Vector2.new(2000, 2000) end 
+
+		for id, nodeData in pairs(type(GameData) == "table" and GameData.PrestigeNodes or {}) do
+			local targetData = generatedNodes[id]
+			if nodeData.Req and targetData then
+				local sourceData = generatedNodes[nodeData.Req]
+				if sourceData then
+					local targetNode = targetData.Base
+					local sourceNode = sourceData.Base
+					local tPos = targetNode.Position
+					local sPos = sourceNode.Position
+
+					local p1X = (sPos.X.Scale * canvasSize.X) + sPos.X.Offset
+					local p1Y = (sPos.Y.Scale * canvasSize.Y) + sPos.Y.Offset
+					local p2X = (tPos.X.Scale * canvasSize.X) + tPos.X.Offset
+					local p2Y = (tPos.Y.Scale * canvasSize.Y) + tPos.Y.Offset
+
+					local line = DrawLine(linesContainer, Vector2.new(p1X, p1Y), Vector2.new(p2X, p2Y))
+					table.insert(nodeLines, { Line = line, Target = id, Source = nodeData.Req })
 				end
 			end
 		end
-		UpdateUI()
+
+		player:SetAttribute("_ForceWebUpdate", math.random())
+	end)
+
+	local function UpdateWebState()
+		local pts = player:GetAttribute("PrestigePoints") or 0
+		PointsLabel.Text = "AVAILABLE POINTS: " .. pts
+
+		for id, nodeObj in pairs(generatedNodes) do
+			local nodeData = GameData.PrestigeNodes[id]
+			local isOwned = player:GetAttribute("PrestigeNode_" .. id)
+			local hasReq = (not nodeData.Req) or player:GetAttribute("PrestigeNode_" .. nodeData.Req)
+			local customColor = Color3.fromHex((nodeObj.NodeColor or "#FFFFFF"):gsub("#", ""))
+
+			if isOwned then
+				nodeObj.Base.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+				nodeObj.Base.BorderColor3 = customColor
+				nodeObj.Text.TextColor3 = Color3.fromRGB(255, 255, 255)
+				nodeObj.Glow.ImageColor3 = customColor
+				nodeObj.Glow.ImageTransparency = 0.4
+			elseif hasReq then
+				nodeObj.Base.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+				nodeObj.Base.BorderColor3 = Color3.fromRGB(100, 150, 255)
+				nodeObj.Text.TextColor3 = Color3.fromRGB(200, 220, 255)
+				nodeObj.Glow.ImageColor3 = Color3.fromRGB(100, 150, 255)
+				nodeObj.Glow.ImageTransparency = 0.6
+			else
+				nodeObj.Base.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+				nodeObj.Base.BorderColor3 = Color3.fromRGB(50, 50, 60)
+				nodeObj.Text.TextColor3 = Color3.fromRGB(160, 160, 160)
+				nodeObj.Glow.ImageColor3 = Color3.fromRGB(150, 50, 50)
+				nodeObj.Glow.ImageTransparency = 0.8
+			end
+		end
+
+		for _, lineData in ipairs(nodeLines) do
+			local isTargetOwned = player:GetAttribute("PrestigeNode_" .. lineData.Target)
+			local isSourceOwned = player:GetAttribute("PrestigeNode_" .. lineData.Source)
+
+			if isTargetOwned then
+				lineData.Line.BackgroundColor3 = Color3.fromRGB(225, 185, 60)
+				lineData.Line.ZIndex = 2
+			elseif isSourceOwned then
+				lineData.Line.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+				lineData.Line.ZIndex = 1
+			else
+				lineData.Line.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+				lineData.Line.ZIndex = 1
+			end
+		end
+
+		if selectedNode and DetailPanel.Visible then
+			local nodeData = GameData.PrestigeNodes[selectedNode]
+			local isOwned = player:GetAttribute("PrestigeNode_" .. selectedNode)
+			local hasReq = (not nodeData.Req) or player:GetAttribute("PrestigeNode_" .. nodeData.Req)
+
+			if isOwned then 
+				DReq.Text = "OWNED"
+				DReq.TextColor3 = Color3.fromRGB(100, 255, 100)
+				UnlockBtn.Text = "OWNED"
+				UnlockBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+				UBtnStroke.Color = UIHelpers.Colors.BorderMuted
+			elseif not hasReq then 
+				DReq.Text = "REQUIRES: " .. (GameData.PrestigeNodes[nodeData.Req] and GameData.PrestigeNodes[nodeData.Req].Name or nodeData.Req)
+				DReq.TextColor3 = UIHelpers.Colors.Border
+				UnlockBtn.Text = "LOCKED"
+				UnlockBtn.TextColor3 = UIHelpers.Colors.Border
+				UBtnStroke.Color = UIHelpers.Colors.Border
+			else 
+				DReq.Text = "AVAILABLE TO UNLOCK"
+				DReq.TextColor3 = UIHelpers.Colors.TextWhite
+				UnlockBtn.Text = "UNLOCK"
+				UnlockBtn.TextColor3 = Color3.fromHex((nodeData.Color or "#FFFFFF"):gsub("#", ""))
+				UBtnStroke.Color = Color3.fromHex((nodeData.Color or "#FFFFFF"):gsub("#", ""))
+			end
+		end
 	end
-	TreeContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(RenderLinesAndNodes); task.delay(0.1, RenderLinesAndNodes)
-	player.AttributeChanged:Connect(function(attr) if string.find(attr, "Prestige") then UpdateUI() end end)
-	task.spawn(function() local ls = player:WaitForChild("leaderstats", 10); if ls and ls:FindFirstChild("Prestige") then ls.Prestige.Changed:Connect(UpdateUI) end end)
+
+	player.AttributeChanged:Connect(function(attr)
+		if string.find(attr, "Prestige") or attr == "_ForceWebUpdate" then 
+			UpdateWebState() 
+		end
+	end)
+
+	UpdateWebState()
+	-- [[ DYNAMIC PRESTIGE WEB UI END ]] --
 
 	LayoutRefs.Prestige = {
-		mLayout = mLayout,
 		LeftPanel = LeftPanel,
 		RightPanel = RightPanel
 	}
@@ -1854,12 +2024,17 @@ local function UpdateLayoutForScreen()
 		end
 	end
 
-	-- Prestige Tab
+	-- Prestige Tab explicitly decoupled from UIListLayout so it side-by-sides properly on PC
 	if LayoutRefs.Prestige then
 		local pr = LayoutRefs.Prestige
-		if pr.mLayout then pr.mLayout.FillDirection = isMobile and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal end
-		if pr.LeftPanel then pr.LeftPanel.Size = isMobile and UDim2.new(0.95, 0, 0, 320) or UDim2.new(0.35, 0, 0, 520) end
-		if pr.RightPanel then pr.RightPanel.Size = isMobile and UDim2.new(0.95, 0, 0, 500) or UDim2.new(0.65, -15, 0, 520) end
+		if pr.LeftPanel then 
+			pr.LeftPanel.Size = isMobile and UDim2.new(1, -30, 0, 320) or UDim2.new(0.32, 0, 1, -30)
+			pr.LeftPanel.Position = isMobile and UDim2.new(0, 15, 0, 15) or UDim2.new(0, 15, 0, 15)
+		end
+		if pr.RightPanel then 
+			pr.RightPanel.Size = isMobile and UDim2.new(1, -30, 0, 500) or UDim2.new(0.66, 0, 1, -30) 
+			pr.RightPanel.Position = isMobile and UDim2.new(0, 15, 0, 350) or UDim2.new(1, -15, 0, 15)
+		end
 	end
 
 	-- Inheritance Tab
