@@ -46,7 +46,7 @@ local ddScroll = nil
 local function CreateMinimalButton(parent, text, size, baseColorHex)
 	local btn = Instance.new("TextButton", parent)
 	btn.Size = size
-	btn.BackgroundColor3 = Color3.fromRGB(15, 15, 18) 
+	btn.BackgroundColor3 = Color3.fromRGB(18, 18, 22) 
 	btn.BorderSizePixel = 0
 	btn.AutoButtonColor = false
 	btn.Font = Enum.Font.GothamBlack
@@ -60,29 +60,19 @@ local function CreateMinimalButton(parent, text, size, baseColorHex)
 	local cColor = Color3.fromHex(baseColorHex:gsub("#", ""))
 	btn.TextColor3 = cColor
 
-	local grad = Instance.new("UIGradient", btn)
-	grad.Color = ColorSequence.new{
-		ColorSequenceKeypoint.new(0, cColor),
-		ColorSequenceKeypoint.new(0.1, Color3.new(cColor.R * 0.4, cColor.G * 0.4, cColor.B * 0.4)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 12))
-	}
-	grad.Rotation = 90
-
 	local stroke = Instance.new("UIStroke", btn)
-	stroke.Color = Color3.new(cColor.R * 0.5, cColor.G * 0.5, cColor.B * 0.5)
+	stroke.Color = Color3.fromRGB(70, 70, 80)
 	stroke.Thickness = 2
 	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 	btn.MouseEnter:Connect(function() 
 		if btn.Active then 
-			TweenService:Create(grad, TweenInfo.new(0.2), {Offset = Vector2.new(0, -0.2)}):Play()
 			TweenService:Create(stroke, TweenInfo.new(0.2), {Color = cColor, Thickness = 3}):Play() 
 		end 
 	end)
 	btn.MouseLeave:Connect(function() 
 		if btn.Active then 
-			TweenService:Create(grad, TweenInfo.new(0.2), {Offset = Vector2.new(0, 0)}):Play()
-			TweenService:Create(stroke, TweenInfo.new(0.2), {Color = Color3.new(cColor.R * 0.5, cColor.G * 0.5, cColor.B * 0.5), Thickness = 2}):Play() 
+			TweenService:Create(stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(70, 70, 80), Thickness = 2}):Play() 
 		end 
 	end)
 	return btn
@@ -99,7 +89,7 @@ local function ShowWaitingForOpponent()
 		local waitContainer = Instance.new("Frame", GUI.ActionContainer)
 		waitContainer.Name = "WaitContainer"
 		waitContainer.Size = UDim2.new(1, 0, 1, 0)
-		waitContainer.BackgroundColor3 = Color3.fromRGB(15, 10, 10)
+		waitContainer.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 		waitContainer.BackgroundTransparency = 0.5
 		waitContainer.BorderSizePixel = 0
 
@@ -136,7 +126,6 @@ local function OpenTargetMenu()
 		TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.15, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
 	else
 		GUI.ActionGrid.Visible = false
-		GUI.TargetMenu.Position = UDim2.new(0, 0, 0, 0)
 	end
 end
 
@@ -152,7 +141,6 @@ local function CloseTargetMenu()
 	else
 		GUI.ActionGrid.Visible = true
 		GUI.TargetMenu.Visible = false
-		GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
 	end
 end
 
@@ -165,7 +153,6 @@ local function SnapTargetMenuClosed()
 		GUI.TargetMenu.Position = UDim2.new(1, 20, 0, 0)
 	else
 		GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
-		GUI.TargetMenu.Position = UDim2.new(0, 0, 0, 0)
 	end
 	GUI.ActionGrid.Visible = true
 	GUI.TargetMenu.Visible = false
@@ -284,8 +271,8 @@ local function AppendLog(message, colorHex)
 
 	local panel = Instance.new("Frame", GUI.LogScroll)
 	panel.LayoutOrder = GlobalLogCounter
-	panel.Size = UDim2.new(1, 0, 0, 0); panel.BackgroundColor3 = Color3.fromRGB(15, 12, 12); panel.BackgroundTransparency = 0.3; panel.BorderSizePixel = 0; panel.AutomaticSize = Enum.AutomaticSize.Y
-	local pStroke = Instance.new("UIStroke", panel); pStroke.Color = Color3.fromRGB(40, 20, 20); pStroke.Thickness = 2
+	panel.Size = UDim2.new(1, 0, 0, 0); panel.BackgroundColor3 = Color3.fromRGB(18, 18, 22); panel.BackgroundTransparency = 0.3; panel.BorderSizePixel = 0; panel.AutomaticSize = Enum.AutomaticSize.Y
+	local pStroke = Instance.new("UIStroke", panel); pStroke.Color = Color3.fromRGB(70, 70, 80); pStroke.Thickness = 2
 	local pad = Instance.new("UIPadding", panel); pad.PaddingLeft = UDim.new(0, 10); pad.PaddingRight = UDim.new(0, 10); pad.PaddingTop = UDim.new(0, 8); pad.PaddingBottom = UDim.new(0, 8)
 
 	local lbl = UIHelpers.CreateLabel(panel, message, UDim2.new(1, 0, 0, 0), Enum.Font.GothamMedium, logColor, 12)
@@ -313,7 +300,7 @@ local function PlayLootAnimation(rewards)
 			local startY = math.random(30, 50) / 100
 			popup.Position = UDim2.new(startX, 0, startY, 0)
 			popup.AnchorPoint = Vector2.new(0.5, 0.5)
-			popup.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+			popup.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 			popup.BackgroundTransparency = 0.1
 			popup.ZIndex = 250
 			popup.BorderSizePixel = 0
@@ -609,11 +596,6 @@ local function UpdatePvESkills()
 	local defaultClose = {"Basic Slash", "Heavy Slash", "None", "None"}
 	local defaultLong = {"Flare Gun", "Anti-Titan Rifle", "None", "None"}
 
-	if isTransformed then
-		defaultClose = {"Titan Punch", "Titan Kick", "Block", "None"}
-		defaultLong = {"Titan Punch", "Titan Kick", "Block", "None"}
-	end
-
 	local fallbacks = (currentRange == "Close") and defaultClose or defaultLong
 	local createdSkills = {}
 
@@ -737,11 +719,17 @@ local function UpdatePvESkills()
 		end
 	end
 
+	if isTransformed then
+		CreateSkillButton("Titan Punch", "TITAN PUNCH", "#FF5555")
+		CreateSkillButton("Titan Kick", "TITAN KICK", "#FF5555")
+	end
+
 	for i = 1, 4 do
 		local skillName = player:GetAttribute("EquippedSkill_" .. i)
 		if not skillName or skillName == "" or skillName == "None" or not IsSkillValid(player, skillName, isTransformed) then 
 			skillName = fallbacks[i] 
 		end
+		if isTransformed and (skillName == "Titan Punch" or skillName == "Titan Kick") then continue end
 		CreateSkillButton(skillName)
 	end
 
@@ -1016,9 +1004,35 @@ end
 -- ==========================================
 -- INITIALIZATION
 -- ==========================================
+
+local function UpdateActionGridLayout()
+	if not GUI or not GUI.ActionGrid then return end
+	local vp = camera.ViewportSize
+	if vp.X == 0 or vp.Y == 0 then return end
+	local isMobile = (vp.X <= 850) or (vp.Y > vp.X)
+
+	local gridLayout = GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout")
+	if not gridLayout then
+		gridLayout = Instance.new("UIGridLayout", GUI.ActionGrid)
+		gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		gridLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	end
+
+	if isMobile then
+		gridLayout.CellSize = UDim2.new(1, -10, 0, 45)
+		gridLayout.CellPadding = UDim2.new(0, 0, 0, 10)
+	else
+		gridLayout.CellSize = UDim2.new(0.15, 0, 0, 45)
+		gridLayout.CellPadding = UDim2.new(0.016, 0, 0, 10)
+	end
+end
+
 function CombatUI.Initialize(masterScreenGui)
 	MasterGuiRef = masterScreenGui
 	GUI = CombatBuilder.Build(masterScreenGui, player)
+
+	camera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateActionGridLayout)
+	UpdateActionGridLayout()
 
 	GUI.ClickOverlay.MouseButton1Click:Connect(function()
 		if isTypewriting then skipTypewriting = true else ClickSignal:Fire() end
