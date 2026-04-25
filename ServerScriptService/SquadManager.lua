@@ -151,7 +151,6 @@ pcall(function()
 		local targetId = data.TargetId
 		local actionType = data.ActionType
 
-		-- Refresh local cache if this server has the squad loaded
 		if ActiveSquads[sqName] then
 			local success, freshData = pcall(function() return SquadStore:GetAsync(sqName) end)
 			if success and freshData then
@@ -159,9 +158,8 @@ pcall(function()
 			end
 		end
 
-		if data.OriginServer == game.JobId then return end -- Avoid duplicate processing for the server that fired this
+		if data.OriginServer == game.JobId then return end 
 
-		-- [[ THE FIX: Handle cross-server Disband events to strip tags from players in other servers ]]
 		if actionType == "Disbanded" then
 			if ActiveSquads[sqName] then ActiveSquads[sqName] = nil end
 			for _, p in ipairs(Players:GetPlayers()) do
@@ -192,7 +190,7 @@ pcall(function()
 				end
 			elseif actionType == "Accepted" and tostring(p.UserId) == targetId then
 				if p:GetAttribute("SquadName") ~= sqName then
-					p:SetAttribute("SquadName", sqName) -- [[ THE FIX: Inject the squad name BEFORE pulling data ]]
+					p:SetAttribute("SquadName", sqName) 
 					LoadPlayerSquad(p)
 					NotificationEvent:FireClient(p, "Your request to join " .. sqName .. " was accepted!", "Success")
 				end
@@ -259,7 +257,6 @@ local function FetchTopSquad()
 		local topEntry = nil
 
 		for rank, entry in ipairs(pages:GetCurrentPage()) do
-			-- [[ THE FIX: Squads MUST have > 0 SP to earn the Top 5 / Ymir's Favored leaderboard titles ]]
 			if (tonumber(entry.value) or 0) > 0 then
 				if rank <= 5 then topSquads[entry.key] = true end
 				if rank == 1 then topEntry = entry end
@@ -278,7 +275,7 @@ local function FetchTopSquad()
 				end
 			end
 		else
-			currentTopSquadName = nil -- Ensures the old favored squad gets dethroned on a reset
+			currentTopSquadName = nil 
 		end
 
 		for _, p in ipairs(Players:GetPlayers()) do
@@ -302,15 +299,17 @@ local function RewardTopSquads()
 				if rank == 1 then
 					for _, p in ipairs(Players:GetPlayers()) do
 						if p:GetAttribute("SquadName") == entry.key and p:FindFirstChild("leaderstats") then
-							p.leaderstats.Dews.Value += 500000
-							NotificationEvent:FireClient(p, "SEASON END: Your Squad placed #1 Globally! (+500,000 Dews)", "Success")
+							-- [ECONOMY PATCH] Heavy squash on end of season rewards
+							p.leaderstats.Dews.Value += 50000
+							NotificationEvent:FireClient(p, "SEASON END: Your Squad placed #1 Globally! (+50,000 Dews)", "Success")
 						end
 					end
 				elseif rank <= 5 then
 					for _, p in ipairs(Players:GetPlayers()) do
 						if p:GetAttribute("SquadName") == entry.key and p:FindFirstChild("leaderstats") then
-							p.leaderstats.Dews.Value += 100000
-							NotificationEvent:FireClient(p, "SEASON END: Your Squad placed Top 5! (+100,000 Dews)", "Success")
+							-- [ECONOMY PATCH] Heavy squash on end of season rewards
+							p.leaderstats.Dews.Value += 15000
+							NotificationEvent:FireClient(p, "SEASON END: Your Squad placed Top 5! (+15,000 Dews)", "Success")
 						end
 					end
 				end
@@ -355,10 +354,11 @@ SquadAction.OnServerEvent:Connect(function(player, action, data)
 		if player:GetAttribute("SquadName") and player:GetAttribute("SquadName") ~= "None" then NotificationEvent:FireClient(player, "You are already in a Squad!", "Error") return end
 
 		local dews = player.leaderstats and player.leaderstats:FindFirstChild("Dews")
-		if not dews or dews.Value < 100000 then NotificationEvent:FireClient(player, "Requires 100,000 Dews.", "Error") return end
+		-- [ECONOMY PATCH] Re-balanced Squad Founding costs
+		if not dews or dews.Value < 25000 then NotificationEvent:FireClient(player, "Requires 25,000 Dews.", "Error") return end
 		if pcall(function() return SquadStore:GetAsync(data.Name) end) and SquadStore:GetAsync(data.Name) then NotificationEvent:FireClient(player, "Squad name taken!", "Error") return end
 
-		dews.Value -= 100000
+		dews.Value -= 25000
 		local safeLogo = data.Logo or ""; local numId = safeLogo:match("%d+"); if numId then safeLogo = "rbxassetid://" .. numId else safeLogo = "" end
 
 		local newSquadData = {
@@ -403,7 +403,8 @@ SquadAction.OnServerEvent:Connect(function(player, action, data)
 			return
 		end
 
-		local cost = math.floor(math.pow(sqData.Level, 2.3) * 500000)
+		-- [ECONOMY PATCH] Re-balanced Level Up costs
+		local cost = math.floor(math.pow(sqData.Level, 2.3) * 25000)
 		if player.leaderstats.Dews.Value < cost then
 			NotificationEvent:FireClient(player, "Not enough Dews! (Requires " .. cost .. ")", "Error")
 			return
@@ -443,7 +444,8 @@ SquadAction.OnServerEvent:Connect(function(player, action, data)
 			return
 		end
 
-		local Costs = { Capacity = 250000, Wealth = 100000, Training = 100000, Luck = 150000, Prestige = 500000 }
+		-- [ECONOMY PATCH] Re-balanced Upgrade costs
+		local Costs = { Capacity = 25000, Wealth = 10000, Training = 10000, Luck = 15000, Prestige = 50000 }
 		local MaxLevels = { Capacity = 5, Wealth = 10, Training = 10, Luck = 10, Prestige = 5 }
 		local ReqScales = { Capacity = 5, Wealth = 5, Training = 5, Luck = 5, Prestige = 10 }
 
@@ -572,7 +574,7 @@ SquadAction.OnServerEvent:Connect(function(player, action, data)
 
 			for _, p in ipairs(Players:GetPlayers()) do
 				if tostring(p.UserId) == targetId then
-					p:SetAttribute("SquadName", sqName) -- [[ THE FIX: Inject the squad name BEFORE pulling data ]]
+					p:SetAttribute("SquadName", sqName) 
 					LoadPlayerSquad(p)
 					NotificationEvent:FireClient(p, "Your request to join " .. sqName .. " was accepted!", "Success")
 				end
@@ -768,7 +770,6 @@ SquadAction.OnServerEvent:Connect(function(player, action, data)
 			end
 		end
 
-		-- [[ THE FIX: Broadcast disband event so ALL servers clear their players of this squad's attributes ]]
 		pcall(function()
 			MessagingService:PublishAsync("SquadUpdate", {
 				SquadName = sqName,
@@ -814,7 +815,6 @@ GetSquadRequests.OnServerInvoke = function(player)
 	local myRole = sqData.Members[tostring(player.UserId)] and sqData.Members[tostring(player.UserId)].Role
 	if myRole ~= "Leader" and myRole ~= "Officer" then return {} end
 
-	-- Always fetch fresh data to sync cross-server requests when UI is opened
 	local success, freshData = pcall(function() return SquadStore:GetAsync(sqName) end)
 	if success and freshData then
 		sqData.Requests = freshData.Requests or {}
