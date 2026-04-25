@@ -82,8 +82,10 @@ lbRf.OnServerInvoke = function(player, lbType)
 	return finalList
 end
 
+-- [ECONOMY PATCH] Reset default dews to 15,000 and appended DewsReset flag
 local DefaultData = { 
-	Prestige = 0, CurrentPart = 1, CurrentMission = 1, CurrentWave = 1, XP = 0, TitanXP = 0, Dews = 0, Elo = 1000, 
+	Prestige = 0, CurrentPart = 1, CurrentMission = 1, CurrentWave = 1, XP = 0, TitanXP = 0, Dews = 15000, Elo = 1000, 
+	DewsReset_V1 = true,
 	Titan = "None", FightingStyle = "None", Clan = "None", Regiment = "Cadet Corps", DeployedDistrict = "Trost District",
 	TitanPity = 0, TitanMythicalPity = 0, ClanPity = 0, ClanMythicalPity = 0, 
 	EquippedWeapon = "None", EquippedAccessory = "None", PathDust = 0, PathsFloor = 1, 
@@ -269,45 +271,34 @@ RemotesFolder.AdminCommand.OnServerEvent:Connect(function(player, command, targe
 	local targetPlayer = player
 	if targetName and targetName ~= "" and targetName:lower() ~= "me" then targetPlayer = nil; for _, p in ipairs(Players:GetPlayers()) do if string.find(p.Name:lower(), "^" .. targetName:lower()) then targetPlayer = p; break end end end
 
-	-- [[ NEW: GLOBAL BAN SYSTEM ]]
 	if command == "BanPlayer" then
 		local targetId = nil
 		if targetPlayer then
 			targetId = targetPlayer.UserId
 		else
-			-- Allows banning offline exploiters by typing their exact username
 			local success, id = pcall(function() return Players:GetUserIdFromNameAsync(targetName) end)
 			if success then targetId = id end
 		end
 
 		if targetId then
 			task.spawn(function()
-				-- 1. Obliterate from Leaderboards
 				pcall(function() PrestigeLB:RemoveAsync(tostring(targetId)) end)
 				pcall(function() EloLB:RemoveAsync(tostring(targetId)) end)
-
-				-- 2. Corrupt/Wipe their game save
 				pcall(function() GameDataStore:RemoveAsync(tostring(targetId)) end)
 
-				-- 3. Execute Universe-Wide Ban
 				local banConfig = {
 					UserIds = {targetId},
-					Duration = -1, -- Permanent
+					Duration = -1, 
 					DisplayReason = "You have been permanently banned and your data has been wiped.",
 					PrivateReason = "Admin Ban Command Executed",
 					ExcludeAltAccounts = true, 
 					ApplyToUniverse = true
 				}
 
-				local success, err = pcall(function()
-					Players:BanAsync(banConfig)
-				end)
+				local success, err = pcall(function() Players:BanAsync(banConfig) end)
 
-				if success then
-					RemotesFolder.NotificationEvent:FireClient(player, "Banned & Wiped User: " .. targetName, "Success")
-				else
-					RemotesFolder.NotificationEvent:FireClient(player, "Ban failed for " .. targetName .. ": " .. tostring(err), "Error")
-				end
+				if success then RemotesFolder.NotificationEvent:FireClient(player, "Banned & Wiped User: " .. targetName, "Success")
+				else RemotesFolder.NotificationEvent:FireClient(player, "Ban failed for " .. targetName .. ": " .. tostring(err), "Error") end
 			end)
 		else
 			RemotesFolder.NotificationEvent:FireClient(player, "Could not find a Roblox account named: " .. targetName, "Error")
@@ -335,7 +326,7 @@ RemotesFolder.AdminCommand.OnServerEvent:Connect(function(player, command, targe
 	elseif command == "SetClan" then targetPlayer:SetAttribute("Clan", tostring(args))
 	elseif command == "SetTitle" then targetPlayer:SetAttribute("CustomTitle", tostring(args))
 	elseif command == "WipePlayer" then
-		targetPlayer.leaderstats.Prestige.Value = 0; targetPlayer.leaderstats.Dews.Value = 0; targetPlayer.leaderstats.Elo.Value = 1000
+		targetPlayer.leaderstats.Prestige.Value = 0; targetPlayer.leaderstats.Dews.Value = 15000; targetPlayer.leaderstats.Elo.Value = 1000
 
 		local savedGamepasses = {}
 		for k, v in pairs(targetPlayer:GetAttributes()) do
@@ -349,13 +340,11 @@ RemotesFolder.AdminCommand.OnServerEvent:Connect(function(player, command, targe
 		for k, v in pairs(savedGamepasses) do targetPlayer:SetAttribute(k, v) end
 
 		targetPlayer:SetAttribute("DataLoaded", true)
-
 		task.spawn(function() 
 			PrestigeLB:SetAsync(tostring(targetPlayer.UserId), 0)
 			EloLB:SetAsync(tostring(targetPlayer.UserId), 1000)
 			if SavePlayer then SavePlayer(targetPlayer, false) end
 		end)
-
 		RemotesFolder.NotificationEvent:FireClient(player, "Player data successfully wiped.", "Success")
 	end
 end)
@@ -440,6 +429,12 @@ local function LoadPlayer(player)
 
 	local data = savedData or DefaultData
 
+	-- [ECONOMY PATCH] Global execution: Wipes existing players corrupted Dews and strictly enforces 15k balance on login
+	if not data.DewsReset_V1 then
+		data.Dews = 15000
+		data.DewsReset_V1 = true
+	end
+
 	VerifyGamepasses(player)
 
 	local leaderstats = Instance.new("Folder"); leaderstats.Name = "leaderstats"; leaderstats.Parent = player
@@ -448,7 +443,7 @@ local function LoadPlayer(player)
 	pVal.Changed:Connect(function(val) player:SetAttribute("Prestige", val) end)
 	player:SetAttribute("Prestige", pVal.Value)
 
-	local dVal = Instance.new("IntValue"); dVal.Name = "Dews"; dVal.Value = data.Dews or 0; dVal.Parent = leaderstats
+	local dVal = Instance.new("IntValue"); dVal.Name = "Dews"; dVal.Value = data.Dews or 15000; dVal.Parent = leaderstats
 	dVal.Changed:Connect(function(val) player:SetAttribute("Dews", val) end)
 	player:SetAttribute("Dews", dVal.Value)
 
@@ -459,9 +454,11 @@ local function LoadPlayer(player)
 	player:SetAttribute("Top5_Prestige", Top5PrestigeCache[player.UserId] or false)
 	player:SetAttribute("Top5_Elo", Top5EloCache[player.UserId] or false)
 
-	-- [[ THE FIX: Dynamically write and map Attributes to the Player object. Everything saved will persist. ]]
 	for k, v in pairs(DefaultData) do if k ~= "Prestige" and k ~= "Dews" and k ~= "Elo" then player:SetAttribute(k, data[k] or v) end end
 	for k, v in pairs(data) do if DefaultData[k] == nil and k ~= "Prestige" and k ~= "Dews" and k ~= "Elo" then player:SetAttribute(k, v) end end
+
+	-- Make sure we explicitly set the Reset attribute so it saves out later
+	player:SetAttribute("DewsReset_V1", true)
 
 	local myReg = player:GetAttribute("Regiment")
 	if myReg then
@@ -470,9 +467,10 @@ local function LoadPlayer(player)
 			if dData.Winner == myReg and player:GetAttribute("RewardClaimedWeek_" .. safeDistrictName) ~= CurrentVP.Week then
 				player:SetAttribute("RewardClaimedWeek_" .. safeDistrictName, CurrentVP.Week)
 
-				player.leaderstats.Dews.Value += 25000
+				-- [ECONOMY PATCH] Heavy squash on District Wins
+				player.leaderstats.Dews.Value += 5000
 				player:SetAttribute("TitanHardeningExtractCount", (player:GetAttribute("TitanHardeningExtractCount") or 0) + 1)
-				task.delay(3, function() RemotesFolder.NotificationEvent:FireClient(player, "Your Regiment secured " .. dName .. " this week! (+25k Dews, +1 Extract)", "Success") end)
+				task.delay(3, function() RemotesFolder.NotificationEvent:FireClient(player, "Your Regiment secured " .. dName .. " this week! (+5k Dews, +1 Extract)", "Success") end)
 			end
 		end
 	end
