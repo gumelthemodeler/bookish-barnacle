@@ -130,10 +130,9 @@ function LabyrinthManager.StartSession(player, carriedLoot)
 		PlayerX = sX,
 		PlayerY = sY,
 		InCombat = false,
-		AccumulatedLoot = carriedLoot or { Dews = 0, XP = 0, Items = {} } -- [[ THE FIX: Carries loot over ]]
+		AccumulatedLoot = carriedLoot or { Dews = 0, XP = 0, Items = {} } 
 	}
 
-	-- [[ THE FIX: Forces the UI to rebuild the grid to prevent invisible enemies ]]
 	Network.LabyrinthUpdate:FireClient(player, "InitSync", ActiveSessions[player.UserId])
 end
 
@@ -184,8 +183,11 @@ Network:WaitForChild("LabyrinthAction").OnServerEvent:Connect(function(player, a
 
 			elseif nextCell == 2 then
 				session.Grid[tY][tX] = 5
-				local dewGain = math.random(5000, 15000) * session.Floor
-				local xpGain = math.random(1500, 4500) * session.Floor
+
+				-- [ECONOMY PATCH] Heavy squash on Labyrinth loot caches to prevent infinite exponential scaling
+				local dewGain = math.clamp(math.floor(math.random(250, 750) * (1 + (session.Floor * 0.1))), 0, 3000)
+				local xpGain = math.floor(math.random(500, 1500) * (1 + (session.Floor * 0.1)))
+
 				session.AccumulatedLoot.Dews += dewGain
 				session.AccumulatedLoot.XP += xpGain
 
@@ -227,7 +229,6 @@ Network:WaitForChild("LabyrinthAction").OnServerEvent:Connect(function(player, a
 
 	elseif action == "NextFloor" then
 		player:SetAttribute("LabyrinthFloor", session.Floor + 1)
-		-- [[ THE FIX: Passes the current pouch to the next floor ]]
 		LabyrinthManager.StartSession(player, session.AccumulatedLoot)
 
 	elseif action == "Abandon" then
