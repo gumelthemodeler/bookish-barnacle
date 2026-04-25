@@ -220,11 +220,23 @@ function SquadsTab.Initialize(parentFrame)
 	local SquadDescLbl = UIHelpers.CreateLabel(InSquadView, "Squad Description goes here.", UDim2.new(1, -120, 0, 30), Enum.Font.GothamMedium, UIHelpers.Colors.TextWhite, 12); SquadDescLbl.Position = UDim2.new(0, 115, 0, 55); SquadDescLbl.TextXAlignment = Enum.TextXAlignment.Left; SquadDescLbl.TextWrapped = true
 	local SpLabel = UIHelpers.CreateLabel(InSquadView, "TOTAL SP: 0", UDim2.new(1, -120, 0, 20), Enum.Font.GothamBlack, Color3.fromRGB(85, 170, 255), 14); SpLabel.Position = UDim2.new(0, 115, 0, 85); SpLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-	local LeaveDisbandBtn, ldStroke = CreateSharpButton(InSquadView, "LEAVE SQUAD", UDim2.new(0, 120, 0, 30), Enum.Font.GothamBlack, 10)
-	LeaveDisbandBtn.Position = UDim2.new(1, -20, 0, 20); LeaveDisbandBtn.AnchorPoint = Vector2.new(1, 0); LeaveDisbandBtn.TextColor3 = Color3.fromRGB(255, 85, 85); ldStroke.Color = Color3.fromRGB(255, 85, 85)
+	local ActionButtonsFrame = Instance.new("Frame", InSquadView)
+	ActionButtonsFrame.Name = "ActionButtonsFrame"
+	ActionButtonsFrame.Size = UDim2.new(1, -40, 0, 40)
+	ActionButtonsFrame.Position = UDim2.new(0, 20, 0, 110)
+	ActionButtonsFrame.BackgroundTransparency = 1
+	local abLayout = Instance.new("UIListLayout", ActionButtonsFrame)
+	abLayout.FillDirection = Enum.FillDirection.Horizontal
+	abLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	abLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	abLayout.Padding = UDim.new(0, 10)
 
-	local RosterTitle = UIHelpers.CreateLabel(InSquadView, "ACTIVE ROSTER", UDim2.new(1, -20, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.TextWhite, 16); RosterTitle.Position = UDim2.new(0, 20, 0, 130); RosterTitle.TextXAlignment = Enum.TextXAlignment.Left
-	local RosterList = Instance.new("ScrollingFrame", InSquadView); RosterList.Size = UDim2.new(1, -40, 1, -180); RosterList.Position = UDim2.new(0, 20, 0, 160); RosterList.BackgroundTransparency = 1; RosterList.ScrollBarThickness = 4; RosterList.BorderSizePixel = 0
+	local LeaveDisbandBtn, ldStroke = CreateSharpButton(ActionButtonsFrame, "LEAVE SQUAD", UDim2.new(0, 120, 0, 30), Enum.Font.GothamBlack, 10)
+	LeaveDisbandBtn.LayoutOrder = 3
+	LeaveDisbandBtn.TextColor3 = Color3.fromRGB(255, 85, 85); ldStroke.Color = Color3.fromRGB(255, 85, 85)
+
+	local RosterTitle = UIHelpers.CreateLabel(InSquadView, "ACTIVE ROSTER", UDim2.new(1, -20, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.TextWhite, 16); RosterTitle.Position = UDim2.new(0, 20, 0, 150); RosterTitle.TextXAlignment = Enum.TextXAlignment.Left
+	local RosterList = Instance.new("ScrollingFrame", InSquadView); RosterList.Size = UDim2.new(1, -40, 1, -190); RosterList.Position = UDim2.new(0, 20, 0, 180); RosterList.BackgroundTransparency = 1; RosterList.ScrollBarThickness = 4; RosterList.BorderSizePixel = 0
 	local rlLayout = Instance.new("UIListLayout", RosterList); rlLayout.Padding = UDim.new(0, 8); rlLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() RosterList.CanvasSize = UDim2.new(0,0,0, rlLayout.AbsoluteContentSize.Y + 10) end)
 
 	local RightPanel = Instance.new("Frame", SplitContainer)
@@ -309,8 +321,8 @@ function SquadsTab.Initialize(parentFrame)
 			if rawLogo ~= "" then SquadLogo.Image = string.match(rawLogo, "rbxassetid") and rawLogo or "rbxassetid://" .. rawLogo:match("%d+") end
 			SpLabel.Text = "TOTAL SP: " .. (player:GetAttribute("SquadSP") or 0)
 
-			if InSquadView:FindFirstChild("ManageReqsBtn") then InSquadView.ManageReqsBtn:Destroy() end
-			if InSquadView:FindFirstChild("LvlUpBtn") then InSquadView.LvlUpBtn:Destroy() end
+			if ActionButtonsFrame:FindFirstChild("ManageReqsBtn") then ActionButtonsFrame.ManageReqsBtn:Destroy() end
+			if ActionButtonsFrame:FindFirstChild("LvlUpBtn") then ActionButtonsFrame.LvlUpBtn:Destroy() end
 
 			if isLeader then
 				LeaveDisbandBtn.Text = "DISBAND SQUAD"
@@ -331,10 +343,9 @@ function SquadsTab.Initialize(parentFrame)
 			end
 
 			if isOfficer then
-				local reqBtn, rStrk = CreateSharpButton(InSquadView, "VIEW REQUESTS", UDim2.new(0, 120, 0, 30), Enum.Font.GothamBlack, 10)
+				local reqBtn, rStrk = CreateSharpButton(ActionButtonsFrame, "VIEW REQUESTS", UDim2.new(0, 120, 0, 30), Enum.Font.GothamBlack, 10)
 				reqBtn.Name = "ManageReqsBtn"
-				reqBtn.Position = UDim2.new(1, -150, 0, 20)
-				reqBtn.AnchorPoint = Vector2.new(1, 0)
+				reqBtn.LayoutOrder = 2
 				reqBtn.TextColor3 = UIHelpers.Colors.Gold
 				rStrk.Color = UIHelpers.Colors.Gold
 
@@ -379,10 +390,9 @@ function SquadsTab.Initialize(parentFrame)
 
 				local cost = math.floor(math.pow(sqLevel, 2.3) * 500000)
 				local btnText = sqLevel >= 50 and "MAX LEVEL" or ("LEVEL UP\n(" .. AbbreviateNumber(cost) .. ")")
-				local LvlUpBtn, lvlStroke = CreateSharpButton(InSquadView, btnText, UDim2.new(0, 90, 0, 30), Enum.Font.GothamBlack, 9)
+				local LvlUpBtn, lvlStroke = CreateSharpButton(ActionButtonsFrame, btnText, UDim2.new(0, 90, 0, 30), Enum.Font.GothamBlack, 9)
 				LvlUpBtn.Name = "LvlUpBtn"
-				LvlUpBtn.Position = UDim2.new(1, -280, 0, 20)
-				LvlUpBtn.AnchorPoint = Vector2.new(1, 0)
+				LvlUpBtn.LayoutOrder = 1
 
 				if sqLevel >= 50 then
 					LvlUpBtn.TextColor3 = UIHelpers.Colors.BorderMuted; lvlStroke.Color = UIHelpers.Colors.BorderMuted
