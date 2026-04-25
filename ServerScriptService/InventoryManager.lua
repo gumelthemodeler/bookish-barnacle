@@ -179,7 +179,8 @@ Network:WaitForChild("ConsumeItem").OnServerEvent:Connect(function(player, itemN
 				end
 
 			elseif itemInfo.Buff == "Dews" then
-				local amt = math.random(itemInfo.MinAmount or 5000, itemInfo.MaxAmount or 20000)
+				-- [ECONOMY PATCH] Squash the random Dew roll items
+				local amt = math.random(itemInfo.MinAmount or 500, itemInfo.MaxAmount or 2500)
 				player.leaderstats.Dews.Value += amt
 				NotificationEvent:FireClient(player, "Gained " .. amt .. " Dews!", "Success")
 			elseif itemInfo.Buff == "Gamepass" then
