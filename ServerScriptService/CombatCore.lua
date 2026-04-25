@@ -42,19 +42,25 @@ function CombatCore.TickStatuses(combatant)
 		if combatant.Statuses["Bleed"] and combatant.Statuses["Bleed"] > 0 then
 			local dmg = combatant.IsPlayer and math.floor(combatant.MaxHP * 0.05) or math.min(math.floor(combatant.MaxHP * 0.02), 5000)
 			dotDamage += dmg
-			dotLog = dotLog .. " <font color='#FF5555'>[BLEED: -" .. dmg .. "]</font>"
+			dotLog = dotLog .. " <font color=\"#FF5555\">[BLEED: -" .. dmg .. "]</font>"
 		end
 		if combatant.Statuses["Burn"] and combatant.Statuses["Burn"] > 0 then
 			local dmg = combatant.IsPlayer and math.floor(combatant.MaxHP * 0.05) or math.min(math.floor(combatant.MaxHP * 0.02), 6500)
 			dotDamage += dmg
-			dotLog = dotLog .. " <font color='#FFAA00'>[BURN: -" .. dmg .. "]</font>"
+			dotLog = dotLog .. " <font color=\"#FFAA00\">[BURN: -" .. dmg .. "]</font>"
+		end
+		if combatant.Statuses["Lacerate"] and combatant.Statuses["Lacerate"] > 0 then
+			local stacks = tonumber(combatant.Statuses["Lacerate"]) or 1
+			local dmg = combatant.IsPlayer and math.floor(combatant.MaxHP * (0.05 * stacks)) or math.min(math.floor(combatant.MaxHP * (0.03 * stacks)), 15000)
+			dotDamage += dmg
+			dotLog = dotLog .. " <font color=\"#AA0000\">[LACERATE x" .. stacks .. ": -" .. dmg .. "]</font>"
 		end
 
 		local toRemove = {}
 		local immunitiesToAdd = {}
 
 		for sName, duration in pairs(combatant.Statuses) do
-			if sName == "Transformed" or sName == "Telegraphing" or sName == "Enraged" then
+			if sName == "Transformed" or sName == "Telegraphing" or sName == "Enraged" or sName == "Lacerate" then
 				continue
 			end
 
@@ -69,7 +75,7 @@ function CombatCore.TickStatuses(combatant)
 		for _, rem in ipairs(toRemove) do
 			combatant.Statuses[rem] = nil
 			if not string.find(rem, "Immunity") and not string.find(rem, "SynergyMark_") then
-				if rem == "Stun" or rem == "Bleed" or rem == "Burn" or rem == "Crippled" or rem == "Immobilized" or rem == "Weakened" or rem == "Blinded" or rem == "TrueBlind" or rem == "Debuff_Defense" then
+				if rem == "Stun" or rem == "Bleed" or rem == "Burn" or rem == "Crippled" or rem == "Immobilized" or rem == "Weakened" or rem == "Blinded" or rem == "TrueBlind" or rem == "Debuff_Defense" or rem == "Confusion" or rem == "Terror" then
 					local immDuration = 2
 					if combatant.IsBoss then immDuration = 4 end 
 					immunitiesToAdd[rem .. "Immunity"] = immDuration
@@ -93,6 +99,9 @@ function CombatCore.CalculateDamage(attacker, defender, skillMult, targetLimb, b
 	local atkBuff = 1.0
 	local defBuff = 1.0
 	local armorPen = 0
+
+	local momentum = tonumber(attacker.MomentumStacks) or 0
+	atkBuff = atkBuff * (1.0 + (momentum * 0.05))
 
 	if attacker.Statuses then
 		if (tonumber(attacker.Statuses.Buff_Strength) or 0) > 0 then atkBuff = atkBuff * 1.5 end
@@ -131,7 +140,6 @@ function CombatCore.CalculateDamage(attacker, defender, skillMult, targetLimb, b
 		atkBuff = atkBuff * aStats.DmgMult
 
 		if (aStats.MomentumDamagePerHit or 0) > 0 and not isAttackerTransformed then
-			local momentum = tonumber(attacker.MomentumStacks) or 0
 			atkBuff = atkBuff * (1.0 + (momentum * aStats.MomentumDamagePerHit))
 		end
 
@@ -203,7 +211,6 @@ function CombatCore.CalculateDamage(attacker, defender, skillMult, targetLimb, b
 	end
 
 	baseDmg = baseDmg * (math.random(90, 110) / 100)
-
 	return math.max(1, math.floor(baseDmg))
 end
 
@@ -261,8 +268,8 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 	targetLimb = tostring(targetLimb or "Body")
 	local skill = SkillData.Skills[skillName] or { Mult = 1.0, Cooldown = 0, Hits = 1, Effect = "None", Description = "A basic attack." }
 
-	local fLogName = "<font color='#55AAFF'>" .. tostring(attacker.Name or "Attacker") .. "</font>"
-	local fDefName = "<font color='#FF5555'>" .. tostring(defender.Name or "Defender") .. "</font>"
+	local fLogName = "<font color=\"#55AAFF\">" .. tostring(attacker.Name or "Attacker") .. "</font>"
+	local fDefName = "<font color=\"#FF5555\">" .. tostring(defender.Name or "Defender") .. "</font>"
 
 	if attacker.Cooldowns then attacker.Cooldowns[skillName] = tonumber(skill.Cooldown) or 0 end
 	if not attacker.BaseMaxHP then attacker.BaseMaxHP = tonumber(attacker.MaxHP) or 100 end
@@ -274,46 +281,45 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 	if mult == 0 then
 		if skill.Effect == "CloseGap" or skillName == "Close In" or skillName == "Advance" or skillName == "Charge" then
 			attacker.LastSkill = skillName
-			if attacker.Statuses and attacker.Statuses["Transformed"] then return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#FFAA00'>" .. fLogName .. " charges forward with immense speed!</font>", false, "Heavy", 0
-			else return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#55AAFF'>" .. fLogName .. " uses their ODM gear to close the distance!</font>", false, "None", 0 end
+			if attacker.Statuses and attacker.Statuses["Transformed"] then return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA00\">" .. attacker.Name .. " charges forward with immense speed!</font>", false, "Heavy", 0
+			else return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55AAFF\">" .. attacker.Name .. " uses their ODM gear to close the distance!</font>", false, "None", 0 end
 		elseif skill.Effect == "FallBack" or skillName == "Fall Back" then
 			attacker.LastSkill = skillName
-			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#FFAA55'>" .. fLogName .. " falls back to Long Range!</font>", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA55\">" .. attacker.Name .. " falls back to Long Range!</font>", false, "None", 0
 		elseif skill.Effect == "Dodge" then
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses["Dodge"] = 1; attacker.LastSkill = skillName 
-			return fLogName .. " used <b>" .. skillName .. "</b>! Evasive maneuvers engaged.", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. attacker.Name .. " engaged evasive maneuvers.", false, "None", 0
 		elseif skill.Effect == "Block" then
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses["Block"] = 1; attacker.LastSkill = skillName 
-			return fLogName .. " used <b>" .. skillName .. "</b>! Defensive stance taken.", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. attacker.Name .. " takes a defensive stance.", false, "None", 0
 		elseif skill.Effect == "Rest" or skillName == "Recover" or skillName == "Regroup" then
 			local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.30
 			attacker.HP = math.min(tonumber(attacker.MaxHP) or 100, (tonumber(attacker.HP) or 0) + healAmount); 
 			attacker.Gas = tonumber(attacker.MaxGas) or 100; attacker.LastSkill = skillName
-			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#55FF55'>Recovered HP and Gas.</font>", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. attacker.Name .. " recovered HP and Gas.</font>", false, "None", 0
 		elseif skill.Effect == "Transform" then
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses["Transformed"] = 999; attacker.LastSkill = skillName;
 
-			-- TITAN HEALTH POOL LINK BREAKER --
 			local tEnd = tonumber(attacker.PlayerObj:GetAttribute("Titan_Endurance_Val")) or 10
 			local tPot = tonumber(attacker.PlayerObj:GetAttribute("Titan_Potential_Val")) or 10
 			attacker.MaxHP = attacker.BaseMaxHP + ((tEnd + tPot) * 40) 
 			attacker.HP = attacker.MaxHP
 			attacker.TitanEnergy = tonumber(attacker.MaxTitanEnergy) or 100
 
-			return fLogName .. " used <b>" .. skillName .. "</b>! Lightning strikes as " .. fLogName .. " shifts into a Titan! <font color='#55FF55'>[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\nLightning strikes as " .. attacker.Name .. " shifts into a Titan! <font color=\"#55FF55\">[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy", 0
 		elseif skill.Effect == "Eject" then
 			if attacker.Statuses then attacker.Statuses["Transformed"] = nil end
 			attacker.LastSkill = skillName
 			attacker.MaxHP = attacker.BaseMaxHP
 			attacker.HP = math.min(attacker.HP, attacker.MaxHP)
-			return fLogName .. " used <b>" .. skillName .. "</b>! " .. fLogName .. " cuts themselves out of the nape, returning to human form.", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. attacker.Name .. " cuts themselves out of the nape, returning to human form.", false, "None", 0
 		elseif skill.Effect == "TitanRest" or skillName == "Titan Recover" then
 			local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.60
 			attacker.HP = math.min(tonumber(attacker.MaxHP) or 100, (tonumber(attacker.HP) or 0) + healAmount); attacker.LastSkill = skillName
-			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#55FF55'>" .. fLogName .. " uses immense steam to regenerate " .. math.floor(healAmount) .. " HP.</font>", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. attacker.Name .. " uses immense steam to regenerate " .. math.floor(healAmount) .. " HP.</font>", false, "None", 0
 		end
 	end
 
@@ -327,12 +333,24 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 	local isAttackerTransformed = attacker.Statuses and (tonumber(attacker.Statuses.Transformed) or 0) > 0
 	local isDefenderTransformed = defender.Statuses and (tonumber(defender.Statuses.Transformed) or 0) > 0
 
+	local momentum = tonumber(attacker.MomentumStacks) or 0
+
 	local atkSpd = tonumber(attacker.TotalSpeed) or 10
 	local defSpd = tonumber(defender.TotalSpeed) or 10
 	local atkRes = tonumber(attacker.TotalResolve) or 10
 	local defRes = tonumber(defender.TotalResolve) or 10
 
-	-- TITAN STAT OVERRIDES
+	atkSpd = atkSpd * (1.0 + (momentum * 0.05))
+
+	if attacker.Statuses and attacker.Statuses["Terror"] then
+		atkSpd = atkSpd * 0.75
+		atkRes = atkRes * 0.75
+	end
+	if defender.Statuses and defender.Statuses["Terror"] then
+		defSpd = defSpd * 0.75
+		defRes = defRes * 0.75
+	end
+
 	if attacker.IsPlayer and isAttackerTransformed and attacker.PlayerObj then
 		atkSpd = (tonumber(attacker.PlayerObj:GetAttribute("Titan_Speed_Val")) or 10) * 3.0
 		atkRes = tonumber(attacker.PlayerObj:GetAttribute("Titan_Endurance_Val")) or 10
@@ -346,6 +364,14 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 		local currentDefHP = tonumber(defender.HP) or 0
 		if currentDefHP < 1 and i > 1 then break end 
 
+		if defender.Statuses and defender.Statuses["CounterStance"] and (skill.Range ~= "Long" and not skill.Unavoidable) then
+			local counterDmg = math.floor((defender.TotalStrength or 10) * 1.5)
+			attacker.HP = math.max(1, (tonumber(attacker.HP) or 10) - counterDmg)
+			table.insert(hitLogs, fLogName .. " attacked, but " .. fDefName .. " was in a <font color=\"#FF3333\"><b>COUNTER STANCE</b></font>! " .. attacker.Name .. " was instantly interrupted and took " .. counterDmg .. " counter-damage!")
+			didHitAtAll = false
+			break
+		end
+
 		local isDodging = false
 		if defender.Statuses then
 			if (tonumber(defender.Statuses.Dodge) or 0) > 0 then isDodging = true end
@@ -357,7 +383,6 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 		if isDodging then dodgeChance = 100 end
 		if defender.Statuses and (tonumber(defender.Statuses.Immobilized) or 0) > 0 then dodgeChance = 0; isDodging = false end
 
-		-- Titan Dodge Stat (Potential)
 		local tPotential = defender.IsPlayer and isDefenderTransformed and (tonumber(defender.PlayerObj:GetAttribute("Titan_Potential_Val")) or 10) or 0
 		dodgeChance = dodgeChance + (tPotential * 0.25)
 
@@ -375,7 +400,6 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 		local critChance = 5 + ((atkRes - defRes) * 0.10)
 		if attacker.AwakenedStats and (tonumber(attacker.AwakenedStats.CritBonus) or 0) > 0 then critChance = critChance + tonumber(attacker.AwakenedStats.CritBonus) end
 
-		-- Titan Crit Stat (Precision)
 		local tPrecision = attacker.IsPlayer and isAttackerTransformed and (tonumber(attacker.PlayerObj:GetAttribute("Titan_Precision_Val")) or 10) or 0
 		critChance = critChance + (tPrecision * 0.25)
 
@@ -385,33 +409,67 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 		local isCrit = math.random(1, 100) <= critChance
 		local dmgMultValue = (tonumber(skill.Mult) or 1.0) * (isCrit and 1.5 or 1.0)
 
+		local effectLog = ""
+
+		if skillName == "Titan Kick" and defender.Statuses and defender.Statuses["Lacerate"] then
+			local stacks = tonumber(defender.Statuses["Lacerate"]) or 1
+			dmgMultValue = dmgMultValue + (0.5 * stacks)
+			defender.Statuses["Lacerate"] = nil
+			effectLog = effectLog .. " <font color=\"#FF0000\"><b>[LACERATE DETONATED!]</b></font>"
+		end
+		if skillName == "Titan Punch" and defender.Statuses and defender.Statuses["Confusion"] then
+			if not defender.Statuses then defender.Statuses = {} end
+			defender.Statuses["Stun"] = 2
+			defender.Statuses["Confusion"] = nil
+			effectLog = effectLog .. " <font color=\"#FFFF00\"><b>[CONFUSION EXPLOITED -> STUNNED!]</b></font>"
+		end
+
 		local baseDmg = CombatCore.CalculateDamage(attacker, defender, dmgMultValue, targetLimb, nil)
 		baseDmg = math.max(1, math.floor(baseDmg * (qteMultiplier or 1.0)))
 
 		local survivalTriggered, hitGate, gateBroken, hpDmg, gateName = CombatCore.TakeDamage(defender, baseDmg, attacker.Style)
 		totalDmgDealt += hpDmg
 
-		local effectLog = ""
-		if qteMultiplier == 0.2 then effectLog = effectLog .. " <font color='#FFD700'><b>[PARRIED!]</b></font>"
-		elseif qteMultiplier == 0.6 then effectLog = effectLog .. " <font color='#AAAAAA'><b>[BLOCKED!]</b></font>" end
+		if qteMultiplier == 0.2 then effectLog = effectLog .. " <font color=\"#FFD700\"><b>[PARRIED!]</b></font>"
+		elseif qteMultiplier == 0.6 then effectLog = effectLog .. " <font color=\"#AAAAAA\"><b>[BLOCKED!]</b></font>" end
 
 		if skill.Effect and skill.Effect ~= "None" and skill.Effect ~= "Block" and skill.Effect ~= "Dodge" and skill.Effect ~= "Rest" then
 			local safeEffect = tostring(skill.Effect)
 			if not defender.Statuses then defender.Statuses = {} end
 			local currentEffect = tonumber(defender.Statuses[safeEffect]) or 0
-			if currentEffect == 0 then
+
+			if safeEffect == "Bleed" then
+				local curLac = tonumber(defender.Statuses["Lacerate"]) or 0
+				if curLac > 0 then
+					defender.Statuses["Lacerate"] = math.min(3, curLac + 1)
+					effectLog = effectLog .. " <font color=\"#AA0000\">[LACERATE x" .. defender.Statuses["Lacerate"] .. "]</font>"
+				elseif currentEffect > 0 then
+					defender.Statuses["Bleed"] = nil
+					defender.Statuses["Lacerate"] = 1
+					effectLog = effectLog .. " <font color=\"#AA0000\">[DEEP WOUND: LACERATE!]</font>"
+				else
+					defender.Statuses["Bleed"] = (tonumber(skill.Duration) or 2) + 1
+					effectLog = effectLog .. " <font color=\"#FF5555\">[BLEED]</font>"
+				end
+			elseif currentEffect == 0 then
 				defender.Statuses[safeEffect] = (tonumber(skill.Duration) or 2) + 1
-				effectLog = effectLog .. " <font color='#AA55FF'>[" .. safeEffect:upper() .. "]</font>"
+				effectLog = effectLog .. " <font color=\"#AA55FF\">[" .. safeEffect:upper() .. "]</font>"
 			end
 		end
 
 		if isCrit or survivalTriggered then overallShake = "Heavy" elseif overallShake == "None" then overallShake = "Normal" end
 
 		local hitMsg = fLogName .. " struck the <b>" .. targetLimb .. "</b> for " .. math.floor(baseDmg) .. " dmg!" .. effectLog
-		if isCrit then hitMsg = hitMsg .. " <font color='#FFAA00'>(CRIT!)</font>" end
-		if survivalTriggered then hitMsg = hitMsg .. " <font color='#FF55FF'>...TATAKAE! (Refused to yield!)</font>" end
+		if isCrit then hitMsg = hitMsg .. " <font color=\"#FFAA00\">(CRIT!)</font>" end
+		if survivalTriggered then hitMsg = hitMsg .. " <font color=\"#FF55FF\">...TATAKAE! (Refused to yield!)</font>" end
 
 		table.insert(hitLogs, hitMsg)
+	end
+
+	if didHitAtAll then
+		attacker.MomentumStacks = math.min(10, (tonumber(attacker.MomentumStacks) or 0) + hitsToDo)
+	else
+		attacker.MomentumStacks = 0
 	end
 
 	local finalMsg = ""
@@ -437,8 +495,8 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 	local fallbackSkill = { Mult = 1.0, Cooldown = 0, Hits = 1, Effect = "None", Description = "A basic attack." }
 	local skill = SkillData.Skills[skillName] or SkillData.Skills["Brutal Swipe"] or fallbackSkill
 
-	local fLogName = "<font color='" .. tostring(logColor or "#FFFFFF") .. "'>" .. tostring(logName or "Attacker") .. "</font>"
-	local fDefName = "<font color='" .. tostring(defColor or "#FF5555") .. "'>" .. tostring(defName or "Defender") .. "</font>"
+	local fLogName = "<font color=\"" .. tostring(logColor or "#FFFFFF") .. "\">" .. tostring(logName or "Attacker") .. "</font>"
+	local fDefName = "<font color=\"" .. tostring(defColor or "#FF5555") .. "\">" .. tostring(defName or "Defender") .. "</font>"
 
 	if attacker.Cooldowns then attacker.Cooldowns[skillName] = tonumber(skill.Cooldown) or 0 end
 	if not attacker.BaseMaxHP then attacker.BaseMaxHP = tonumber(attacker.MaxHP) or 100 end
@@ -463,15 +521,15 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 			attacker.LastSkill = skillName
 			local moveWord = attacker.IsPlayer and "close" or "closes"
 			if attacker.Statuses and attacker.Statuses["Transformed"] then
-				return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#FFAA00'>" .. fLogName .. " charges forward with immense speed!</font>", false, "Heavy"
+				return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA00\">" .. fLogName .. " charges forward with immense speed!</font>", false, "Heavy"
 			else
-				return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#55AAFF'>" .. fLogName .. " uses their ODM gear to " .. moveWord .. " the distance!</font>", false, "None"
+				return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55AAFF\">" .. fLogName .. " uses their ODM gear to " .. moveWord .. " the distance!</font>", false, "None"
 			end
 
 		elseif skill.Effect == "FallBack" or skillName == "Fall Back" then
 			attacker.LastSkill = skillName
 			local moveWord = attacker.IsPlayer and "fall" or "falls"
-			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#FFAA55'>" .. fLogName .. " " .. moveWord .. " back to Long Range!</font>", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA55\">" .. fLogName .. " " .. moveWord .. " back to Long Range!</font>", false, "None"
 
 		elseif skill.Effect == "Dodge" then
 			if not attacker.Statuses then attacker.Statuses = {} end
@@ -479,24 +537,24 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 			local trueBlind = tonumber(attacker.Statuses.TrueBlind) or 0
 			if blind > 0 or trueBlind > 0 then return fLogName .. " attempted to use <b>" .. skillName .. "</b>, but stumbled due to blindness!", false, "None" end
 			attacker.Statuses["Dodge"] = 1; attacker.LastSkill = skillName 
-			return fLogName .. " used <b>" .. skillName .. "</b>! " .. fLogName .. " maneuvers rapidly, preparing to evade the next attack.", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. fLogName .. " maneuvers rapidly, preparing to evade the next attack.", false, "None"
 
 		elseif skill.Effect == "Block" then
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses["Block"] = 1; attacker.LastSkill = skillName 
-			return fLogName .. " used <b>" .. skillName .. "</b>! " .. fLogName .. " braces for impact, massively increasing defense.", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. fLogName .. " braces for impact, massively increasing defense.", false, "None"
 
 		elseif skill.Effect == "NapeGuard" then
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses["NapeGuard"] = (tonumber(skill.Duration) or 2) + 1
 			attacker.LastSkill = skillName
-			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#AA55FF'>[NAPE GUARDED]</font>", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#AA55FF\">[NAPE GUARDED]</font>", false, "None"
 
 		elseif string.find(tostring(skill.Effect), "Buff_") then
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses[skill.Effect] = (tonumber(skill.Duration) or 2) + 1
 			attacker.LastSkill = skillName
-			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#AA55FF'>[" .. string.gsub(skill.Effect:upper(), "_", " ") .. " ACTIVATED]</font>", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#AA55FF\">[" .. string.gsub(skill.Effect:upper(), "_", " ") .. " ACTIVATED]</font>", false, "None"
 
 		elseif skill.Effect == "Rest" or skillName == "Recover" or skillName == "Regroup" then
 			local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.30
@@ -508,7 +566,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 
 			attacker.LastSkill = skillName
 			local regroupWord = attacker.IsPlayer and "regroup" or "regroups"
-			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#55FF55'>" .. fLogName .. " " .. regroupWord .. ", recovering HP and Gas.</font>", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. fLogName .. " " .. regroupWord .. ", recovering HP and Gas.</font>", false, "None"
 
 		elseif skill.Effect == "Transform" then
 			local cName = attacker.Clan or "None"
@@ -518,48 +576,59 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses["Transformed"] = 999; attacker.LastSkill = skillName; 
 
-			-- TITAN HEALTH POOL LINK BREAKER --
 			local tEnd = tonumber(attacker.PlayerObj:GetAttribute("Titan_Endurance_Val")) or 10
 			local tPot = tonumber(attacker.PlayerObj:GetAttribute("Titan_Potential_Val")) or 10
 			attacker.MaxHP = attacker.BaseMaxHP + ((tEnd + tPot) * 40) 
 			attacker.HP = attacker.MaxHP
 			attacker.TitanEnergy = tonumber(attacker.MaxTitanEnergy) or 100
 
-			return fLogName .. " used <b>" .. skillName .. "</b>! Lightning strikes as " .. fLogName .. " shifts into a Titan! <font color='#55FF55'>[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\nLightning strikes as " .. fLogName .. " shifts into a Titan! <font color=\"#55FF55\">[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy"
 
 		elseif skill.Effect == "Eject" then
 			if attacker.Statuses then attacker.Statuses["Transformed"] = nil end
 			attacker.LastSkill = skillName
 			attacker.MaxHP = attacker.BaseMaxHP
 			attacker.HP = math.min(attacker.HP, attacker.MaxHP)
-			return fLogName .. " used <b>" .. skillName .. "</b>! " .. fLogName .. " cuts themselves out of the nape, returning to human form.", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. fLogName .. " cuts themselves out of the nape, returning to human form.", false, "None"
 
 		elseif skill.Effect == "TitanRest" or skillName == "Titan Recover" then
 			local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.60
 			attacker.HP = math.min(tonumber(attacker.MaxHP) or 100, (tonumber(attacker.HP) or 0) + healAmount); attacker.LastSkill = skillName
-			return fLogName .. " used <b>" .. skillName .. "</b>! <font color='#55FF55'>" .. fLogName .. " uses immense steam to regenerate " .. math.floor(healAmount) .. " HP.</font>", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. fLogName .. " uses immense steam to regenerate " .. math.floor(healAmount) .. " HP.</font>", false, "None"
 		end
 	end
 
 	-- [[ PVE DAMAGE RESOLUTION ]]
 	local hitsToDo = tonumber(skill.Hits) or 1; local hitLogs = {}; local didHitAtAll = false; local overallShake = "None"
 
-	local synergyTag = isSequenceCombo and " <font color='#FFD700'>[SYNERGY: " .. lastAtkSkill .. " -> " .. skillName .. "]</font>" or ""
+	local synergyTag = isSequenceCombo and " <font color=\"#FFD700\">[SYNERGY: " .. lastAtkSkill .. " -> " .. skillName .. "]</font>" or ""
 	local synergyOwner = defender.SynergyOwners and defender.SynergyOwners[targetLimb]
 	if defender.Statuses and defender.Statuses["SynergyMark_" .. targetLimb] and attacker.IsPlayer and attacker.PlayerObj and synergyOwner ~= attacker.PlayerObj.UserId then
-		synergyTag = synergyTag .. " <font color='#55FFFF'><b>[CO-OP TAKEDOWN!]</b></font>"
+		synergyTag = synergyTag .. " <font color=\"#55FFFF\"><b>[CO-OP TAKEDOWN!]</b></font>"
 		defender.Statuses["SynergyMark_" .. targetLimb] = nil
 	end
 
 	local isAttackerTransformed = attacker.Statuses and (tonumber(attacker.Statuses.Transformed) or 0) > 0
 	local isDefenderTransformed = defender.Statuses and (tonumber(defender.Statuses.Transformed) or 0) > 0
 
+	local momentum = tonumber(attacker.MomentumStacks) or 0
+
 	local atkSpd = tonumber(attacker.TotalSpeed) or 10
 	local defSpd = tonumber(defender.TotalSpeed) or 10
 	local atkRes = tonumber(attacker.TotalResolve) or 10
 	local defRes = tonumber(defender.TotalResolve) or 10
 
-	-- TITAN STAT OVERRIDES
+	atkSpd = atkSpd * (1.0 + (momentum * 0.05))
+
+	if attacker.Statuses and attacker.Statuses["Terror"] then
+		atkSpd = atkSpd * 0.75
+		atkRes = atkRes * 0.75
+	end
+	if defender.Statuses and defender.Statuses["Terror"] then
+		defSpd = defSpd * 0.75
+		defRes = defRes * 0.75
+	end
+
 	if attacker.IsPlayer and isAttackerTransformed and attacker.PlayerObj then
 		atkSpd = (tonumber(attacker.PlayerObj:GetAttribute("Titan_Speed_Val")) or 10) * 3.0
 		atkRes = tonumber(attacker.PlayerObj:GetAttribute("Titan_Endurance_Val")) or 10
@@ -589,6 +658,14 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 	for i = 1, hitsToDo do
 		local currentDefHP = tonumber(defender.HP) or 0
 		if currentDefHP < 1 and i > 1 then break end 
+
+		if defender.Statuses and defender.Statuses["CounterStance"] and (skill.Range ~= "Long" and not skill.Unavoidable) then
+			local counterDmg = math.floor((defender.TotalStrength or 10) * 1.5)
+			attacker.HP = math.max(1, (tonumber(attacker.HP) or 10) - counterDmg)
+			table.insert(hitLogs, fLogName .. " attacked, but " .. fDefName .. " was in a <font color=\"#FF3333\"><b>COUNTER STANCE</b></font>! " .. fLogName .. " was instantly interrupted and took " .. counterDmg .. " counter-damage!")
+			didHitAtAll = false
+			break
+		end
 
 		local isDodging = false
 		if defender.Statuses then
@@ -641,9 +718,9 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 			if isDodging then 
 				isDodging = false
 				if skill.Range == "Any" then
-					effectLog = effectLog .. "\n<font color='#FF3333'><b>[DODGE FAILED: AREA ATTACK IS UNAVOIDABLE! YOU MUST BLOCK!]</b></font>"
+					effectLog = effectLog .. "\n<font color=\"#FF3333\"><b>[DODGE FAILED: AREA ATTACK IS UNAVOIDABLE! YOU MUST BLOCK!]</b></font>"
 				else
-					effectLog = effectLog .. "\n<font color='#FF3333'><b>[DODGE FAILED: ATTACK IS UNAVOIDABLE! YOU MUST FALL BACK OR BLOCK!]</b></font>"
+					effectLog = effectLog .. "\n<font color=\"#FF3333\"><b>[DODGE FAILED: ATTACK IS UNAVOIDABLE! YOU MUST FALL BACK OR BLOCK!]</b></font>"
 				end
 			end
 		elseif isDodging then 
@@ -656,7 +733,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 
 		if isDodging and defender.Statuses and (tonumber(defender.Statuses.Immobilized) or 0) > 0 then
 			dodgeChance = 0; isDodging = false
-			effectLog = effectLog .. " <font color='#FF5555'>[IMMOBILIZED: Dodge Failed!]</font>"
+			effectLog = effectLog .. " <font color=\"#FF5555\">[IMMOBILIZED: Dodge Failed!]</font>"
 		end
 
 		if defender.Statuses and (tonumber(defender.Statuses.Immobilized) or 0) > 0 then dodgeChance = 0 end
@@ -666,7 +743,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 				local dodgeMsg = isDodging and " (Maneuvered)" or ""
 				if attacker.IsPlayer then table.insert(hitLogs, fLogName .. " aimed for the <b>" .. targetLimb .. "</b>, but " .. fDefName .. " dodged!" .. dodgeMsg)
 				else table.insert(hitLogs, fLogName .. " attacked, but " .. fDefName .. " dodged!" .. dodgeMsg) end
-			else table.insert(hitLogs, "<font color='#AAAAAA'>- Hit " .. i .. " missed!</font>") end
+			else table.insert(hitLogs, "<font color=\"#AAAAAA\">- Hit " .. i .. " missed!</font>") end
 			continue
 		end
 
@@ -691,6 +768,19 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		local isCrit = math.random(1, 100) <= (critChance or 0)
 		local dmgMultValue = (tonumber(skill.Mult) or 1.0) * (isCrit and 1.5 or 1.0) * comboMult
 
+		if skillName == "Titan Kick" and defender.Statuses and defender.Statuses["Lacerate"] then
+			local stacks = tonumber(defender.Statuses["Lacerate"]) or 1
+			dmgMultValue = dmgMultValue + (0.5 * stacks)
+			defender.Statuses["Lacerate"] = nil
+			effectLog = effectLog .. " <font color=\"#FF0000\"><b>[LACERATE DETONATED!]</b></font>"
+		end
+		if skillName == "Titan Punch" and defender.Statuses and defender.Statuses["Confusion"] then
+			if not defender.Statuses then defender.Statuses = {} end
+			defender.Statuses["Stun"] = 2
+			defender.Statuses["Confusion"] = nil
+			effectLog = effectLog .. " <font color=\"#FFFF00\"><b>[CONFUSION EXPLOITED -> STUNNED!]</b></font>"
+		end
+
 		local baseDmg = CombatCore.CalculateDamage(attacker, defender, dmgMultValue, targetLimb, battleContext)
 		local survivalTriggered, hitGate, gateBroken, hpDmg, gateName = CombatCore.TakeDamage(defender, baseDmg, attacker.Style)
 
@@ -704,15 +794,15 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 					DoomsdayManager.RegisterDamage(attacker.PlayerObj, baseDmg)
 				end)
 				if success then
-					globalDmgLog = " <font color='#FF55FF'><b>[GLOBAL DMG LOGGED: " .. math.floor(baseDmg) .. "]</b></font>"
+					globalDmgLog = " <font color=\"#FF55FF\"><b>[GLOBAL DMG LOGGED: " .. math.floor(baseDmg) .. "]</b></font>"
 				else
 					warn("[DOOMSDAY ERROR]: Failed to log damage! Ensure DoomsdayManager is a ModuleScript. Error: " .. tostring(err))
 				end
 			end
 		end
 
-		if skill.Effect == "CloseGap" then effectLog = effectLog .. " <font color='#55AAFF'>[CLOSED DISTANCE]</font>"
-		elseif skill.Effect == "FallBack" then effectLog = effectLog .. " <font color='#FFAA55'>[RETREATED]</font>" end
+		if skill.Effect == "CloseGap" then effectLog = effectLog .. " <font color=\"#55AAFF\">[CLOSED DISTANCE]</font>"
+		elseif skill.Effect == "FallBack" then effectLog = effectLog .. " <font color=\"#FFAA55\">[RETREATED]</font>" end
 
 		if skill.Effect and skill.Effect ~= "None" and skill.Effect ~= "Block" and skill.Effect ~= "Dodge" and skill.Effect ~= "Rest" and skill.Effect ~= "Flee" and skill.Effect ~= "Transform" and skill.Effect ~= "Eject" and skill.Effect ~= "TitanRest" and skill.Effect ~= "FallBack" and skill.Effect ~= "CloseGap" then
 			if not defender.Statuses then defender.Statuses = {} end
@@ -724,7 +814,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 					attacker.TitanEnergy = math.min(maxNrg, pNrg + 40)
 					local pHP = tonumber(attacker.HP) or 0; local maxHP = tonumber(attacker.MaxHP) or 100
 					attacker.HP = math.min(maxHP, pHP + (maxHP * 0.15))
-					effectLog = effectLog .. " <font color='#55FF55'>[+40 HEAT | +15% HP]</font>"
+					effectLog = effectLog .. " <font color=\"#55FF55\">[+40 HEAT | +15% HP]</font>"
 				end
 			else
 				local currentEffect = tonumber(defender.Statuses[safeEffect]) or 0
@@ -738,29 +828,42 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 				end
 
 				if isShroudImmune then
-					effectLog = effectLog .. " <font color='#888888'>[SHROUD: STUN IMMUNE]</font>"
+					effectLog = effectLog .. " <font color=\"#888888\">[SHROUD: STUN IMMUNE]</font>"
 					appliedThisStrike[safeEffect] = true
-				elseif isBossImmune and (safeEffect == "Stun" or safeEffect == "Bleed" or safeEffect == "Blinded" or safeEffect == "TrueBlind" or safeEffect == "Crippled" or safeEffect == "Weakened") then
-					effectLog = effectLog .. " <font color='#FF0000'>[BOSS IMMUNE]</font>"
+				elseif isBossImmune and (safeEffect == "Stun" or safeEffect == "Bleed" or safeEffect == "Blinded" or safeEffect == "TrueBlind" or safeEffect == "Crippled" or safeEffect == "Weakened" or safeEffect == "Confusion" or safeEffect == "Terror") then
+					effectLog = effectLog .. " <font color=\"#FF0000\">[BOSS IMMUNE]</font>"
 					appliedThisStrike[safeEffect] = true
-				elseif isArmored and (safeEffect == "Stun" or safeEffect == "Bleed" or safeEffect == "Blinded" or safeEffect == "TrueBlind" or safeEffect == "Crippled" or safeEffect == "Weakened") then
-					effectLog = effectLog .. " <font color='#888888'>[ARMOR RESISTS EFFECT]</font>"
-				elseif currentEffect > 0 then effectLog = effectLog .. " <font color='#888888'>[ALREADY ACTIVE]</font>"
-				elseif currentImmunity > 0 then effectLog = effectLog .. " <font color='#888888'>[IMMUNITY ACTIVE]</font>"
+				elseif isArmored and (safeEffect == "Stun" or safeEffect == "Bleed" or safeEffect == "Blinded" or safeEffect == "TrueBlind" or safeEffect == "Crippled" or safeEffect == "Weakened" or safeEffect == "Confusion" or safeEffect == "Terror") then
+					effectLog = effectLog .. " <font color=\"#888888\">[ARMOR RESISTS EFFECT]</font>"
+				elseif currentImmunity > 0 then effectLog = effectLog .. " <font color=\"#888888\">[IMMUNITY ACTIVE]</font>"
 				elseif safeEffect == "GasDrain" then
 					if defender.IsPlayer then
 						defender.Gas = math.max(0, (tonumber(defender.Gas) or 0) - 40)
-						effectLog = effectLog .. " <font color='#FF5555'>[-40 GAS]</font>"
+						effectLog = effectLog .. " <font color=\"#FF5555\">[-40 GAS]</font>"
 					end
 				elseif string.find(safeEffect, "Buff_") then
 					if not attacker.Statuses then attacker.Statuses = {} end
 					if not appliedThisStrike[safeEffect] then
 						attacker.Statuses[safeEffect] = (tonumber(skill.Duration) or 2) + 1
-						effectLog = effectLog .. " <font color='#55FF55'>[" .. string.gsub(safeEffect:upper(), "_", " ") .. "]</font>"
+						effectLog = effectLog .. " <font color=\"#55FF55\">[" .. string.gsub(safeEffect:upper(), "_", " ") .. "]</font>"
 						appliedThisStrike[safeEffect] = true
 					end
 				else
-					if not appliedThisStrike[safeEffect] then
+					if safeEffect == "Bleed" then
+						local curLac = tonumber(defender.Statuses["Lacerate"]) or 0
+						if curLac > 0 then
+							defender.Statuses["Lacerate"] = math.min(3, curLac + 1)
+							effectLog = effectLog .. " <font color=\"#AA0000\">[LACERATE x" .. defender.Statuses["Lacerate"] .. "]</font>"
+						elseif currentEffect > 0 then
+							defender.Statuses["Bleed"] = nil
+							defender.Statuses["Lacerate"] = 1
+							effectLog = effectLog .. " <font color=\"#AA0000\">[DEEP WOUND: LACERATE!]</font>"
+						else
+							defender.Statuses["Bleed"] = (tonumber(skill.Duration) or 2) + 1
+							effectLog = effectLog .. " <font color=\"#FF5555\">[BLEED]</font>"
+						end
+						appliedThisStrike["Bleed"] = true
+					elseif not appliedThisStrike[safeEffect] then
 						local appliedDur = tonumber(skill.Duration) or 2
 						if weather == "Rain" and safeEffect == "Burn" then appliedDur = math.ceil(appliedDur / 2) end
 
@@ -771,14 +874,14 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 						end
 
 						defender.Statuses[safeEffect] = appliedDur
-						effectLog = effectLog .. " <font color='#AA55FF'>[" .. safeEffect:upper() .. "]</font>"
+						effectLog = effectLog .. " <font color=\"#AA55FF\">[" .. safeEffect:upper() .. "]</font>"
 						appliedThisStrike[safeEffect] = true
 					end
 				end
 			end
 		end
 
-		if isArmored and (targetLimb == "Legs" or targetLimb == "Arms" or targetLimb == "Eyes") then effectLog = effectLog .. " <font color='#888888'>[ARMOR DEFLECTS DEBUFF]</font>"
+		if isArmored and (targetLimb == "Legs" or targetLimb == "Arms" or targetLimb == "Eyes") then effectLog = effectLog .. " <font color=\"#888888\">[ARMOR DEFLECTS DEBUFF]</font>"
 		else
 			if targetLimb == "Legs" and attacker.IsPlayer and not defender.IsHuman then
 				if not defender.Statuses then defender.Statuses = {} end
@@ -788,20 +891,20 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 				local immobImm = tonumber(defender.Statuses["ImmobilizedImmunity"]) or 0
 
 				if defender.Statuses["Enraged"] then
-					effectLog = effectLog .. " <font color='#FF0000'>[ENRAGE: IMMUNE]</font>"
+					effectLog = effectLog .. " <font color=\"#FF0000\">[ENRAGE: IMMUNE]</font>"
 					appliedThisStrike["Crippled"] = true
 					appliedThisStrike["Immobilized"] = true
 				elseif cripStatus > 0 or immobStatus > 0 then
 					if cripStatus > 0 and immobStatus == 0 and not appliedThisStrike["Crippled"] then 
 						defender.Statuses["Immobilized"] = defender.IsBoss and 1 or 2
 						defender.Statuses["Crippled"] = nil
-						effectLog = effectLog .. " <font color='#00FF00'>[IMMOBILIZED]</font>"
+						effectLog = effectLog .. " <font color=\"#00FF00\">[IMMOBILIZED]</font>"
 						appliedThisStrike["Immobilized"] = true
-					else effectLog = effectLog .. " <font color='#888888'>[ALREADY ACTIVE]</font>" end
-				elseif cripImm > 0 or immobImm > 0 then effectLog = effectLog .. " <font color='#888888'>[IMMUNITY ACTIVE]</font>"
+					else effectLog = effectLog .. " <font color=\"#888888\">[ALREADY ACTIVE]</font>" end
+				elseif cripImm > 0 or immobImm > 0 then effectLog = effectLog .. " <font color=\"#888888\">[IMMUNITY ACTIVE]</font>"
 				else 
 					defender.Statuses["Crippled"] = defender.IsBoss and 1 or 2
-					effectLog = effectLog .. " <font color='#55FF55'>[CRIPPLED]</font>" 
+					effectLog = effectLog .. " <font color=\"#55FF55\">[CRIPPLED]</font>" 
 					appliedThisStrike["Crippled"] = true
 				end
 
@@ -811,13 +914,13 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 				local weakImm = tonumber(defender.Statuses["WeakenedImmunity"]) or 0
 
 				if defender.Statuses["Enraged"] then
-					effectLog = effectLog .. " <font color='#FF0000'>[ENRAGE: IMMUNE]</font>"
+					effectLog = effectLog .. " <font color=\"#FF0000\">[ENRAGE: IMMUNE]</font>"
 					appliedThisStrike["Weakened"] = true
-				elseif weakStatus > 0 then effectLog = effectLog .. " <font color='#888888'>[ALREADY ACTIVE]</font>"
-				elseif weakImm > 0 then effectLog = effectLog .. " <font color='#888888'>[IMMUNITY ACTIVE]</font>"
+				elseif weakStatus > 0 then effectLog = effectLog .. " <font color=\"#888888\">[ALREADY ACTIVE]</font>"
+				elseif weakImm > 0 then effectLog = effectLog .. " <font color=\"#888888\">[IMMUNITY ACTIVE]</font>"
 				else 
 					if not appliedThisStrike["Weakened"] then
-						defender.Statuses["Weakened"] = 2; effectLog = effectLog .. " <font color='#FFDD55'>[WEAKENED]</font>" 
+						defender.Statuses["Weakened"] = 2; effectLog = effectLog .. " <font color=\"#FFDD55\">[WEAKENED]</font>" 
 						appliedThisStrike["Weakened"] = true
 					end
 				end
@@ -830,43 +933,43 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 				local tblImm = tonumber(defender.Statuses["TrueBlindImmunity"]) or 0
 
 				if defender.Statuses["Enraged"] then
-					effectLog = effectLog .. " <font color='#FF0000'>[ENRAGE: IMMUNE]</font>"
+					effectLog = effectLog .. " <font color=\"#FF0000\">[ENRAGE: IMMUNE]</font>"
 					appliedThisStrike["Blinded"] = true
 					appliedThisStrike["TrueBlind"] = true
-				elseif tblBlind > 0 then effectLog = effectLog .. " <font color='#888888'>[ALREADY ACTIVE]</font>"
-				elseif blImm > 0 or tblImm > 0 then effectLog = effectLog .. " <font color='#888888'>[IMMUNITY ACTIVE]</font>"
+				elseif tblBlind > 0 then effectLog = effectLog .. " <font color=\"#888888\">[ALREADY ACTIVE]</font>"
+				elseif blImm > 0 or tblImm > 0 then effectLog = effectLog .. " <font color=\"#888888\">[IMMUNITY ACTIVE]</font>"
 				else
 					if blStatus > 0 and not appliedThisStrike["Blinded"] then 
 						defender.Statuses["TrueBlind"] = defender.IsBoss and 1 or 2
 						defender.Statuses["Blinded"] = nil
-						effectLog = effectLog .. " <font color='#555555'>[TRUE BLINDNESS]</font>" 
+						effectLog = effectLog .. " <font color=\"#555555\">[TRUE BLINDNESS]</font>" 
 						appliedThisStrike["TrueBlind"] = true
 					elseif blStatus == 0 then 
 						if not appliedThisStrike["Blinded"] then
 							defender.Statuses["Blinded"] = defender.IsBoss and 1 or 2
-							effectLog = effectLog .. " <font color='#DDDDDD'>[BLINDED]</font>" 
+							effectLog = effectLog .. " <font color=\"#DDDDDD\">[BLINDED]</font>" 
 							appliedThisStrike["Blinded"] = true
 						end
 					else
-						effectLog = effectLog .. " <font color='#888888'>[ALREADY ACTIVE]</font>"
+						effectLog = effectLog .. " <font color=\"#888888\">[ALREADY ACTIVE]</font>"
 					end
 				end
 			end
 		end
 
-		if targetLimb == "Nape" and defender.Statuses and (tonumber(defender.Statuses["NapeGuard"]) or 0) > 0 then effectLog = effectLog .. " <font color='#AAAAAA'>[BLOCKED BY NAPE GUARD]</font>" end
+		if targetLimb == "Nape" and defender.Statuses and (tonumber(defender.Statuses["NapeGuard"]) or 0) > 0 then effectLog = effectLog .. " <font color=\"#AAAAAA\">[BLOCKED BY NAPE GUARD]</font>" end
 		if isCrit or survivalTriggered then overallShake = "Heavy" elseif overallShake == "None" then overallShake = "Normal" end
 
 		local hitMsg = ""
 		if attacker.IsPlayer then hitMsg = hitsToDo == 1 and (fLogName .. " struck the <b>" .. targetLimb .. "</b>" .. synergyTag .. " for " .. math.floor(baseDmg) .. " dmg!" .. effectLog .. globalDmgLog) or ("- Hit " .. i .. " dealt " .. math.floor(baseDmg) .. " damage" .. effectLog .. globalDmgLog)
 		else hitMsg = hitsToDo == 1 and (fLogName .. " struck you" .. synergyTag .. " for " .. math.floor(baseDmg) .. " dmg!" .. effectLog) or ("- Hit " .. i .. " dealt " .. math.floor(baseDmg) .. " damage" .. effectLog) end
 
-		if skill.Unavoidable and not attacker.IsPlayer then hitMsg = hitMsg .. " <font color='#FF5555'>[UNAVOIDABLE]</font>" end
-		if isCrit then hitMsg = hitMsg .. " <font color='#FFAA00'>(CRIT!)</font>" end
-		if defender.GateType == "Steam" and hitGate then hitMsg = hitMsg .. " <font color='#FFAAAA'>(Repelled by Steam!)</font>"
-		elseif hitGate then hitMsg = hitMsg .. " <font color='#DDDDDD'>[Hit " .. tostring(gateName) .. "!]</font>" end
-		if gateBroken then hitMsg = hitMsg .. " <font color='#FFFFFF'><b>[" .. tostring(gateName):upper() .. " SHATTERED!]</b></font>" end
-		if survivalTriggered then hitMsg = hitMsg .. " <font color='#FF55FF'>...TATAKAE! (Refused to yield!)</font>" end
+		if skill.Unavoidable and not attacker.IsPlayer then hitMsg = hitMsg .. " <font color=\"#FF5555\">[UNAVOIDABLE]</font>" end
+		if isCrit then hitMsg = hitMsg .. " <font color=\"#FFAA00\">(CRIT!)</font>" end
+		if defender.GateType == "Steam" and hitGate then hitMsg = hitMsg .. " <font color=\"#FFAAAA\">(Repelled by Steam!)</font>"
+		elseif hitGate then hitMsg = hitMsg .. " <font color=\"#DDDDDD\">[Hit " .. tostring(gateName) .. "!]</font>" end
+		if gateBroken then hitMsg = hitMsg .. " <font color=\"#FFFFFF\"><b>[" .. tostring(gateName):upper() .. " SHATTERED!]</b></font>" end
+		if survivalTriggered then hitMsg = hitMsg .. " <font color=\"#FF55FF\">...TATAKAE! (Refused to yield!)</font>" end
 
 		table.insert(hitLogs, hitMsg)
 	end
@@ -878,8 +981,10 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		defender.SynergyOwners[targetLimb] = attacker.PlayerObj.UserId
 	end
 
-	if attacker.IsPlayer and didHitAtAll and (aStats.MaxMomentumStacks or 0) > 0 and not isAttackerTransformed then
-		attacker.MomentumStacks = math.min(aStats.MaxMomentumStacks, (tonumber(attacker.MomentumStacks) or 0) + hitsToDo)
+	if didHitAtAll then
+		attacker.MomentumStacks = math.min(10, (tonumber(attacker.MomentumStacks) or 0) + hitsToDo)
+	elseif attacker.IsPlayer then
+		attacker.MomentumStacks = 0
 	end
 
 	local finalMsg = ""
@@ -894,7 +999,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		if wpnData and wpnData.SelfDamage then
 			local recoil = math.floor((tonumber(attacker.MaxHP) or 100) * wpnData.SelfDamage)
 			attacker.HP = math.max(1, (tonumber(attacker.HP) or 100) - recoil)
-			finalMsg = finalMsg .. "\n<font color='#FF3333'>[" .. attacker.Name .. " took " .. recoil .. " recoil damage from their Cursed Weapon!]</font>"
+			finalMsg = finalMsg .. "\n<font color=\"#FF3333\">[" .. attacker.Name .. " took " .. recoil .. " recoil damage from their Cursed Weapon!]</font>"
 		end
 	end
 
