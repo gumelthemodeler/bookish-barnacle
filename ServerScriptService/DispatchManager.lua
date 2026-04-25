@@ -1,6 +1,5 @@
 -- @ScriptType: Script
 -- @ScriptType: Script
--- @ScriptType: Script
 -- Name: DispatchManager
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
@@ -45,7 +44,6 @@ local function UpdateBountyProgress(plr, taskType, amt)
 	end
 end
 
--- [[ Dynamic Ally Events ]]
 local DispatchEvents = {
 	{ Chance = 10, Name = "Aberrant Encounter", DewMod = 0.5, XPMod = 1.5, LootBonus = 0, Msg = "<font color='#FF5555'>Fought off an Aberrant! Lost some supplies but gained massive combat experience.</font>" },
 	{ Chance = 15, Name = "Hidden Cache", DewMod = 2.0, XPMod = 1.0, LootBonus = 2, Msg = "<font color='#55FF55'>Found an abandoned supply cache! Loot significantly increased.</font>" },
@@ -97,7 +95,6 @@ RemotesFolder:WaitForChild("DispatchAction").OnServerEvent:Connect(function(play
 		local info = dData[allyName]
 		if not info then return end
 
-		-- [[ THE FIX: Safely handles older dispatches from before the Regiment Update ]]
 		if info.Type ~= nil and info.Type ~= "Ally" then return end
 
 		local elapsedMins = math.floor((os.time() - info.StartTime) / 60)
@@ -119,7 +116,8 @@ RemotesFolder:WaitForChild("DispatchAction").OnServerEvent:Connect(function(play
 			if roll <= cum then randEvent = e break end
 		end
 
-		local dewsGained = math.floor((elapsedMins * 12) * lvlMultiplier * randEvent.DewMod)
+		-- [ECONOMY PATCH] Reduced base passive income scaling for Allies
+		local dewsGained = math.floor((elapsedMins * 3) * lvlMultiplier * randEvent.DewMod)
 		local xpGained = math.floor((elapsedMins * 5) * lvlMultiplier * randEvent.XPMod)
 
 		local winReg = RemotesFolder:FindFirstChild("WinningRegiment")
@@ -156,9 +154,10 @@ RemotesFolder:WaitForChild("DispatchAction").OnServerEvent:Connect(function(play
 		local regName = player:GetAttribute("Regiment") or "Cadet Corps"
 		if dData["RegimentSquad"] then return end
 
-		local cost = 25000 
+		-- [ECONOMY PATCH] Regiment deployment cost lowered to match the squashed returns
+		local cost = 5000 
 		if player.leaderstats.Dews.Value < cost then
-			RemotesFolder.NotificationEvent:FireClient(player, "Requires 25,000 Dews to fund a Regiment Expedition!", "Error")
+			RemotesFolder.NotificationEvent:FireClient(player, "Requires 5,000 Dews to fund a Regiment Expedition!", "Error")
 			return
 		end
 
@@ -176,7 +175,7 @@ RemotesFolder:WaitForChild("DispatchAction").OnServerEvent:Connect(function(play
 
 		if elapsedMins < 60 then
 			RemotesFolder.NotificationEvent:FireClient(player, "Squad recalled too early. Only partial funds recovered.", "Error")
-			player.leaderstats.Dews.Value += 10000 -- Give back a partial refund for recalling early
+			player.leaderstats.Dews.Value += 2500 -- Give back a partial refund for recalling early
 			dData["RegimentSquad"] = nil; SaveDispatchData(player, dData); return
 		end
 
@@ -188,7 +187,8 @@ RemotesFolder:WaitForChild("DispatchAction").OnServerEvent:Connect(function(play
 		local rolls = math.floor(elapsedMins / 60) -- 1 item roll per hour
 
 		if regName == "Scout Regiment" then
-			dewsGained = elapsedMins * 15
+			-- [ECONOMY PATCH] Regiment yields squashed drastically to prevent passive 100k farming
+			dewsGained = elapsedMins * 5
 			for i = 1, rolls do
 				local rng = math.random(1, 100)
 				if rng <= 10 then table.insert(itemsFound, "Abyssal Blood")
@@ -199,7 +199,7 @@ RemotesFolder:WaitForChild("DispatchAction").OnServerEvent:Connect(function(play
 			log = "<font color='#55AAFF'>Scouts successfully extracted core materials.</font>"
 
 		elseif regName == "Garrison" then
-			dewsGained = elapsedMins * 45
+			dewsGained = elapsedMins * 12
 			for i = 1, rolls do
 				local rng = math.random(1, 100)
 				if rng <= 15 then table.insert(itemsFound, "Titan Hardening Extract")
@@ -209,7 +209,7 @@ RemotesFolder:WaitForChild("DispatchAction").OnServerEvent:Connect(function(play
 			log = "<font color='#FF5555'>Garrison successfully secured the perimeter.</font>"
 
 		elseif regName == "Military Police" then
-			dewsGained = elapsedMins * 75
+			dewsGained = elapsedMins * 20
 			for i = 1, rolls do
 				local rng = math.random(1, 100)
 				if rng <= 5 then table.insert(itemsFound, "Spinal Fluid Syringe")
@@ -220,7 +220,7 @@ RemotesFolder:WaitForChild("DispatchAction").OnServerEvent:Connect(function(play
 			log = "<font color='#55FF55'>Military Police secured inner-wall taxes.</font>"
 
 		else
-			dewsGained = elapsedMins * 10
+			dewsGained = elapsedMins * 3
 			log = "<font color='#AAAAAA'>Cadets finished their training march.</font>"
 		end
 
