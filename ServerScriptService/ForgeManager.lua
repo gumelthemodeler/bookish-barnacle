@@ -153,7 +153,8 @@ FuseTitan.OnServerEvent:Connect(function(player, baseSlot, sacSlot)
 	if not validSlots[tostring(baseSlot)] or not validSlots[tostring(sacSlot)] then return end
 
 	local dews = player.leaderstats.Dews.Value
-	if dews >= 300000 then
+	-- [ECONOMY PATCH] 300,000 -> 50,000
+	if dews >= 50000 then
 		local baseAttr = (baseSlot == "Equipped") and "Titan" or ("Titan_Slot" .. baseSlot)
 		local sacAttr = (sacSlot == "Equipped") and "Titan" or ("Titan_Slot" .. sacSlot)
 
@@ -162,7 +163,7 @@ FuseTitan.OnServerEvent:Connect(function(player, baseSlot, sacSlot)
 		local result = FusionRecipes[baseTitan] and FusionRecipes[baseTitan][sacTitan]
 
 		if result then
-			player.leaderstats.Dews.Value -= 300000
+			player.leaderstats.Dews.Value -= 50000
 			player:SetAttribute(baseAttr, result)
 			player:SetAttribute(sacAttr, "None")
 
@@ -171,7 +172,7 @@ FuseTitan.OnServerEvent:Connect(function(player, baseSlot, sacSlot)
 			NotificationEvent:FireClient(player, "Invalid Fusion combination.", "Error")
 		end
 	else
-		NotificationEvent:FireClient(player, "Not enough Dews to fuse! Requires 300,000.", "Error")
+		NotificationEvent:FireClient(player, "Not enough Dews to fuse! Requires 50,000.", "Error")
 	end
 end)
 
@@ -180,18 +181,19 @@ ItemizeTitan.Name = "ItemizeTitan"
 ItemizeTitan.OnServerEvent:Connect(function(player, slotId)
 	if not slotId then return end
 	local dews = player.leaderstats.Dews.Value
-	if dews >= 100000 then
+	-- [ECONOMY PATCH] 100,000 -> 25,000
+	if dews >= 25000 then
 		local attrName = (slotId == "Equipped") and "Titan" or ("Titan_Slot" .. slotId)
 		local titanName = player:GetAttribute(attrName) or "None"
 		if titanName ~= "None" then
-			player.leaderstats.Dews.Value -= 100000
+			player.leaderstats.Dews.Value -= 25000
 			player:SetAttribute(attrName, "None")
 			local safeItemName = ("Itemized " .. titanName):gsub("[^%w]", "") .. "Count"
 			player:SetAttribute(safeItemName, (player:GetAttribute(safeItemName) or 0) + 1)
 			NotificationEvent:FireClient(player, "Titan extracted to your inventory!", "Success")
 		end
 	else
-		NotificationEvent:FireClient(player, "Not enough Dews to itemize!", "Error")
+		NotificationEvent:FireClient(player, "Not enough Dews to itemize! Requires 25,000.", "Error")
 	end
 end)
 
@@ -200,11 +202,12 @@ ItemizeClan.Name = "ItemizeClan"
 ItemizeClan.OnServerEvent:Connect(function(player, slotId)
 	if not slotId then return end
 	local dews = player.leaderstats.Dews.Value
-	if dews >= 100000 then
+	-- [ECONOMY PATCH] 100,000 -> 25,000
+	if dews >= 25000 then
 		local attrName = (slotId == "Equipped") and "Clan" or ("Clan_Slot" .. slotId)
 		local clanName = player:GetAttribute(attrName) or "None"
 		if clanName ~= "None" then
-			player.leaderstats.Dews.Value -= 100000
+			player.leaderstats.Dews.Value -= 25000
 			player:SetAttribute(attrName, "None")
 
 			local safeItemName = ("Itemized " .. clanName):gsub("[^%w]", "") .. "Count"
@@ -212,6 +215,6 @@ ItemizeClan.OnServerEvent:Connect(function(player, slotId)
 			NotificationEvent:FireClient(player, "Clan bloodline extracted to your inventory!", "Success")
 		end
 	else
-		NotificationEvent:FireClient(player, "Not enough Dews to itemize!", "Error")
+		NotificationEvent:FireClient(player, "Not enough Dews to itemize! Requires 25,000.", "Error")
 	end
 end)
