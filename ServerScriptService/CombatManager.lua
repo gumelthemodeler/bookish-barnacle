@@ -567,6 +567,7 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 	local autoSoldDews = 0
 
 	if not battle.Enemy.IsRumblingBoss then
+		-- [[ THE FIX: Wrapped in pcall and used proper nil-safe arguments to prevent Progression Lock ]]
 		local success, retItems, retDews = pcall(function()
 			return LootManager.ProcessDrops(player, battle.Enemy.Drops or {}, battle.Context.IsEndless, battle.Context.CurrentWave)
 		end)
@@ -1146,7 +1147,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 		end
 
 		local success, msg, didHit, shakeType = pcall(function() 
-			-- [[ THE FIX: Added 8th parameter `defColor` to prevent battle.Context table from shifting into color log string ]]
+			-- [[ THE FIX: Restored defColor parameter to stop battleContext table shifting into formatting tags ]]
 			return CombatCore.ExecuteStrike(
 				attacker, 
 				defender, 
