@@ -30,6 +30,19 @@ local HORSE_RARITIES = {
 	{Name = "Phantom Destrier", Rarity = "Mythical", Weight = 0.5, BaseEff = 1.0}
 }
 
+-- [[ THE FIX: Added the missing FormatNumber function so the Recall feature doesn't crash ]]
+local function FormatNumber(n)
+	if not n then return "0" end
+	n = tonumber(n) or 0
+	local formatted = tostring(math.floor(n))
+	local k
+	while true do
+		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+		if k == 0 then break end
+	end
+	return formatted
+end
+
 local function DecodeJSON(attr)
 	if not attr or attr == "" then return {} end
 	local success, res = pcall(function() return HttpService:JSONDecode(attr) end)
@@ -116,10 +129,12 @@ Network:WaitForChild("DispatchAction").OnServerEvent:Connect(function(player, ac
 		local horseBonus = CalculateGlobalHorseEfficiency(player)
 
 		-- Final formula respects levels and stable buffs
-		local gatheredDews = math.floor((mins * baseYield * (1 + (lvl * 0.1))) * (1 + horseBonus))
+		local finalYieldPerMinute = baseYield * (1 + (lvl * 0.1)) * (1 + horseBonus)
+		local gatheredDews = math.floor(mins * finalYieldPerMinute)
 
-		-- HARD CAP: Limits the absolute maximum an ally can bring back to prevent economy destruction
-		local maxAllowed = baseYield * 1000
+		-- [[ THE FIX: Adjusted the maxAllowed cap so it respects the player's hard-earned multipliers ]]
+		-- Absolute max is equivalent to 1,000 minutes of their fully boosted yield
+		local maxAllowed = math.floor(finalYieldPerMinute * 1000)
 		gatheredDews = math.min(gatheredDews, maxAllowed)
 
 		dData[payload] = nil
