@@ -175,7 +175,7 @@ UnlockPrestigeNode.OnServerEvent:Connect(function(player, nodeId)
 	if ActivePrestigeTransactions[player.UserId] then return end
 	ActivePrestigeTransactions[player.UserId] = true
 
-	local node = SkillData.PrestigeNodes[nodeId]
+	local node = GameData.PrestigeNodes[nodeId]
 	if not node then ActivePrestigeTransactions[player.UserId] = nil; return end
 
 	if player:GetAttribute("PrestigeNode_" .. nodeId) then
@@ -230,7 +230,6 @@ PrestigeAction.OnServerInvoke = function(player)
 			player:SetAttribute("Prestige", ls.Prestige.Value)
 		end
 
-		-- Fully respects preserved prestige nodes and recalculates them on wipe
 		local statsToReset = {"Health", "Gas", "Strength", "Defense", "Speed", "Resolve", "Titan_Power_Val", "Titan_Speed_Val", "Titan_Hardening_Val", "Titan_Endurance_Val", "Titan_Precision_Val", "Titan_Potential_Val"}
 		for _, s in ipairs(statsToReset) do
 			local pBonus = player:GetAttribute("Prestige_" .. s) or 0
