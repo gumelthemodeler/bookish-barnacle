@@ -10,11 +10,11 @@ local GachaRoll = Network:FindFirstChild("GachaRoll") or Instance.new("RemoteEve
 GachaRoll.Name = "GachaRoll"
 local GachaResult = Network:FindFirstChild("GachaResult") or Instance.new("RemoteEvent", Network)
 GachaResult.Name = "GachaResult"
+local NotificationEvent = Network:WaitForChild("NotificationEvent")
 
 local ManageStorage = Network:FindFirstChild("ManageStorage") or Instance.new("RemoteEvent", Network)
 ManageStorage.Name = "ManageStorage"
 
--- [[ THE FIX: Unbreakable Time-Lock Debounce ]]
 local SwapDebounce = {}
 
 ManageStorage.OnServerEvent:Connect(function(player, gType, slotIndex)
@@ -49,14 +49,12 @@ ManageStorage.OnServerEvent:Connect(function(player, gType, slotIndex)
 	player:SetAttribute(activeAttr, currentSlotted)
 	player:SetAttribute(slotAttr, currentActive)
 
-	local NotificationEvent = Network:FindFirstChild("NotificationEvent")
 	if NotificationEvent then
 		NotificationEvent:FireClient(player, safeGType .. " Vault Updated Successfully.", "Success")
 	end
 end)
 
 GachaRoll.OnServerEvent:Connect(function(player, gType, isPremium)
-	-- [[ THE FIX: Properly separate the Item count checks for Premium vs Standard ]]
 	local attrReq = ""
 	if gType == "Titan" then
 		attrReq = isPremium and "SpinalFluidSyringeCount" or "StandardTitanSerumCount"
@@ -86,8 +84,6 @@ GachaRoll.OnServerEvent:Connect(function(player, gType, isPremium)
 			end
 		else
 			local clanPity = player:GetAttribute("ClanPity") or 0
-
-			-- [[ THE FIX: Force Pity threshold if using a Legendary Clan Vial ]]
 			if isPremium then clanPity += 100 end
 
 			if clanPity >= 100 then
@@ -106,6 +102,11 @@ GachaRoll.OnServerEvent:Connect(function(player, gType, isPremium)
 
 		player:SetAttribute(gType, resultName)
 		GachaResult:FireClient(player, gType, resultName, rarity)
+
+		-- Global Notifications for high tier rolls
+		if rarity == "Mythical" or rarity == "Transcendent" then
+			NotificationEvent:FireAllClients(player.Name .. " inherited the " .. resultName .. "!", "Success")
+		end
 	else
 		GachaResult:FireClient(player, gType, "Error", "None")
 	end
