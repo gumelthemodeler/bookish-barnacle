@@ -262,21 +262,42 @@ local function AppendLog(message, colorHex)
 	if not GUI or not GUI.LogScroll or not message or message == "" then return end
 	GlobalLogCounter = GlobalLogCounter + 1
 
-	-- [[ THE FIX: SELF-HEALING REGEX ]]
-	-- Automatically repairs single-quotes and missing quotes inside <font> tags!
-	message = string.gsub(message, "color='(#[%w]+)'", "color=\"%1\"")
-	message = string.gsub(message, "color=(#[%w]+)>", "color=\"%1\">")
+	-- [[ BULLETPROOF REGEX FONT REPAIR ]]
+	-- Completely strips any broken attributes and enforces standard RichText formatting
+	message = string.gsub(message, "<font.-#(%w+).->", "<font color=\"#%1\">")
 
-	local logColor = colorHex and Color3.fromHex(colorHex:gsub("#", "")) or UIHelpers.Colors.TextWhite
+	local logColor = colorHex and Color3.fromHex(colorHex:gsub("#", "")) or Color3.fromRGB(245, 245, 245)
 
 	local panel = Instance.new("Frame", GUI.LogScroll)
 	panel.LayoutOrder = GlobalLogCounter
-	panel.Size = UDim2.new(1, 0, 0, 0); panel.BackgroundColor3 = Color3.fromRGB(18, 18, 22); panel.BackgroundTransparency = 0.3; panel.BorderSizePixel = 0; panel.AutomaticSize = Enum.AutomaticSize.Y
-	local pStroke = Instance.new("UIStroke", panel); pStroke.Color = Color3.fromRGB(70, 70, 80); pStroke.Thickness = 2
-	local pad = Instance.new("UIPadding", panel); pad.PaddingLeft = UDim.new(0, 10); pad.PaddingRight = UDim.new(0, 10); pad.PaddingTop = UDim.new(0, 8); pad.PaddingBottom = UDim.new(0, 8)
+	panel.Size = UDim2.new(1, 0, 0, 0)
+	panel.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+	panel.BackgroundTransparency = 0.3
+	panel.BorderSizePixel = 0
+	panel.AutomaticSize = Enum.AutomaticSize.Y
 
-	local lbl = UIHelpers.CreateLabel(panel, message, UDim2.new(1, 0, 0, 0), Enum.Font.GothamMedium, logColor, 12)
-	lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.RichText = true; lbl.TextWrapped = true; lbl.AutomaticSize = Enum.AutomaticSize.Y
+	local pStroke = Instance.new("UIStroke", panel)
+	pStroke.Color = Color3.fromRGB(70, 70, 80)
+	pStroke.Thickness = 2
+
+	local pad = Instance.new("UIPadding", panel)
+	pad.PaddingLeft = UDim.new(0, 10)
+	pad.PaddingRight = UDim.new(0, 10)
+	pad.PaddingTop = UDim.new(0, 8)
+	pad.PaddingBottom = UDim.new(0, 8)
+
+	-- We build this completely from scratch to bypass UIHelpers, which was stripping RichText.
+	local lbl = Instance.new("TextLabel", panel)
+	lbl.Size = UDim2.new(1, 0, 0, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Font = Enum.Font.GothamMedium
+	lbl.TextColor3 = logColor
+	lbl.TextSize = 12
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.TextWrapped = true
+	lbl.RichText = true
+	lbl.AutomaticSize = Enum.AutomaticSize.Y
+	lbl.Text = message
 
 	local children = GUI.LogScroll:GetChildren()
 	local frames = {}
@@ -319,7 +340,7 @@ local function PlayLootAnimation(rewards)
 				local suckTween = TweenService:Create(popup, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0.1, 0, 0.45, 0)})
 				local scaleDown = TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
 				suckTween:Play(); scaleDown:Play(); suckTween.Completed:Wait()
-				AppendLog("<font color=\"" .. reward.Color .. "\">Looted: " .. reward.Text .. "</font>")
+				AppendLog("<font color=\"#" .. reward.Color:gsub("#", "") .. "\">Looted: " .. reward.Text .. "</font>")
 				popup:Destroy()
 			end)
 			task.wait(0.15) 
