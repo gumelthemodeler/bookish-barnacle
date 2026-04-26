@@ -97,7 +97,7 @@ end
 function CombatCore.CalculateDamage(attacker, defender, skillMult, targetLimb, battleContext)
 	local atkStrength = math.max(1, tonumber(attacker.TotalStrength) or 10)
 	local defArmor = math.max(1, tonumber(defender.TotalDefense) or 10)
-	local terrain = battleContext and battleContext.Terrain or "City"
+	local terrain = (battleContext and type(battleContext) == "table") and battleContext.Terrain or "City"
 
 	local atkBuff = 1.0
 	local defBuff = 1.0
@@ -268,8 +268,10 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 	targetLimb = tostring(targetLimb or "Body")
 	local skill = SkillData.Skills[skillName] or { Mult = 1.0, Cooldown = 0, Hits = 1, Effect = "None", Description = "A basic attack." }
 
-	local fLogName = "<font color=\"#55AAFF\">" .. tostring(attacker.Name or "Attacker") .. "</font>"
-	local fDefName = "<font color=\"#FF5555\">" .. tostring(defender.Name or "Defender") .. "</font>"
+	local aName = tostring(attacker.Name or "Attacker")
+	local dName = tostring(defender.Name or "Defender")
+	local fLogName = "<font color=\"#55AAFF\">" .. aName .. "</font>"
+	local fDefName = "<font color=\"#FF5555\">" .. dName .. "</font>"
 
 	if attacker.Cooldowns then attacker.Cooldowns[skillName] = tonumber(skill.Cooldown) or 0 end
 	if not attacker.BaseMaxHP then attacker.BaseMaxHP = tonumber(attacker.MaxHP) or 100 end
@@ -280,24 +282,24 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 	if mult == 0 then
 		if skill.Effect == "CloseGap" or skillName == "Close In" or skillName == "Advance" or skillName == "Charge" then
 			attacker.LastSkill = skillName
-			if attacker.Statuses and attacker.Statuses["Transformed"] then return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA00\">" .. attacker.Name .. " charges forward with immense speed!</font>", false, "Heavy", 0
-			else return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55AAFF\">" .. attacker.Name .. " uses their ODM gear to close the distance!</font>", false, "None", 0 end
+			if attacker.Statuses and attacker.Statuses["Transformed"] then return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA00\">" .. aName .. " charges forward with immense speed!</font>", false, "Heavy", 0
+			else return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55AAFF\">" .. aName .. " uses their ODM gear to close the distance!</font>", false, "None", 0 end
 		elseif skill.Effect == "FallBack" or skillName == "Fall Back" then
 			attacker.LastSkill = skillName
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA55\">" .. attacker.Name .. " falls back to Long Range!</font>", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA55\">" .. aName .. " falls back to Long Range!</font>", false, "None", 0
 		elseif skill.Effect == "Dodge" then
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses["Dodge"] = 1; attacker.LastSkill = skillName 
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. attacker.Name .. " engaged evasive maneuvers.", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. aName .. " engaged evasive maneuvers.", false, "None", 0
 		elseif skill.Effect == "Block" then
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses["Block"] = 1; attacker.LastSkill = skillName 
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. attacker.Name .. " takes a defensive stance.", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. aName .. " takes a defensive stance.", false, "None", 0
 		elseif skill.Effect == "Rest" or skillName == "Recover" or skillName == "Regroup" then
 			local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.30
 			attacker.HP = math.min(tonumber(attacker.MaxHP) or 100, (tonumber(attacker.HP) or 0) + healAmount); 
 			attacker.Gas = tonumber(attacker.MaxGas) or 100; attacker.LastSkill = skillName
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. attacker.Name .. " recovered HP and Gas.</font>", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. aName .. " recovered HP and Gas.</font>", false, "None", 0
 		elseif skill.Effect == "Transform" then
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses["Transformed"] = 999; attacker.LastSkill = skillName;
@@ -308,17 +310,17 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 			attacker.HP = attacker.MaxHP
 			attacker.TitanEnergy = tonumber(attacker.MaxTitanEnergy) or 100
 
-			return fLogName .. " used <b>" .. skillName .. "</b>!\nLightning strikes as " .. attacker.Name .. " shifts into a Titan! <font color=\"#55FF55\">[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\nLightning strikes as " .. aName .. " shifts into a Titan! <font color=\"#55FF55\">[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy", 0
 		elseif skill.Effect == "Eject" then
 			if attacker.Statuses then attacker.Statuses["Transformed"] = nil end
 			attacker.LastSkill = skillName
 			attacker.MaxHP = attacker.BaseMaxHP
 			attacker.HP = math.min(attacker.HP, attacker.MaxHP)
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. attacker.Name .. " cuts themselves out of the nape, returning to human form.", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. aName .. " cuts themselves out of the nape, returning to human form.", false, "None", 0
 		elseif skill.Effect == "TitanRest" or skillName == "Titan Recover" then
 			local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.60
 			attacker.HP = math.min(tonumber(attacker.MaxHP) or 100, (tonumber(attacker.HP) or 0) + healAmount); attacker.LastSkill = skillName
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. attacker.Name .. " uses immense steam to regenerate " .. math.floor(healAmount) .. " HP.</font>", false, "None", 0
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. aName .. " uses immense steam to regenerate " .. math.floor(healAmount) .. " HP.</font>", false, "None", 0
 		end
 	end
 
@@ -365,7 +367,7 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 		if defender.Statuses and defender.Statuses["CounterStance"] and (skill.Range ~= "Long" and not skill.Unavoidable) then
 			local counterDmg = math.floor((defender.TotalStrength or 10) * 1.5)
 			attacker.HP = math.max(1, (tonumber(attacker.HP) or 10) - counterDmg)
-			table.insert(hitLogs, fLogName .. " attacked, but " .. fDefName .. " was in a <font color=\"#FF3333\"><b>COUNTER STANCE</b></font>! " .. attacker.Name .. " was instantly interrupted and took " .. counterDmg .. " counter-damage!")
+			table.insert(hitLogs, fLogName .. " attacked, but " .. fDefName .. " was in a <font color=\"#FF3333\"><b>COUNTER STANCE</b></font>! " .. aName .. " was instantly interrupted and took " .. counterDmg .. " counter-damage!")
 			didHitAtAll = false
 			break
 		end
@@ -488,14 +490,27 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 	skillName = tostring(skillName or "Brutal Swipe")
 	targetLimb = tostring(targetLimb or "Body")
 
-	local terrain = battleContext and battleContext.Terrain or "City"
-	local weather = battleContext and battleContext.Weather or "Clear"
+	-- [[ FIX: INTERCEPT SHIFTED ARGUMENTS TO PREVENT TABLE ADDRESS LOGGING ]]
+	if type(defColor) == "table" and battleContext == nil then
+		battleContext = defColor
+		defColor = defender.IsPlayer and "#FFFFFF" or "#FF5555"
+	end
+
+	-- Extract colors safely so strings are guaranteed to be proper hex formats
+	local safeLogColor = (type(logColor) == "string" and string.match(logColor, "^#%w+")) and logColor or "#FFFFFF"
+	local safeDefColor = (type(defColor) == "string" and string.match(defColor, "^#%w+")) and defColor or "#FF5555"
+
+	local terrain = (battleContext and type(battleContext) == "table") and battleContext.Terrain or "City"
+	local weather = (battleContext and type(battleContext) == "table") and battleContext.Weather or "Clear"
 
 	local fallbackSkill = { Mult = 1.0, Cooldown = 0, Hits = 1, Effect = "None", Description = "A basic attack." }
 	local skill = SkillData.Skills[skillName] or SkillData.Skills["Brutal Swipe"] or fallbackSkill
 
-	local fLogName = "<font color=\"" .. tostring(logColor or "#FFFFFF") .. "\">" .. tostring(logName or "Attacker") .. "</font>"
-	local fDefName = "<font color=\"" .. tostring(defColor or "#FF5555") .. "\">" .. tostring(defName or "Defender") .. "</font>"
+	-- Pre-build the base strings
+	local aName = tostring(logName or "Attacker")
+	local dName = tostring(defName or "Defender")
+	local fLogName = "<font color=\"" .. safeLogColor .. "\">" .. aName .. "</font>"
+	local fDefName = "<font color=\"" .. safeDefColor .. "\">" .. dName .. "</font>"
 
 	if attacker.Cooldowns then attacker.Cooldowns[skillName] = tonumber(skill.Cooldown) or 0 end
 	if not attacker.BaseMaxHP then attacker.BaseMaxHP = tonumber(attacker.MaxHP) or 100 end
@@ -514,20 +529,21 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 
 	local mult = tonumber(skill.Mult) or 1.0
 
+	-- [[ FIX: REPLACED FLOGNAME WITH ANAME INSIDE FONT TAGS TO PREVENT NESTING CRASHES ]]
 	if mult == 0 then
 		if skill.Effect == "CloseGap" or skillName == "Close In" or skillName == "Advance" or skillName == "Charge" then
 			attacker.LastSkill = skillName
 			local moveWord = attacker.IsPlayer and "close" or "closes"
 			if attacker.Statuses and attacker.Statuses["Transformed"] then
-				return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA00\">" .. fLogName .. " charges forward with immense speed!</font>", false, "Heavy"
+				return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA00\">" .. aName .. " charges forward with immense speed!</font>", false, "Heavy"
 			else
-				return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55AAFF\">" .. fLogName .. " uses their ODM gear to " .. moveWord .. " the distance!</font>", false, "None"
+				return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55AAFF\">" .. aName .. " uses their ODM gear to " .. moveWord .. " the distance!</font>", false, "None"
 			end
 
 		elseif skill.Effect == "FallBack" or skillName == "Fall Back" then
 			attacker.LastSkill = skillName
 			local moveWord = attacker.IsPlayer and "fall" or "falls"
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA55\">" .. fLogName .. " " .. moveWord .. " back to Long Range!</font>", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#FFAA55\">" .. aName .. " " .. moveWord .. " back to Long Range!</font>", false, "None"
 
 		elseif skill.Effect == "Dodge" then
 			if not attacker.Statuses then attacker.Statuses = {} end
@@ -535,12 +551,12 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 			local trueBlind = tonumber(attacker.Statuses.TrueBlind) or 0
 			if blind > 0 or trueBlind > 0 then return fLogName .. " attempted to use <b>" .. skillName .. "</b>, but stumbled due to blindness!", false, "None" end
 			attacker.Statuses["Dodge"] = 1; attacker.LastSkill = skillName 
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. fLogName .. " maneuvers rapidly, preparing to evade the next attack.", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. aName .. " maneuvers rapidly, preparing to evade the next attack.", false, "None"
 
 		elseif skill.Effect == "Block" then
 			if not attacker.Statuses then attacker.Statuses = {} end
 			attacker.Statuses["Block"] = 1; attacker.LastSkill = skillName 
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. fLogName .. " braces for impact, massively increasing defense.", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. aName .. " braces for impact, massively increasing defense.", false, "None"
 
 		elseif skill.Effect == "NapeGuard" then
 			if not attacker.Statuses then attacker.Statuses = {} end
@@ -564,7 +580,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 
 			attacker.LastSkill = skillName
 			local regroupWord = attacker.IsPlayer and "regroup" or "regroups"
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. fLogName .. " " .. regroupWord .. ", recovering HP and Gas.</font>", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. aName .. " " .. regroupWord .. ", recovering HP and Gas.</font>", false, "None"
 
 		elseif skill.Effect == "Transform" then
 			local cName = attacker.Clan or "None"
@@ -580,19 +596,19 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 			attacker.HP = attacker.MaxHP
 			attacker.TitanEnergy = tonumber(attacker.MaxTitanEnergy) or 100
 
-			return fLogName .. " used <b>" .. skillName .. "</b>!\nLightning strikes as " .. fLogName .. " shifts into a Titan! <font color=\"#55FF55\">[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\nLightning strikes as " .. aName .. " shifts into a Titan! <font color=\"#55FF55\">[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy"
 
 		elseif skill.Effect == "Eject" then
 			if attacker.Statuses then attacker.Statuses["Transformed"] = nil end
 			attacker.LastSkill = skillName
 			attacker.MaxHP = attacker.BaseMaxHP
 			attacker.HP = math.min(attacker.HP, attacker.MaxHP)
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. fLogName .. " cuts themselves out of the nape, returning to human form.", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. aName .. " cuts themselves out of the nape, returning to human form.", false, "None"
 
 		elseif skill.Effect == "TitanRest" or skillName == "Titan Recover" then
 			local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.60
 			attacker.HP = math.min(tonumber(attacker.MaxHP) or 100, (tonumber(attacker.HP) or 0) + healAmount); attacker.LastSkill = skillName
-			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. fLogName .. " uses immense steam to regenerate " .. math.floor(healAmount) .. " HP.</font>", false, "None"
+			return fLogName .. " used <b>" .. skillName .. "</b>!\n<font color=\"#55FF55\">" .. aName .. " uses immense steam to regenerate " .. math.floor(healAmount) .. " HP.</font>", false, "None"
 		end
 	end
 
@@ -659,7 +675,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		if defender.Statuses and defender.Statuses["CounterStance"] and (skill.Range ~= "Long" and not skill.Unavoidable) then
 			local counterDmg = math.floor((defender.TotalStrength or 10) * 1.5)
 			attacker.HP = math.max(1, (tonumber(attacker.HP) or 10) - counterDmg)
-			table.insert(hitLogs, fLogName .. " attacked, but " .. fDefName .. " was in a <font color=\"#FF3333\"><b>COUNTER STANCE</b></font>! " .. fLogName .. " was instantly interrupted and took " .. counterDmg .. " counter-damage!")
+			table.insert(hitLogs, fLogName .. " attacked, but " .. fDefName .. " was in a <font color=\"#FF3333\"><b>COUNTER STANCE</b></font>! " .. aName .. " was instantly interrupted and took " .. counterDmg .. " counter-damage!")
 			didHitAtAll = false
 			break
 		end
@@ -782,21 +798,6 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		local survivalTriggered, hitGate, gateBroken, hpDmg, gateName = CombatCore.TakeDamage(defender, baseDmg, attacker.Style)
 
 		local isArmored = defender.GateType == "Reinforced Skin" and (tonumber(defender.GateHP) or 0) > 0
-		local globalDmgLog = ""
-
-		if defender.IsDoomsdayBoss and attacker.IsPlayer and attacker.PlayerObj then
-			if baseDmg > 0 then
-				local success, err = pcall(function()
-					local DoomsdayManager = require(game:GetService("ServerScriptService"):WaitForChild("DoomsdayManager"))
-					DoomsdayManager.RegisterDamage(attacker.PlayerObj, baseDmg)
-				end)
-				if success then
-					globalDmgLog = " <font color=\"#FF55FF\"><b>[GLOBAL DMG LOGGED: " .. math.floor(baseDmg) .. "]</b></font>"
-				else
-					warn("[DOOMSDAY ERROR]: " .. tostring(err))
-				end
-			end
-		end
 
 		if skill.Effect == "CloseGap" then effectLog = effectLog .. " <font color=\"#55AAFF\">[CLOSED DISTANCE]</font>"
 		elseif skill.Effect == "FallBack" then effectLog = effectLog .. " <font color=\"#FFAA55\">[RETREATED]</font>" end
@@ -963,7 +964,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		if isCrit or survivalTriggered then overallShake = "Heavy" elseif overallShake == "None" then overallShake = "Normal" end
 
 		local hitMsg = ""
-		if attacker.IsPlayer then hitMsg = hitsToDo == 1 and (fLogName .. " struck the <b>" .. targetLimb .. "</b>" .. synergyTag .. " for " .. math.floor(baseDmg) .. " dmg!" .. effectLog .. globalDmgLog) or ("- Hit " .. i .. " dealt " .. math.floor(baseDmg) .. " damage" .. effectLog .. globalDmgLog)
+		if attacker.IsPlayer then hitMsg = hitsToDo == 1 and (fLogName .. " struck the <b>" .. targetLimb .. "</b>" .. synergyTag .. " for " .. math.floor(baseDmg) .. " dmg!" .. effectLog) or ("- Hit " .. i .. " dealt " .. math.floor(baseDmg) .. " damage" .. effectLog)
 		else hitMsg = hitsToDo == 1 and (fLogName .. " struck you" .. synergyTag .. " for " .. math.floor(baseDmg) .. " dmg!" .. effectLog) or ("- Hit " .. i .. " dealt " .. math.floor(baseDmg) .. " damage" .. effectLog) end
 
 		if skill.Unavoidable and not attacker.IsPlayer then hitMsg = hitMsg .. " <font color=\"#FF5555\">[UNAVOIDABLE]</font>" end
@@ -1001,7 +1002,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		if wpnData and wpnData.SelfDamage then
 			local recoil = math.floor((tonumber(attacker.MaxHP) or 100) * wpnData.SelfDamage)
 			attacker.HP = math.max(1, (tonumber(attacker.HP) or 100) - recoil)
-			finalMsg = finalMsg .. "\n<font color=\"#FF3333\">[" .. attacker.Name .. " took " .. recoil .. " recoil damage from their Cursed Weapon!]</font>"
+			finalMsg = finalMsg .. "\n<font color=\"#FF3333\">[" .. aName .. " took " .. recoil .. " recoil damage from their Cursed Weapon!]</font>"
 		end
 	end
 
