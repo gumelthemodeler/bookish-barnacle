@@ -68,6 +68,9 @@ task.spawn(function()
 	local MusicManager = require(playerScripts:WaitForChild("MusicManager"))
 	VFXManager.Initialize()
 	MusicManager.Initialize()
+
+	-- [[ FIX: FORCE NOTIFICATION MANAGER TO WAKE UP AND LISTEN TO SERVER ]]
+	require(playerScripts:WaitForChild("SharedUI"):WaitForChild("NotificationManager"))
 end)
 
 -- ==========================================
