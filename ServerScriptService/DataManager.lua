@@ -31,7 +31,8 @@ local requiredRemotes = {
 	"RaidAction", "RaidUpdate", "ToggleTraining", "ShopAction", "ShopUpdate", "UpgradeStat", "TrainAction", "EquipItem", "SellItem", "AutoSell", "AdminCommand",
 	"GachaRoll", "GachaRollAuto", "GachaResult", "AwakenAction", "ManageStorage", "VIPFreeReroll", "RedeemCode", "ClaimBounty", "ForgeItem", "ConsumeItem", "JoinRegiment", "ShowRegimentUI",
 	"FuseTitan", "PathsShopBuy", "AwakenWeapon", "DispatchAction", "TradeAction", "TradeUpdate", "TradeRequest", "DeployToDistrict", "EquipSkill",
-	"PathsShopEvent", "UpgradeRune", "LabyrinthAction", "LabyrinthUpdate"
+	"PathsShopEvent", "UpgradeRune", "LabyrinthAction", "LabyrinthUpdate",
+	"TriggerRumbling", "SyncRumbling" -- Rumbling Remotes
 }
 
 for _, remoteName in ipairs(requiredRemotes) do
@@ -40,19 +41,20 @@ for _, remoteName in ipairs(requiredRemotes) do
 	end
 end
 
-if not RemotesFolder:FindFirstChild("GetShopData") then
-	local rf = Instance.new("RemoteFunction"); rf.Name = "GetShopData"; rf.Parent = RemotesFolder
+-- Remote Functions
+local function InitRF(name)
+	if not RemotesFolder:FindFirstChild(name) then
+		local rf = Instance.new("RemoteFunction"); rf.Name = name; rf.Parent = RemotesFolder
+	end
 end
 
-local lbRf = RemotesFolder:FindFirstChild("GetLeaderboardData")
-if not lbRf then
-	lbRf = Instance.new("RemoteFunction"); lbRf.Name = "GetLeaderboardData"; lbRf.Parent = RemotesFolder
-end
+InitRF("GetShopData")
+InitRF("GetLeaderboardData")
+InitRF("PrestigeAction")
+InitRF("GetDoomsdayData")
+InitRF("GetRumblingData")
 
-local prestigeRf = RemotesFolder:FindFirstChild("PrestigeAction")
-if not prestigeRf then
-	prestigeRf = Instance.new("RemoteFunction"); prestigeRf.Name = "PrestigeAction"; prestigeRf.Parent = RemotesFolder
-end
+local lbRf = RemotesFolder:WaitForChild("GetLeaderboardData")
 
 lbRf.OnServerInvoke = function(player, lbType)
 	local cache = LBCache[lbType] or {}
@@ -82,7 +84,6 @@ lbRf.OnServerInvoke = function(player, lbType)
 	return finalList
 end
 
--- [ECONOMY PATCH] Reset default dews to 15,000 and appended DewsReset flag
 local DefaultData = { 
 	Prestige = 0, CurrentPart = 1, CurrentMission = 1, CurrentWave = 1, XP = 0, TitanXP = 0, Dews = 15000, Elo = 1000, 
 	DewsReset_V1 = true,
@@ -90,7 +91,7 @@ local DefaultData = {
 	TitanPity = 0, TitanMythicalPity = 0, ClanPity = 0, ClanMythicalPity = 0, 
 	EquippedWeapon = "None", EquippedAccessory = "None", PathDust = 0, PathsFloor = 1, 
 	EquippedSkill_1 = "Basic Slash", EquippedSkill_2 = "Heavy Slash", EquippedSkill_3 = "Maneuver", EquippedSkill_4 = "Recover",
-	DispatchData = "{}", AllyLevels = "{}", UnlockedAllies = "", MaxDeployments = 2, 
+	DispatchData = "{}", AllyLevels = "{}", UnlockedAllies = "", MaxDeployments = 2, HorseData = "[]",
 	Health = GameData.BaseStats.Health or 10, Strength = GameData.BaseStats.Strength or 10, 
 	Defense = GameData.BaseStats.Defense or 10, Speed = GameData.BaseStats.Speed or 10, 
 	Gas = GameData.BaseStats.Stamina or 10, Resolve = GameData.BaseStats.Willpower or 10,
@@ -98,7 +99,8 @@ local DefaultData = {
 	Titan_Power_Val = 10, Titan_Speed_Val = 10, Titan_Hardening_Val = 10, 
 	Titan_Endurance_Val = 10, Titan_Precision_Val = 10, Titan_Potential_Val = 10,
 	Setting_ScreenFlash = true, Setting_Music = true, Setting_AutoTrain = false, 
-	LastFreeReroll = 0, RedeemedCodes = "", LoginStreak = 0, LastLoginDate = "", AutoTrainSessionTime = 0 
+	LastFreeReroll = 0, RedeemedCodes = "", LoginStreak = 0, LastLoginDate = "", AutoTrainSessionTime = 0,
+	WeaponDurability = 100
 }
 
 local CurrentVP = {
@@ -429,7 +431,6 @@ local function LoadPlayer(player)
 
 	local data = savedData or DefaultData
 
-	-- [ECONOMY PATCH] Global execution: Wipes existing players corrupted Dews and strictly enforces 15k balance on login
 	if not data.DewsReset_V1 then
 		data.Dews = 15000
 		data.DewsReset_V1 = true
@@ -457,7 +458,6 @@ local function LoadPlayer(player)
 	for k, v in pairs(DefaultData) do if k ~= "Prestige" and k ~= "Dews" and k ~= "Elo" then player:SetAttribute(k, data[k] or v) end end
 	for k, v in pairs(data) do if DefaultData[k] == nil and k ~= "Prestige" and k ~= "Dews" and k ~= "Elo" then player:SetAttribute(k, v) end end
 
-	-- Make sure we explicitly set the Reset attribute so it saves out later
 	player:SetAttribute("DewsReset_V1", true)
 
 	local myReg = player:GetAttribute("Regiment")
@@ -466,8 +466,6 @@ local function LoadPlayer(player)
 			local safeDistrictName = dName:gsub("[^%w]", "")
 			if dData.Winner == myReg and player:GetAttribute("RewardClaimedWeek_" .. safeDistrictName) ~= CurrentVP.Week then
 				player:SetAttribute("RewardClaimedWeek_" .. safeDistrictName, CurrentVP.Week)
-
-				-- [ECONOMY PATCH] Heavy squash on District Wins
 				player.leaderstats.Dews.Value += 5000
 				player:SetAttribute("TitanHardeningExtractCount", (player:GetAttribute("TitanHardeningExtractCount") or 0) + 1)
 				task.delay(3, function() RemotesFolder.NotificationEvent:FireClient(player, "Your Regiment secured " .. dName .. " this week! (+5k Dews, +1 Extract)", "Success") end)
@@ -561,7 +559,7 @@ SavePlayer = function(p, isLeaving)
 	dataToSave.Elo = eloVal
 
 	for k, v in pairs(p:GetAttributes()) do 
-		if k ~= "DataLoaded" and k ~= "InTrade" then 
+		if k ~= "DataLoaded" and k ~= "InTrade" and k ~= "Top5_Prestige" and k ~= "Top5_Elo" then 
 			dataToSave[k] = v 
 		end 
 	end
