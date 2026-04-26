@@ -358,6 +358,44 @@ function SupplyForgeTab.Initialize(parentFrame)
 	local pInput = Instance.new("TextBox", SendContainer); pInput.Size = UDim2.new(0.8, 0, 0, 40); pInput.Position = UDim2.new(0.5, 0, 0, 60); pInput.AnchorPoint = Vector2.new(0.5, 0); pInput.BackgroundColor3 = Color3.fromRGB(15, 15, 18); pInput.TextColor3 = UIHelpers.Colors.TextWhite; pInput.Font = Enum.Font.GothamMedium; pInput.TextSize = 16; pInput.PlaceholderText = "Target Username..."; pInput.Text = ""; Instance.new("UIStroke", pInput).Color = UIHelpers.Colors.BorderMuted
 	local SendBtn, sendStroke = CreateSharpButton(SendContainer, "SEND REQUEST", UDim2.new(0.8, 0, 0, 45), Enum.Font.GothamBlack, 16); SendBtn.Position = UDim2.new(0.5, 0, 0, 120); SendBtn.AnchorPoint = Vector2.new(0.5, 0); SendBtn.TextColor3 = Color3.fromRGB(85, 170, 255); sendStroke.Color = Color3.fromRGB(85, 170, 255)
 
+	-- [[ RE-ADDED PROMO CODES PANEL HERE ]]
+	local CodeContainer = Instance.new("Frame", TradeLeftPanel)
+	CodeContainer.Size = UDim2.new(1, 0, 0, 100)
+	CodeContainer.Position = UDim2.new(0, 0, 1, 20)
+	CodeContainer.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+	CodeContainer.BorderSizePixel = 0
+	local cStroke = Instance.new("UIStroke", CodeContainer)
+	cStroke.Color = Color3.fromRGB(70, 70, 80)
+	cStroke.Thickness = 2
+
+	local codeTitle = UIHelpers.CreateLabel(CodeContainer, "REDEEM PROMO CODE", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 16)
+	codeTitle.Position = UDim2.new(0, 0, 0, 10)
+
+	local cInput = Instance.new("TextBox", CodeContainer)
+	cInput.Size = UDim2.new(0.65, 0, 0, 35)
+	cInput.Position = UDim2.new(0.05, 0, 0, 50)
+	cInput.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+	cInput.TextColor3 = UIHelpers.Colors.TextWhite
+	cInput.Font = Enum.Font.GothamMedium
+	cInput.TextSize = 14
+	cInput.PlaceholderText = "Enter Code..."
+	cInput.Text = ""
+	Instance.new("UIStroke", cInput).Color = UIHelpers.Colors.BorderMuted
+
+	local RedeemBtn, redeemStroke = CreateSharpButton(CodeContainer, "REDEEM", UDim2.new(0.25, 0, 0, 35), Enum.Font.GothamBlack, 14)
+	RedeemBtn.Position = UDim2.new(0.72, 0, 0, 50)
+	RedeemBtn.TextColor3 = Color3.fromRGB(85, 255, 85)
+	redeemStroke.Color = Color3.fromRGB(85, 255, 85)
+
+	RedeemBtn.MouseButton1Click:Connect(function()
+		if cInput.Text ~= "" then
+			Network:WaitForChild("RedeemCode"):FireServer(cInput.Text)
+			cInput.Text = ""
+		end
+	end)
+	-- [[ END OF PROMO CODES PANEL ]]
+
+
 	local TradeRightPanel = Instance.new("Frame", TradeRow); TradeRightPanel.Size = UDim2.new(0.48, 0, 1, 0); TradeRightPanel.BackgroundTransparency = 1
 	local IncContainer, _ = CreateGrimPanel(TradeRightPanel); IncContainer.Size = UDim2.new(1, 0, 1, 0)
 	local incTitle = UIHelpers.CreateLabel(IncContainer, "INCOMING REQUESTS", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 16); incTitle.Position = UDim2.new(0, 0, 0, 10)
@@ -684,7 +722,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 			mnDurLbl.Text = "DURABILITY: " .. math.floor(dur) .. " / " .. maxDur
 			mnDurLbl.TextColor3 = Color3.fromRGB(255, 150, 150)
 			local cost = math.floor((maxDur - dur) * 150)
-			mnCostLbl.Text = "COST: " .. FormatNumber(cost) .. " Dews"
+			mnCostLbl.Text = "COST: " .. UIHelpers.FormatNumber(cost) .. " Dews"
 			mnCostLbl.TextColor3 = UIHelpers.Colors.Gold
 			RepairBtn.Visible = true
 		end
