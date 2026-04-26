@@ -51,6 +51,32 @@ local function DeductItem(plr, matName, amt)
 end
 
 Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeName, quality)
+	if recipeName == "RepairWeapon" then
+		local eqWpn = player:GetAttribute("EquippedWeapon")
+		if not eqWpn or eqWpn == "None" then return end
+
+		local currentDurability = tonumber(player:GetAttribute("WeaponDurability")) or 100
+		local maxDurability = 100
+
+		if currentDurability >= maxDurability then
+			NotificationEvent:FireClient(player, "Weapon is already pristine.", "Error")
+			return
+		end
+
+		local repairAmount = maxDurability - currentDurability
+		local cost = math.floor(repairAmount * 150)
+		local dews = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Dews")
+
+		if dews and dews.Value >= cost then
+			dews.Value -= cost
+			player:SetAttribute("WeaponDurability", maxDurability)
+			NotificationEvent:FireClient(player, "Weapon successfully resharpened!", "Success")
+		else
+			NotificationEvent:FireClient(player, "Not enough Dews to repair!", "Error")
+		end
+		return
+	end
+
 	local recipe = ItemData.ForgeRecipes[recipeName]
 	if not recipe then return end
 
@@ -88,7 +114,6 @@ Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeN
 
 	if not canForge then NotificationEvent:FireClient(player, "Missing required materials or Itemized Abyssal lineages!", "Error"); return end
 
-	-- DEDUCT MATERIALS
 	player.leaderstats.Dews.Value -= recipe.DewCost
 
 	for reqItemName, reqAmt in pairs(recipe.ReqItems) do
@@ -111,7 +136,6 @@ Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeN
 		end
 	end
 
-	-- GIVE RESULT
 	local resSafeName = recipe.Result:gsub("[^%w]", "")
 	player:SetAttribute(resSafeName .. "Count", (player:GetAttribute(resSafeName .. "Count") or 0) + 1)
 
@@ -133,7 +157,6 @@ Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeN
 		end
 	end
 
-	-- Global announcements (stripped of raw HTML tags to prevent string bugs)
 	if quality == "Flawless" then
 		NotificationEvent:FireAllClients(player.Name .. " forged a FLAWLESS " .. recipe.Result .. "!", "Loot")
 	elseif resData and resData.Rarity == "Transcendent" then 
@@ -141,7 +164,6 @@ Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeN
 	end
 end)
 
--- [[ GEAR REFINERY BACKEND (Infinite Multi-Upgrades) ]]
 local RefineGear = Network:FindFirstChild("RefineGear") or Instance.new("RemoteEvent", Network)
 RefineGear.Name = "RefineGear"
 RefineGear.OnServerEvent:Connect(function(player, weaponName)
@@ -153,8 +175,8 @@ RefineGear.OnServerEvent:Connect(function(player, weaponName)
 
 	local currentLevel = player:GetAttribute(safeWpn .. "_AwakenLevel") or 0
 
-	local dewsNeeded = 50000 + (currentLevel * 25000)
-	local extractsNeeded = 5 + (currentLevel * 2)
+	local dewsNeeded = 10000 + (currentLevel * 5000)
+	local extractsNeeded = 1 + currentLevel
 
 	local dews = player.leaderstats.Dews.Value
 	local extracts = GetItemCount(player, "Titan Hardening Extract")
@@ -181,18 +203,17 @@ RefineGear.OnServerEvent:Connect(function(player, weaponName)
 	end
 end)
 
--- [[ TITAN VARIANT BACKEND ]]
 MutateTitan.OnServerInvoke = function(player)
 	local dews = player.leaderstats.Dews.Value
 	local abyssalBlood = GetItemCount(player, "Abyssal Blood")
 
-	if dews >= 100000 and abyssalBlood >= 1 then
+	if dews >= 25000 and abyssalBlood >= 1 then
 		local currentTitan = player:GetAttribute("Titan") or "None"
 		if currentTitan == "None" then
 			return false, "You must inherit a Titan first to awaken a variant!"
 		end
 
-		player.leaderstats.Dews.Value -= 100000
+		player.leaderstats.Dews.Value -= 25000
 		DeductItem(player, "Abyssal Blood", 1)
 
 		local variants = {"Titan Hardening", "Crimson Steam", "Abyssal Eyes", "Beast Fur", "Crystalline Nape"}
@@ -213,14 +234,14 @@ Network:WaitForChild("AwakenAction").OnServerEvent:Connect(function(player, acti
 		if count >= 1 and validClans[currentClan] then
 			DeductItem(player, "Ancestral Awakening Serum", 1)
 			player:SetAttribute("Clan", "Awakened " .. currentClan)
-			NotificationEvent:FireClient(player, currentClan .. " Bloodline Awakened!", "Success")
+			NotificationEvent:FireAllClients(player.Name .. " has Awakened their " .. currentClan .. " bloodline!", "Success")
 		elseif count >= 1 then NotificationEvent:FireClient(player, "Your bloodline is too weak to awaken.", "Error") end
 	elseif actionType == "Titan" then
 		local count = GetItemCount(player, "Ymir's Clay Fragment")
 		if count >= 1 and player:GetAttribute("Titan") == "Attack Titan" then
 			DeductItem(player, "Ymir's Clay Fragment", 1)
 			player:SetAttribute("Titan", "Founding Attack Titan")
-			NotificationEvent:FireClient(player, "You have reached the Coordinate!", "Success")
+			NotificationEvent:FireAllClients(player.Name .. " has reached the Coordinate!", "Success")
 		end
 	end
 end)
@@ -233,7 +254,7 @@ FuseTitan.OnServerEvent:Connect(function(player, baseSlot, sacSlot)
 	if not validSlots[tostring(baseSlot)] or not validSlots[tostring(sacSlot)] then return end
 
 	local dews = player.leaderstats.Dews.Value
-	if dews >= 50000 then
+	if dews >= 15000 then
 		local baseAttr = (baseSlot == "Equipped") and "Titan" or ("Titan_Slot" .. baseSlot)
 		local sacAttr = (sacSlot == "Equipped") and "Titan" or ("Titan_Slot" .. sacSlot)
 
@@ -242,16 +263,17 @@ FuseTitan.OnServerEvent:Connect(function(player, baseSlot, sacSlot)
 		local result = FusionRecipes[baseTitan] and FusionRecipes[baseTitan][sacTitan]
 
 		if result then
-			player.leaderstats.Dews.Value -= 50000
+			player.leaderstats.Dews.Value -= 15000
 			player:SetAttribute(baseAttr, result)
 			player:SetAttribute(sacAttr, "None")
 
 			FusionComplete:FireClient(player, result)
+			NotificationEvent:FireAllClients(player.Name .. " has hybridized the " .. result .. "!", "Success")
 		else
 			NotificationEvent:FireClient(player, "Invalid Fusion combination.", "Error")
 		end
 	else
-		NotificationEvent:FireClient(player, "Not enough Dews to fuse! Requires 50,000.", "Error")
+		NotificationEvent:FireClient(player, "Not enough Dews to fuse! Requires 15,000.", "Error")
 	end
 end)
 
@@ -260,18 +282,18 @@ ItemizeTitan.Name = "ItemizeTitan"
 ItemizeTitan.OnServerEvent:Connect(function(player, slotId)
 	if not slotId then return end
 	local dews = player.leaderstats.Dews.Value
-	if dews >= 25000 then
+	if dews >= 5000 then
 		local attrName = (slotId == "Equipped") and "Titan" or ("Titan_Slot" .. slotId)
 		local titanName = player:GetAttribute(attrName) or "None"
 		if titanName ~= "None" then
-			player.leaderstats.Dews.Value -= 25000
+			player.leaderstats.Dews.Value -= 5000
 			player:SetAttribute(attrName, "None")
 			local safeItemName = ("Itemized " .. titanName):gsub("[^%w]", "") .. "Count"
 			player:SetAttribute(safeItemName, (player:GetAttribute(safeItemName) or 0) + 1)
 			NotificationEvent:FireClient(player, "Titan extracted to your inventory!", "Success")
 		end
 	else
-		NotificationEvent:FireClient(player, "Not enough Dews to itemize! Requires 25,000.", "Error")
+		NotificationEvent:FireClient(player, "Not enough Dews to itemize! Requires 5,000.", "Error")
 	end
 end)
 
@@ -280,11 +302,11 @@ ItemizeClan.Name = "ItemizeClan"
 ItemizeClan.OnServerEvent:Connect(function(player, slotId)
 	if not slotId then return end
 	local dews = player.leaderstats.Dews.Value
-	if dews >= 25000 then
+	if dews >= 5000 then
 		local attrName = (slotId == "Equipped") and "Clan" or ("Clan_Slot" .. slotId)
 		local clanName = player:GetAttribute(attrName) or "None"
 		if clanName ~= "None" then
-			player.leaderstats.Dews.Value -= 25000
+			player.leaderstats.Dews.Value -= 5000
 			player:SetAttribute(attrName, "None")
 
 			local safeItemName = ("Itemized " .. clanName):gsub("[^%w]", "") .. "Count"
@@ -292,6 +314,6 @@ ItemizeClan.OnServerEvent:Connect(function(player, slotId)
 			NotificationEvent:FireClient(player, "Clan bloodline extracted to your inventory!", "Success")
 		end
 	else
-		NotificationEvent:FireClient(player, "Not enough Dews to itemize! Requires 25,000.", "Error")
+		NotificationEvent:FireClient(player, "Not enough Dews to itemize! Requires 5,000.", "Error")
 	end
 end)
