@@ -118,7 +118,6 @@ local function UpdateLayoutForScreen()
 	if vp.X == 0 or vp.Y == 0 then return end
 	local isMobile = (vp.X <= 850) or (vp.Y > vp.X)
 
-	-- Market & Trade Responsive Layout
 	if LayoutRefs.MarketLayout then LayoutRefs.MarketLayout.FillDirection = isMobile and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal end
 	if LayoutRefs.MarketLeft then LayoutRefs.MarketLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 300) or UDim2.new(0.48, 0, 1, 0) end
 	if LayoutRefs.MarketRight then LayoutRefs.MarketRight.Size = isMobile and UDim2.new(0.95, 0, 0, 300) or UDim2.new(0.48, 0, 1, 0) end
@@ -127,12 +126,10 @@ local function UpdateLayoutForScreen()
 	if LayoutRefs.TradeLeft then LayoutRefs.TradeLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 200) or UDim2.new(0.48, 0, 1, 0) end
 	if LayoutRefs.TradeRight then LayoutRefs.TradeRight.Size = isMobile and UDim2.new(0.95, 0, 0, 200) or UDim2.new(0.48, 0, 1, 0) end
 
-	-- Forge Responsive Layout
 	if LayoutRefs.ForgeLayout then LayoutRefs.ForgeLayout.FillDirection = isMobile and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal end
 	if LayoutRefs.ForgeLeft then LayoutRefs.ForgeLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 350) or UDim2.new(0.35, 0, 1, 0) end
 	if LayoutRefs.ForgeRight then LayoutRefs.ForgeRight.Size = isMobile and UDim2.new(0.95, 0, 0, 500) or UDim2.new(0.63, 0, 1, 0) end
 
-	-- Titan Lab Responsive Layout
 	if LayoutRefs.TitanLayout then LayoutRefs.TitanLayout.FillDirection = isMobile and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal end
 	if LayoutRefs.TitanLeft then LayoutRefs.TitanLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 400) or UDim2.new(0.5, 0, 1, 0) end
 	if LayoutRefs.TitanRight then LayoutRefs.TitanRight.Size = isMobile and UDim2.new(0.95, 0, 0, 400) or UDim2.new(0.48, 0, 1, 0) end
@@ -235,7 +232,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 	local rrContainer = Instance.new("Frame", MTLeftPanel); rrContainer.Size = UDim2.new(1, 0, 0, 40); rrContainer.Position = UDim2.new(0, 0, 0, 30); rrContainer.BackgroundTransparency = 1
 	local rrLayout = Instance.new("UIListLayout", rrContainer); rrLayout.FillDirection = Enum.FillDirection.Horizontal; rrLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center; rrLayout.Padding = UDim.new(0, 10)
 
-	local rrDews, rrDewsStroke = CreateSharpButton(rrContainer, "RESTOCK (300K Dews)", UDim2.new(0.48, 0, 1, 0), Enum.Font.GothamBlack, 11); rrDews.TextColor3 = Color3.fromRGB(85, 170, 255); rrDewsStroke.Color = Color3.fromRGB(85, 170, 255)
+	local rrDews, rrDewsStroke = CreateSharpButton(rrContainer, "RESTOCK (15K Dews)", UDim2.new(0.48, 0, 1, 0), Enum.Font.GothamBlack, 11); rrDews.TextColor3 = Color3.fromRGB(85, 170, 255); rrDewsStroke.Color = Color3.fromRGB(85, 170, 255)
 	local rrPremium, rrPremStroke = CreateSharpButton(rrContainer, "RESTOCK (15 R$)", UDim2.new(0.48, 0, 1, 0), Enum.Font.GothamBlack, 11)
 
 	local restockTimer = UIHelpers.CreateLabel(MTLeftPanel, "RESTOCKS IN: 00:00", UDim2.new(1, 0, 0, 20), Enum.Font.GothamBlack, Color3.fromRGB(255, 150, 100), 12); restockTimer.Position = UDim2.new(0, 0, 0, 75); restockTimer.TextXAlignment = Enum.TextXAlignment.Left
@@ -272,7 +269,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 			rrPremium.Text = "FREE RESTOCK"
 			rrPremium.TextColor3 = Color3.fromRGB(200, 100, 255); rrPremStroke.Color = Color3.fromRGB(200, 100, 255); isFreeRestock = true
 		else
-			rrPremium.Text = "RESTOCK (15 R$)"; rrPremium.TextColor3 = Color3.fromRGB(85, 255, 85); rrPremStroke.Color = Color3.fromRGB(85, 255, 85); isFreeRestock = false
+			rrPremium.Text = "RESTOCK (50 R$)"; rrPremium.TextColor3 = Color3.fromRGB(85, 255, 85); rrPremStroke.Color = Color3.fromRGB(85, 255, 85); isFreeRestock = false
 		end
 	end
 	UpdateRerollButton()
@@ -390,7 +387,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 	LayoutRefs.TradeRight = TradeRightPanel
 
 	-- ==========================================
-	-- 2. THE FORGE (Crafting + Rituals + Refinery + True Minigame)
+	-- 2. THE FORGE (Crafting + Rituals + Refinery + Maintenance)
 	-- ==========================================
 	local ForgeTab = activeSubFrames["THE FORGE"]
 	local fgTitle = UIHelpers.CreateLabel(ForgeTab, "WEAPONSMITH & RITUALS", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.TextWhite, 20)
@@ -407,9 +404,11 @@ function SupplyForgeTab.Initialize(parentFrame)
 	-- Mode Toggles
 	local fModeNav = Instance.new("Frame", FLeftPanel); fModeNav.Size = UDim2.new(1, 0, 0, 35); fModeNav.BackgroundTransparency = 1
 	local fmLayout = Instance.new("UIListLayout", fModeNav); fmLayout.FillDirection = Enum.FillDirection.Horizontal; fmLayout.Padding = UDim.new(0, 5)
-	local modeForgeBtn, mfStroke = CreateSharpButton(fModeNav, "CRAFTING", UDim2.new(0.32, 0, 1, 0), Enum.Font.GothamBlack, 11)
-	local modeRitualBtn, mrtStroke = CreateSharpButton(fModeNav, "RITUALS", UDim2.new(0.32, 0, 1, 0), Enum.Font.GothamBlack, 11)
-	local modeRefineBtn, mrStroke = CreateSharpButton(fModeNav, "REFINERY", UDim2.new(0.32, 0, 1, 0), Enum.Font.GothamBlack, 11)
+
+	local modeForgeBtn, mfStroke = CreateSharpButton(fModeNav, "CRAFTING", UDim2.new(0.23, 0, 1, 0), Enum.Font.GothamBlack, 11)
+	local modeRitualBtn, mrtStroke = CreateSharpButton(fModeNav, "RITUALS", UDim2.new(0.23, 0, 1, 0), Enum.Font.GothamBlack, 11)
+	local modeRefineBtn, mrStroke = CreateSharpButton(fModeNav, "REFINERY", UDim2.new(0.23, 0, 1, 0), Enum.Font.GothamBlack, 11)
+	local modeMaintBtn, mntStroke = CreateSharpButton(fModeNav, "MAINTENANCE", UDim2.new(0.26, 0, 1, 0), Enum.Font.GothamBlack, 11)
 
 	local RecipeList = Instance.new("ScrollingFrame", FLeftPanel); RecipeList.Size = UDim2.new(1, 0, 1, -45); RecipeList.Position = UDim2.new(0, 0, 0, 45); RecipeList.BackgroundTransparency = 1; RecipeList.ScrollBarThickness = 4; RecipeList.BorderSizePixel = 0
 	local rlLayout = Instance.new("UIListLayout", RecipeList); rlLayout.Padding = UDim.new(0, 10); rlLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() RecipeList.CanvasSize = UDim2.new(0, 0, 0, rlLayout.AbsoluteContentSize.Y + 20) end)
@@ -428,12 +427,12 @@ function SupplyForgeTab.Initialize(parentFrame)
 	bpLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() BlueprintView.CanvasSize = UDim2.new(0, 0, 0, bpLayout.AbsoluteContentSize.Y + 20) end)
 
 	local RefineView = Instance.new("Frame", FRightPanel); RefineView.Size = UDim2.new(1, 0, 1, 0); RefineView.BackgroundTransparency = 1; RefineView.Visible = false
-	local MinigameView = Instance.new("Frame", FRightPanel); MinigameView.Size = UDim2.new(1, 0, 1, 0); MinigameView.BackgroundTransparency = 1; MinigameView.Visible = false
-	local mgLayout = Instance.new("UIListLayout", MinigameView); mgLayout.SortOrder = Enum.SortOrder.LayoutOrder; mgLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center; mgLayout.Padding = UDim.new(0, 20)
+	local MaintView = Instance.new("Frame", FRightPanel); MaintView.Size = UDim2.new(1, 0, 1, 0); MaintView.BackgroundTransparency = 1; MaintView.Visible = false
 
 	modeForgeBtn.TextColor3 = UIHelpers.Colors.Gold; mfStroke.Color = UIHelpers.Colors.Gold
 	modeRitualBtn.TextColor3 = UIHelpers.Colors.TextMuted; mrtStroke.Color = UIHelpers.Colors.BorderMuted
 	modeRefineBtn.TextColor3 = UIHelpers.Colors.TextMuted; mrStroke.Color = UIHelpers.Colors.BorderMuted
+	modeMaintBtn.TextColor3 = UIHelpers.Colors.TextMuted; mntStroke.Color = UIHelpers.Colors.BorderMuted
 
 	local selectedRecipeName = nil; local selectedRefineItem = nil; local currentMode = "Crafting"
 
@@ -442,12 +441,19 @@ function SupplyForgeTab.Initialize(parentFrame)
 		modeForgeBtn.TextColor3 = (mode == "Crafting") and UIHelpers.Colors.Gold or UIHelpers.Colors.TextMuted; mfStroke.Color = (mode == "Crafting") and UIHelpers.Colors.Gold or UIHelpers.Colors.BorderMuted
 		modeRitualBtn.TextColor3 = (mode == "Rituals") and UIHelpers.Colors.Gold or UIHelpers.Colors.TextMuted; mrtStroke.Color = (mode == "Rituals") and UIHelpers.Colors.Gold or UIHelpers.Colors.BorderMuted
 		modeRefineBtn.TextColor3 = (mode == "Refinery") and UIHelpers.Colors.Gold or UIHelpers.Colors.TextMuted; mrStroke.Color = (mode == "Refinery") and UIHelpers.Colors.Gold or UIHelpers.Colors.BorderMuted
+		modeMaintBtn.TextColor3 = (mode == "Maintenance") and UIHelpers.Colors.Gold or UIHelpers.Colors.TextMuted; mntStroke.Color = (mode == "Maintenance") and UIHelpers.Colors.Gold or UIHelpers.Colors.BorderMuted
+
 		RecipeList.Visible = (mode == "Crafting"); RitualList.Visible = (mode == "Rituals"); RefineList.Visible = (mode == "Refinery")
-		BlueprintView.Visible = (mode == "Crafting" or mode == "Rituals"); RefineView.Visible = (mode == "Refinery"); MinigameView.Visible = false
+		BlueprintView.Visible = (mode == "Crafting" or mode == "Rituals"); RefineView.Visible = (mode == "Refinery"); MaintView.Visible = (mode == "Maintenance")
+
+		if mode == "Maintenance" then
+			player:SetAttribute("_ForceUIRefresh", math.random())
+		end
 	end
 	modeForgeBtn.MouseButton1Click:Connect(function() SwitchMode("Crafting") end)
 	modeRitualBtn.MouseButton1Click:Connect(function() SwitchMode("Rituals") end)
 	modeRefineBtn.MouseButton1Click:Connect(function() SwitchMode("Refinery") end)
+	modeMaintBtn.MouseButton1Click:Connect(function() SwitchMode("Maintenance") end)
 
 	-- BLUEPRINT UI 
 	local bpTitle = UIHelpers.CreateLabel(BlueprintView, "SELECT A BLUEPRINT", UDim2.new(1, -20, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 20); bpTitle.LayoutOrder = 1; bpTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -458,145 +464,6 @@ function SupplyForgeTab.Initialize(parentFrame)
 
 	local CraftBtnBox = Instance.new("Frame", BlueprintView); CraftBtnBox.Size = UDim2.new(1, -20, 0, 60); CraftBtnBox.BackgroundTransparency = 1; CraftBtnBox.LayoutOrder = 5
 	local CraftBtn, CraftStroke = CreateSharpButton(CraftBtnBox, "FORGE", UDim2.new(0.8, 0, 0, 45), Enum.Font.GothamBlack, 16); CraftBtn.Position = UDim2.new(0.5, 0, 0, 10); CraftBtn.AnchorPoint = Vector2.new(0.5, 0); CraftBtn.Visible = false
-
-	-- THE NEW QTE MINIGAME
-	local mgSpacer = Instance.new("Frame", MinigameView); mgSpacer.Size = UDim2.new(1,0,0,10); mgSpacer.BackgroundTransparency = 1; mgSpacer.LayoutOrder = 0
-	local mgTitle = UIHelpers.CreateLabel(MinigameView, "ACTIVE FORGE", UDim2.new(1, 0, 0, 40), Enum.Font.GothamBlack, Color3.fromRGB(255, 100, 100), 32); mgTitle.LayoutOrder = 1
-	local mgInst = UIHelpers.CreateLabel(MinigameView, "Strike when the outer ring aligns with the core. (0/3)", UDim2.new(1, 0, 0, 20), Enum.Font.GothamMedium, UIHelpers.Colors.TextWhite, 16); mgInst.LayoutOrder = 2
-
-	local ForgeAnvilContainer = Instance.new("Frame", MinigameView)
-	ForgeAnvilContainer.Size = UDim2.new(0, 220, 0, 220)
-	ForgeAnvilContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-	ForgeAnvilContainer.LayoutOrder = 3
-	local faStroke = Instance.new("UIStroke", ForgeAnvilContainer); faStroke.Color = UIHelpers.Colors.BorderMuted; faStroke.Thickness = 4
-	Instance.new("UICorner", ForgeAnvilContainer).CornerRadius = UDim.new(0.5, 0)
-
-	local TargetRing = Instance.new("Frame", ForgeAnvilContainer)
-	TargetRing.Size = UDim2.new(0.4, 0, 0.4, 0)
-	TargetRing.Position = UDim2.new(0.5, 0, 0.5, 0)
-	TargetRing.AnchorPoint = Vector2.new(0.5, 0.5)
-	TargetRing.BackgroundTransparency = 1
-	local trStroke = Instance.new("UIStroke", TargetRing); trStroke.Color = UIHelpers.Colors.Gold; trStroke.Thickness = 5
-	Instance.new("UICorner", TargetRing).CornerRadius = UDim.new(0.5, 0)
-
-	local ShrinkRing = Instance.new("Frame", ForgeAnvilContainer)
-	ShrinkRing.Size = UDim2.new(1, 0, 1, 0)
-	ShrinkRing.Position = UDim2.new(0.5, 0, 0.5, 0)
-	ShrinkRing.AnchorPoint = Vector2.new(0.5, 0.5)
-	ShrinkRing.BackgroundTransparency = 1
-	local srStroke = Instance.new("UIStroke", ShrinkRing); srStroke.Color = Color3.fromRGB(255, 100, 100); srStroke.Thickness = 4
-	Instance.new("UICorner", ShrinkRing).CornerRadius = UDim.new(0.5, 0)
-
-	local StrikeFeedback = UIHelpers.CreateLabel(ForgeAnvilContainer, "", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBlack, Color3.fromRGB(255, 255, 255), 26); StrikeFeedback.ZIndex = 5
-
-	local StrikeBtn, StrikeStroke = CreateSharpButton(MinigameView, "STRIKE", UDim2.new(0, 240, 0, 70), Enum.Font.GothamBlack, 32); StrikeBtn.LayoutOrder = 4
-	StrikeBtn.TextColor3 = Color3.fromRGB(255, 85, 85); StrikeStroke.Color = Color3.fromRGB(255, 85, 85); StrikeStroke.Thickness = 4
-
-	local mgActive = false; local mgConn = nil; local strikes = 0; local totalAccuracy = 0; local currentRingScale = 1.0
-
-	local function ResetRings()
-		currentRingScale = 1.0
-		ShrinkRing.Size = UDim2.new(currentRingScale, 0, currentRingScale, 0)
-		srStroke.Color = Color3.fromRGB(255, 100, 100)
-	end
-
-	local function ShowFeedback(text, color)
-		StrikeFeedback.Text = text
-		StrikeFeedback.TextColor3 = color
-		StrikeFeedback.TextTransparency = 0
-		TweenService:Create(StrikeFeedback, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play()
-	end
-
-	local function EndMinigame()
-		mgActive = false; if mgConn then mgConn:Disconnect() mgConn = nil end
-		local finalQuality = "Standard"; local avg = totalAccuracy / 3
-		if avg >= 0.85 then finalQuality = "Flawless" elseif avg >= 0.50 then finalQuality = "Masterwork" end
-
-		mgInst.Text = "Forge Complete!"
-
-		-- CINEMATIC DOPAMINE
-		local cinGui = Instance.new("ScreenGui", player.PlayerGui)
-		cinGui.Name = "ForgeCinematicGui"
-		cinGui.DisplayOrder = 1000
-
-		local bg = Instance.new("Frame", cinGui)
-		bg.Size = UDim2.new(1,0,1,0); bg.BackgroundColor3 = Color3.new(0,0,0); bg.BackgroundTransparency = 1
-		TweenService:Create(bg, TweenInfo.new(0.3), {BackgroundTransparency = 0.5}):Play()
-
-		local title = UIHelpers.CreateLabel(bg, "ITEM FORGED", UDim2.new(1,0,0,50), Enum.Font.GothamBlack, Color3.fromRGB(255, 200, 100), 40)
-		title.Position = UDim2.new(0,0,0.4,0); title.TextTransparency = 1
-
-		local itemName = UIHelpers.CreateLabel(bg, string.upper(selectedRecipeName), UDim2.new(1,0,0,50), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 60)
-		itemName.Position = UDim2.new(0,0,0.5,0); itemName.TextTransparency = 1
-
-		local qLbl = UIHelpers.CreateLabel(bg, "QUALITY: " .. string.upper(finalQuality), UDim2.new(1,0,0,30), Enum.Font.GothamBold, Color3.new(1,1,1), 20)
-		qLbl.Position = UDim2.new(0,0,0.6,0); qLbl.TextTransparency = 1
-		if finalQuality == "Flawless" then qLbl.TextColor3 = UIHelpers.Colors.Gold end
-
-		TweenService:Create(title, TweenInfo.new(0.4), {TextTransparency = 0, Position = UDim2.new(0,0,0.35,0)}):Play()
-		task.wait(0.2)
-		TweenService:Create(itemName, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextTransparency = 0, TextSize = 70}):Play()
-		if VFXManager and type(VFXManager.PlaySFX) == "function" then VFXManager.PlaySFX("Reveal", 1) end
-		task.wait(0.2)
-		TweenService:Create(qLbl, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
-
-		if selectedRecipeName then Network:WaitForChild("ForgeItem"):FireServer(selectedRecipeName, finalQuality) end
-
-		task.wait(2)
-		local fade = TweenService:Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 1})
-		TweenService:Create(title, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-		TweenService:Create(itemName, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-		TweenService:Create(qLbl, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-		fade:Play(); fade.Completed:Wait()
-		cinGui:Destroy()
-
-		MinigameView.Visible = false; BlueprintView.Visible = true
-	end
-
-	local function HandleStrike(forcedMiss)
-		if not mgActive then return end
-		local dist = math.abs(currentRingScale - 0.4)
-		local accuracy = 0
-
-		local flash = Instance.new("Frame", ForgeAnvilContainer)
-		flash.Size = UDim2.new(1,0,1,0); flash.BackgroundColor3 = Color3.new(1,1,1)
-		flash.ZIndex = 10; Instance.new("UICorner", flash).CornerRadius = UDim.new(0.5,0)
-		TweenService:Create(flash, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-		game.Debris:AddItem(flash, 0.3)
-
-		if forcedMiss then
-			accuracy = 0
-			ShowFeedback("MISS", Color3.fromRGB(255, 50, 50))
-			if VFXManager and type(VFXManager.PlaySFX) == "function" then VFXManager.PlaySFX("Error", 1) end
-		elseif dist <= 0.08 then
-			accuracy = 1.0
-			ShowFeedback("PERFECT!", UIHelpers.Colors.Gold)
-			if VFXManager and type(VFXManager.PlaySFX) == "function" then VFXManager.PlaySFX("HeavySlash", 1) end
-			local trGlow = TargetRing:Clone()
-			trGlow.Parent = ForgeAnvilContainer
-			TweenService:Create(trGlow, TweenInfo.new(0.4), {Size = UDim2.new(0.6,0,0.6,0), BackgroundTransparency = 1}):Play()
-			game.Debris:AddItem(trGlow, 0.4)
-		elseif dist <= 0.18 then
-			accuracy = 0.5
-			ShowFeedback("GOOD", Color3.fromRGB(85, 255, 85))
-			if VFXManager and type(VFXManager.PlaySFX) == "function" then VFXManager.PlaySFX("Slash", 1) end
-		else
-			accuracy = 0
-			ShowFeedback("POOR", Color3.fromRGB(255, 150, 100))
-			if VFXManager and type(VFXManager.PlaySFX) == "function" then VFXManager.PlaySFX("Block", 1) end
-		end
-
-		totalAccuracy += accuracy; strikes += 1
-		mgInst.Text = "Strike when the outer ring aligns with the core. (" .. strikes .. "/3)"
-
-		if strikes >= 3 then 
-			EndMinigame() 
-		else 
-			mgActive = false; task.wait(0.6); ResetRings(); mgActive = true 
-		end
-	end
-
-	StrikeBtn.MouseButton1Click:Connect(function() HandleStrike(false) end)
 
 	local sortedCrafts, sortedRituals = {}, {}
 	for rec, data in pairs(ItemData.ForgeRecipes or {}) do
@@ -646,7 +513,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 		local isRitualList = (recipeData.SpecialType == "AbyssalClanRequirement" or string.find(selectedRecipeName, "Serum") or string.find(selectedRecipeName, "Abyssal"))
 
 		bpTitle.Text = string.upper(selectedRecipeName); bpTitle.TextColor3 = rColor
-		bpDesc.Text = "<font color='" .. ColorToHex(rColor) .. "'>[" .. rarity:upper() .. "]</font> " .. (resData and resData.Desc or "A piece of forged equipment.")
+		bpDesc.Text = "<font color=\"" .. ColorToHex(rColor) .. "\">[" .. rarity:upper() .. "]</font> " .. (resData and resData.Desc or "A piece of forged equipment.")
 		ReqTitle.Visible = true; CraftBtn.Visible = true; CraftStroke.Color = rColor; CraftBtn.TextColor3 = rColor
 		for _, c in ipairs(ReqList:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
 
@@ -718,18 +585,8 @@ function SupplyForgeTab.Initialize(parentFrame)
 			Network:WaitForChild("ForgeItem"):FireServer(selectedRecipeName, "Standard")
 			NotifySafe("Successfully forged " .. selectedRecipeName .. "!", "Success")
 		else
-			BlueprintView.Visible = false; MinigameView.Visible = true; strikes = 0; totalAccuracy = 0
-			mgInst.Text = "Strike when the outer ring aligns with the core. (0/3)"; ResetRings(); mgActive = true
-
-			if mgConn then mgConn:Disconnect() end
-			mgConn = RunService.RenderStepped:Connect(function(dt)
-				if mgActive then
-					local speed = 0.6 + (strikes * 0.2) 
-					currentRingScale -= dt * speed
-					ShrinkRing.Size = UDim2.new(currentRingScale, 0, currentRingScale, 0)
-					if currentRingScale <= 0.1 then HandleStrike(true) end
-				end
-			end)
+			Network:WaitForChild("ForgeItem"):FireServer(selectedRecipeName, "Standard")
+			NotifySafe("Successfully forged " .. selectedRecipeName .. "!", "Success")
 		end
 	end)
 
@@ -772,8 +629,8 @@ function SupplyForgeTab.Initialize(parentFrame)
 						rfCostLbl.TextColor3 = UIHelpers.Colors.TextMuted
 						RefineBtn.Visible = false
 					else
-						local costDews = 50000 + (currentLevel * 25000)
-						local costExtracts = 5 + (currentLevel * 2)
+						local costDews = 10000 + (currentLevel * 5000)
+						local costExtracts = 1 + currentLevel
 						rfCostLbl.Text = "COST: " .. costDews .. " Dews + " .. costExtracts .. " Titan Hardening Extract"
 						rfCostLbl.TextColor3 = Color3.fromRGB(255, 100, 100)
 						RefineBtn.Text = "AWAKEN TO +" .. (currentLevel + 1)
@@ -785,11 +642,69 @@ function SupplyForgeTab.Initialize(parentFrame)
 	end
 	RefineBtn.MouseButton1Click:Connect(function() if not selectedRefineItem then return end Network:WaitForChild("RefineGear"):FireServer(selectedRefineItem); task.wait(0.5); UpdateRefineList(); selectedRefineItem = nil; rfTargetLbl.Text = "TARGET: NONE"; RefineBtn.Visible = false end)
 
+	-- MAINTENANCE UI
+	local mnTitle = UIHelpers.CreateLabel(MaintView, "WEAPON MAINTENANCE", UDim2.new(1, -20, 0, 30), Enum.Font.GothamBlack, Color3.fromRGB(255, 100, 100), 20); mnTitle.Position = UDim2.new(0, 10, 0, 10); mnTitle.TextXAlignment = Enum.TextXAlignment.Left
+	local mnDesc = UIHelpers.CreateLabel(MaintView, "Resharpen your equipped weapon to restore its durability and damage output.", UDim2.new(1, -20, 0, 40), Enum.Font.GothamMedium, UIHelpers.Colors.TextMuted, 13); mnDesc.Position = UDim2.new(0, 10, 0, 40); mnDesc.TextXAlignment = Enum.TextXAlignment.Left; mnDesc.TextWrapped = true; mnDesc.TextYAlignment = Enum.TextYAlignment.Top
+
+	local mnEqLbl = UIHelpers.CreateLabel(MaintView, "EQUIPPED: NONE", UDim2.new(1, -20, 0, 25), Enum.Font.GothamBlack, UIHelpers.Colors.TextWhite, 18); mnEqLbl.Position = UDim2.new(0, 10, 0, 90); mnEqLbl.TextXAlignment = Enum.TextXAlignment.Left
+	local mnDurLbl = UIHelpers.CreateLabel(MaintView, "DURABILITY: 100/100", UDim2.new(1, -20, 0, 25), Enum.Font.GothamBold, Color3.fromRGB(150, 255, 150), 14); mnDurLbl.Position = UDim2.new(0, 10, 0, 115); mnDurLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+	local mnCostLbl = UIHelpers.CreateLabel(MaintView, "COST: 0 Dews", UDim2.new(1, -20, 0, 25), Enum.Font.GothamBold, UIHelpers.Colors.Gold, 12); mnCostLbl.Position = UDim2.new(0, 10, 0, 140); mnCostLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+	local RepairBtn, RepairStroke = CreateSharpButton(MaintView, "RESHARPEN", UDim2.new(0.8, 0, 0, 45), Enum.Font.GothamBlack, 16); RepairBtn.Position = UDim2.new(0.5, 0, 1, -15); RepairBtn.AnchorPoint = Vector2.new(0.5, 1); RepairBtn.Visible = false; RepairBtn.TextColor3 = Color3.fromRGB(255, 100, 100); RepairStroke.Color = Color3.fromRGB(255, 100, 100)
+
+	local function UpdateMaintenanceUI()
+		local eqWpn = player:GetAttribute("EquippedWeapon")
+		if not eqWpn or eqWpn == "None" then
+			mnEqLbl.Text = "EQUIPPED: NONE"
+			mnEqLbl.TextColor3 = UIHelpers.Colors.TextMuted
+			mnDurLbl.Text = "Equip a weapon to maintain it."
+			mnDurLbl.TextColor3 = UIHelpers.Colors.TextMuted
+			mnCostLbl.Text = ""
+			RepairBtn.Visible = false
+			return
+		end
+
+		local wData = ItemData.Equipment[eqWpn]
+		local rColor = CONFIG.RarityColors[wData and wData.Rarity or "Common"] or UIHelpers.Colors.TextWhite
+
+		mnEqLbl.Text = "EQUIPPED: " .. string.upper(eqWpn)
+		mnEqLbl.TextColor3 = rColor
+
+		local dur = tonumber(player:GetAttribute("WeaponDurability")) or 100
+		local maxDur = 100
+
+		if dur >= maxDur then
+			mnDurLbl.Text = "DURABILITY: " .. math.floor(dur) .. " / " .. maxDur .. " (PRISTINE)"
+			mnDurLbl.TextColor3 = Color3.fromRGB(150, 255, 150)
+			mnCostLbl.Text = "Weapon is fully maintained."
+			mnCostLbl.TextColor3 = UIHelpers.Colors.TextMuted
+			RepairBtn.Visible = false
+		else
+			mnDurLbl.Text = "DURABILITY: " .. math.floor(dur) .. " / " .. maxDur
+			mnDurLbl.TextColor3 = Color3.fromRGB(255, 150, 150)
+			local cost = math.floor((maxDur - dur) * 150)
+			mnCostLbl.Text = "COST: " .. FormatNumber(cost) .. " Dews"
+			mnCostLbl.TextColor3 = UIHelpers.Colors.Gold
+			RepairBtn.Visible = true
+		end
+	end
+
+	RepairBtn.MouseButton1Click:Connect(function() 
+		Network:WaitForChild("ForgeItem"):FireServer("RepairWeapon")
+		if VFXManager and type(VFXManager.PlaySFX) == "function" then VFXManager.PlaySFX("HeavySlash", 1.5) end
+		task.wait(0.2)
+		UpdateMaintenanceUI()
+	end)
+
 	player.AttributeChanged:Connect(function(attr) 
 		if string.match(attr, "Count$") or attr == "_ForceUIRefresh" then 
 			RefreshBlueprint()
 			UpdateRefineList() 
 		end 
+		if attr == "EquippedWeapon" or attr == "WeaponDurability" or attr == "_ForceUIRefresh" then
+			UpdateMaintenanceUI()
+		end
 	end)
 
 	task.spawn(function()
@@ -802,6 +717,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 	end)
 
 	UpdateRefineList()
+	UpdateMaintenanceUI()
 
 	LayoutRefs.ForgeLayout = fgLayout
 	LayoutRefs.ForgeLeft = FLeftPanel
@@ -849,12 +765,14 @@ function SupplyForgeTab.Initialize(parentFrame)
 	end
 
 	local Slot1, Slot1Title, Slot1AddBtn, Slot1OverBtn, S1Glow = CreateFusionSlot(UDim2.new(0.2, 0, 0.25, 0), "SUBJECT ALPHA", false)
+	local PlusLbl = UIHelpers.CreateLabel(SlotContainer, "+", UDim2.new(0, 20, 0, 100), Enum.Font.GothamBlack, UIHelpers.Colors.TextMuted, 24)
 	local Slot2, Slot2Title, Slot2AddBtn, Slot2OverBtn, S2Glow = CreateFusionSlot(UDim2.new(0.8, 0, 0.25, 0), "SUBJECT OMEGA", false)
+	local EqLbl = UIHelpers.CreateLabel(SlotContainer, "=", UDim2.new(0, 20, 0, 100), Enum.Font.GothamBlack, UIHelpers.Colors.TextMuted, 24)
 	local ResultSlot, ResultTitle, ResultLbl, _, ResGlow = CreateFusionSlot(UDim2.new(0.5, 0, 0.75, 0), "HYBRIDIZATION", true)
 
-	local FuseBtn, FuseStroke = CreateSharpButton(TLLeftPanel, "INITIATE FUSION (50K Dews)", UDim2.new(0.8, 0, 0, 45), Enum.Font.GothamBlack, 14); FuseBtn.Position = UDim2.new(0.5, 0, 0, 320); FuseBtn.AnchorPoint = Vector2.new(0.5, 0); FuseBtn.TextColor3 = Color3.fromRGB(170, 85, 255); FuseStroke.Color = Color3.fromRGB(170, 85, 255)
+	local FuseBtn, FuseStroke = CreateSharpButton(TLLeftPanel, "INITIATE FUSION (15K Dews)", UDim2.new(0.8, 0, 0, 45), Enum.Font.GothamBlack, 14); FuseBtn.Position = UDim2.new(0.5, 0, 0, 320); FuseBtn.AnchorPoint = Vector2.new(0.5, 0); FuseBtn.TextColor3 = Color3.fromRGB(170, 85, 255); FuseStroke.Color = Color3.fromRGB(170, 85, 255)
 
-	-- Sleek Inline Selection Panel (No dark screen overlay)
+	-- Sleek Inline Selection Panel
 	local SelectionPanel = Instance.new("Frame", TLLeftPanel)
 	SelectionPanel.Size = UDim2.new(1, 0, 1, -380)
 	SelectionPanel.Position = UDim2.new(0, 0, 0, 380)
@@ -970,7 +888,9 @@ function SupplyForgeTab.Initialize(parentFrame)
 	local cvName = UIHelpers.CreateLabel(currentVariantCard, "STANDARD", UDim2.new(1, -20, 0, 30), Enum.Font.GothamBlack, Color3.fromRGB(255, 255, 255), 20); cvName.Position = UDim2.new(0, 10, 0, 30); cvName.TextXAlignment = Enum.TextXAlignment.Left
 	local cvBuff = UIHelpers.CreateLabel(currentVariantCard, "Standard shifting properties.", UDim2.new(1, -20, 0, 20), Enum.Font.GothamMedium, Color3.fromRGB(200, 255, 200), 12); cvBuff.Position = UDim2.new(0, 10, 0, 60); cvBuff.TextXAlignment = Enum.TextXAlignment.Left
 
-	local MutateBtn, MutateStroke = CreateSharpButton(TLRightPanel, "AWAKEN VARIANT (100K Dews + 1 Abyssal Blood)", UDim2.new(0.9, 0, 0, 45), Enum.Font.GothamBlack, 12); MutateBtn.Position = UDim2.new(0.5, 0, 1, -15); MutateBtn.AnchorPoint = Vector2.new(0.5, 1); MutateBtn.TextColor3 = Color3.fromRGB(255, 85, 85); MutateStroke.Color = Color3.fromRGB(255, 85, 85)
+	local MutateBtn, MutateStroke = CreateSharpButton(TLRightPanel, "AWAKEN VARIANT (25K Dews + 1 Abyssal Blood)", UDim2.new(0.9, 0, 0, 45), Enum.Font.GothamBlack, 12)
+	-- Pinned directly under the variant display instead of the bottom of the screen
+	MutateBtn.Position = UDim2.new(0.5, 0, 0, 195); MutateBtn.AnchorPoint = Vector2.new(0.5, 0); MutateBtn.TextColor3 = Color3.fromRGB(255, 85, 85); MutateStroke.Color = Color3.fromRGB(255, 85, 85)
 
 	local function UpdateVariantUI()
 		local myTitan = player:GetAttribute("Titan") or "None"
@@ -993,7 +913,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 		if not MutateBtn.Active then return end
 		local dews = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Dews") and player.leaderstats.Dews.Value or 0
 		local abyssalBlood = GetItemCount("Abyssal Blood")
-		if dews < 100000 or abyssalBlood < 1 then NotifySafe("Requires 100K Dews and 1 Abyssal Blood!", "Error"); return end
+		if dews < 25000 or abyssalBlood < 1 then NotifySafe("Requires 25K Dews and 1 Abyssal Blood!", "Error"); return end
 
 		MutateBtn.Active = false
 		local success, result = Network:WaitForChild("MutateTitan"):InvokeServer()
