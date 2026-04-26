@@ -262,7 +262,6 @@ local function AppendLog(message, colorHex)
 	if not GUI or not GUI.LogScroll or not message or message == "" then return end
 	GlobalLogCounter = GlobalLogCounter + 1
 
-	-- Bulletproof regex font repair
 	message = string.gsub(message, "<font.-#(%w+).->", "<font color=\"#%1\">")
 
 	local logColor = colorHex and Color3.fromHex(colorHex:gsub("#", "")) or Color3.fromRGB(245, 245, 245)
@@ -701,6 +700,21 @@ local function UpdateState(data)
 		local heat = battle.Player.TitanEnergy or 0; local maxHeat = battle.Player.MaxTitanEnergy or 100
 		if GUI.pHeatText then GUI.pHeatText.Text = "HEAT " .. math.floor(heat) .. "/" .. math.floor(maxHeat) end
 		if GUI.pHeatBar then TweenService:Create(GUI.pHeatBar, tInfo, {Size = UDim2.new(maxHeat > 0 and math.clamp(heat / maxHeat, 0, 1) or 0, 0, 1, 0)}):Play() end
+
+		-- [[ THE FIX: Smoothly toggle Gas and Heat bar visibility based on Transformation state ]]
+		local isTransformed = battle.Player.Statuses and battle.Player.Statuses["Transformed"] ~= nil
+
+		if GUI.pGasText then 
+			GUI.pGasText.Visible = not isTransformed 
+			if GUI.pGasText.Parent and GUI.pGasText.Parent.Name:find("Container") then GUI.pGasText.Parent.Visible = not isTransformed end
+		end
+		if GUI.pGasBar and GUI.pGasBar.Parent then GUI.pGasBar.Parent.Visible = not isTransformed end
+
+		if GUI.pHeatText then 
+			GUI.pHeatText.Visible = isTransformed
+			if GUI.pHeatText.Parent and GUI.pHeatText.Parent.Name:find("Container") then GUI.pHeatText.Parent.Visible = isTransformed end
+		end
+		if GUI.pHeatBar and GUI.pHeatBar.Parent then GUI.pHeatBar.Parent.Visible = isTransformed end
 
 		local hpRatio = safeHP / maxHP
 		if VFXManager and type(VFXManager.ToggleHeartbeat) == "function" then
@@ -1216,7 +1230,6 @@ function CombatUI.Initialize(masterScreenGui)
 					DestroyWaitContainer()
 
 					if GUI.ActionGrid then
-						-- [[ FIX: Restored Visibility property so the buttons aren't hidden ]]
 						GUI.ActionGrid.Visible = true
 						for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
 						local continueBtn = CreateMinimalButton(GUI.ActionGrid, "CONTINUE EXPEDITION", UDim2.new(0, 0, 0, 0), "#55FF55")
@@ -1258,7 +1271,6 @@ function CombatUI.Initialize(masterScreenGui)
 				DestroyWaitContainer()
 
 				if GUI.ActionGrid then
-					-- [[ FIX: Restored Visibility property so the buttons aren't hidden ]]
 					GUI.ActionGrid.Visible = true
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
 					if data and data.Battle and data.Battle.Context and data.Battle.Context.IsStoryMission then
@@ -1291,7 +1303,6 @@ function CombatUI.Initialize(masterScreenGui)
 				DestroyWaitContainer()
 
 				if GUI.ActionGrid then
-					-- [[ FIX: Restored Visibility property so the buttons aren't hidden ]]
 					GUI.ActionGrid.Visible = true
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
 					local closeBtn = CreateMinimalButton(GUI.ActionGrid, "RETURN TO COMMAND", UDim2.new(0, 0, 0, 0), "#FF5555")
@@ -1316,7 +1327,6 @@ function CombatUI.Initialize(masterScreenGui)
 				inputLocked = true
 				DestroyWaitContainer()
 				if GUI and GUI.ActionGrid then
-					-- [[ FIX: Restored Visibility property so the buttons aren't hidden ]]
 					GUI.ActionGrid.Visible = true
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
 					GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
