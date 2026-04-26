@@ -188,7 +188,6 @@ local function StartBattle(player, encounterType, requestedPartId)
 
 	elseif encounterType == "EngageWorldBoss" then
 		isWorldBoss = true
-
 		eTemplate = EnemyData.WorldBosses and EnemyData.WorldBosses[requestedPartId]
 		if not eTemplate and requestedPartId == "Rumbling Horde" then
 			eTemplate = {
@@ -539,6 +538,8 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		dewsGain = 0
 	end
 
+	dewsGain = math.floor(dewsGain * 0.1)
+
 	if player:GetAttribute("HasDoubleXP") then xpGain *= 2; dewsGain *= 2 end
 
 	local winReg = Network:FindFirstChild("WinningRegiment")
@@ -556,7 +557,7 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		end
 	end
 
-	dewsGain = math.clamp(math.floor(dewsGain * 0.1), 0, 5000)
+	dewsGain = math.clamp(math.floor(dewsGain), 0, 35000)
 
 	player:SetAttribute("XP", (player:GetAttribute("XP") or 0) + xpGain)
 	player:SetAttribute("TitanXP", (player:GetAttribute("TitanXP") or 0) + xpGain)
@@ -567,7 +568,6 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 	local autoSoldDews = 0
 
 	if not battle.Enemy.IsRumblingBoss then
-		-- [[ THE FIX: Wrapped in pcall and used proper nil-safe arguments to prevent Progression Lock ]]
 		local success, retItems, retDews = pcall(function()
 			return LootManager.ProcessDrops(player, battle.Enemy.Drops or {}, battle.Context.IsEndless, battle.Context.CurrentWave)
 		end)
@@ -581,8 +581,10 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 
 	if dialogueRewards and dialogueRewards.ItemName then
 		local amountGiven = dialogueRewards.Amount or 1
-		pcall(function() LootManager.GiveOrAutoSellItem(player, dialogueRewards.ItemName, amountGiven) end)
-		table.insert(droppedItems, {Name = dialogueRewards.ItemName, Amount = amountGiven})
+		local finalAmt = amountGiven
+		pcall(function() finalAmt = LootManager.GiveOrAutoSellItem(player, dialogueRewards.ItemName, amountGiven) end)
+		if type(finalAmt) ~= "number" then finalAmt = amountGiven end
+		table.insert(droppedItems, {Name = dialogueRewards.ItemName, Amount = finalAmt})
 	end
 
 	if autoSoldDews and autoSoldDews > 0 then killMsg = killMsg .. "\n<font color=\"#FFD700\">[Inventory Full: Auto-sold new drops for " .. autoSoldDews .. " Dews]</font>" end
@@ -1147,7 +1149,6 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 		end
 
 		local success, msg, didHit, shakeType = pcall(function() 
-			-- [[ THE FIX: Restored defColor parameter to stop battleContext table shifting into formatting tags ]]
 			return CombatCore.ExecuteStrike(
 				attacker, 
 				defender, 
@@ -1300,6 +1301,21 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 			end
 
 			if combatant.IsPlayer then
+				-- [[ THE FIX: Added math to deduct Heat and Gas before executing a normal attack ]]
+				local skillObj = SkillData.Skills[skillName]
+				if skillObj then
+					local isTransformed = battle.Player.Statuses and battle.Player.Statuses["Transformed"]
+					if not isTransformed then
+						local actualGasCost = tonumber(skillObj.GasCost) or 0
+						if battle.Context.Terrain == "Forest" then actualGasCost = math.ceil(actualGasCost * 0.5)
+						elseif battle.Context.Terrain == "Plains" then actualGasCost = math.ceil(actualGasCost * 1.5) end
+						battle.Player.Gas = math.max(0, (tonumber(battle.Player.Gas) or 0) - actualGasCost)
+					else
+						local actualHeatCost = tonumber(skillObj.EnergyCost) or tonumber(skillObj.HeatCost) or 0
+						battle.Player.TitanEnergy = math.max(0, (tonumber(battle.Player.TitanEnergy) or 0) - actualHeatCost)
+					end
+				end
+
 				DispatchStrike(battle.Player, battle.Enemy, skillName, targetLimb)
 			else
 				local pRatio = (battle.Player.HP or 0) / (battle.Player.MaxHP or 100)
