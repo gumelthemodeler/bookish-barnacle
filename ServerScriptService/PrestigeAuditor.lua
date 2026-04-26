@@ -17,8 +17,9 @@ local function AuditPrestigePoints(player)
 	if totalPrestige <= 0 then return end
 
 	-- Calculate how many points the player has already spent
+	-- Added fallback or {} so pairs() never crashes if SkillData is modified
 	local spentPoints = 0
-	for id, nodeData in pairs(SkillData.PrestigeNodes) do
+	for id, nodeData in pairs(SkillData.PrestigeNodes or {}) do
 		if player:GetAttribute("PrestigeNode_" .. id) then
 			spentPoints += nodeData.Cost
 		end
