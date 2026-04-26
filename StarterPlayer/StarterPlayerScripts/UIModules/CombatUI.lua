@@ -119,47 +119,33 @@ end
 
 local function OpenTargetMenu()
 	if not GUI or not GUI.ActionGrid or not GUI.TargetMenu then return end
-	local isMobile = (camera.ViewportSize.X <= 850) or (camera.ViewportSize.Y > camera.ViewportSize.X)
 	GUI.TargetMenu.Visible = true
 
-	if isMobile then
-		TweenService:Create(GUI.ActionContainer, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(-1, -20, 0, 160)}):Play()
-		TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0.4, 10, 0, 160)}):Play()
-	else
-		TweenService:Create(GUI.ActionContainer, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 20, 1, 50)}):Play()
-		TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 20, 1, -380)}):Play()
-	end
+	TweenService:Create(GUI.ActionGrid, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = UDim2.new(0.4, -5, 1, 0)}):Play()
+	TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0.4, 5, 0, 0)}):Play()
+
+	if GUI.UpdateLayout then GUI.UpdateLayout() end
 end
 
 local function CloseTargetMenu()
 	if not GUI or not GUI.ActionGrid or not GUI.TargetMenu then return end
-	local isMobile = (camera.ViewportSize.X <= 850) or (camera.ViewportSize.Y > camera.ViewportSize.X)
 
-	if isMobile then
-		TweenService:Create(GUI.ActionContainer, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0.4, 10, 0, 160)}):Play()
-		local t = TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(1, 20, 0, 160)})
-		t:Play()
-		task.delay(0.2, function() if GUI.TargetMenu.Position.X.Scale == 1 then GUI.TargetMenu.Visible = false end end)
-	else
-		TweenService:Create(GUI.ActionContainer, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 20, 1, -140)}):Play()
-		local t = TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(0, 20, 1, 50)})
-		t:Play()
-		task.delay(0.2, function() if GUI.TargetMenu.Position.Y.Offset == 50 then GUI.TargetMenu.Visible = false end end)
-	end
+	TweenService:Create(GUI.ActionGrid, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+	local t = TweenService:Create(GUI.TargetMenu, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.new(1, 0, 0, 0)})
+	t:Play()
+
+	t.Completed:Connect(function()
+		GUI.TargetMenu.Visible = false
+		if GUI.UpdateLayout then GUI.UpdateLayout() end
+	end)
 end
 
 local function SnapTargetMenuClosed()
 	if not GUI or not GUI.ActionGrid or not GUI.TargetMenu then return end
-	local isMobile = (camera.ViewportSize.X <= 850) or (camera.ViewportSize.Y > camera.ViewportSize.X)
-
-	if isMobile then
-		GUI.ActionContainer.Position = UDim2.new(0.4, 10, 0, 160)
-		GUI.TargetMenu.Position = UDim2.new(1, 20, 0, 160)
-	else
-		GUI.ActionContainer.Position = UDim2.new(0, 20, 1, -140)
-		GUI.TargetMenu.Position = UDim2.new(0, 20, 1, 50)
-	end
+	GUI.ActionGrid.Size = UDim2.new(1, 0, 1, 0)
+	GUI.TargetMenu.Position = UDim2.new(1, 0, 0, 0)
 	GUI.TargetMenu.Visible = false
+	if GUI.UpdateLayout then GUI.UpdateLayout() end
 end
 
 local function AbbreviateNumber(n)
@@ -327,7 +313,7 @@ local function PlayLootAnimation(rewards)
 				local suckTween = TweenService:Create(popup, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0.1, 0, 0.45, 0)})
 				local scaleDown = TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
 				suckTween:Play(); scaleDown:Play(); suckTween.Completed:Wait()
-				AppendLog("<font color='" .. reward.Color .. "'>Looted: " .. reward.Text .. "</font>")
+				AppendLog("<font color=\"" .. reward.Color .. "\">Looted: " .. reward.Text .. "</font>")
 				popup:Destroy()
 			end)
 			task.wait(0.15) 
@@ -1143,7 +1129,7 @@ function CombatUI.Initialize(masterScreenGui)
 		elseif action == "TurnStrike" and currentPvPMatch == matchId then
 			local data = d1
 			UpdatePvPState(data)
-			if data and data.LogMsg then AppendLog(data.LogMsg) end -- Removed forcing yellow here so unnested tags work
+			if data and data.LogMsg then AppendLog(data.LogMsg) end 
 		elseif action == "NextTurnStarted" and currentPvPMatch == matchId then
 			local turnNum, turnEndTime = d1, d2
 			inputLocked = false
@@ -1153,12 +1139,12 @@ function CombatUI.Initialize(masterScreenGui)
 			if winnerTeam == "Draw" then
 				AppendLog("<b>MATCH ENDED IN A DRAW!</b>", "#AAAAAA")
 			elseif (winnerTeam == "Team1" and amIPlayer1) or (winnerTeam == "Team2" and not amIPlayer1) then
-				AppendLog("<b><font color='#55FF55'>YOU WON THE MATCH!</font></b>", "#55FF55")
+				AppendLog("<b><font color=\"#55FF55\">YOU WON THE MATCH!</font></b>", "#55FF55")
 			else
 				if isSpectating then
-					AppendLog("<b><font color='#FFAA00'>MATCH HAS CONCLUDED.</font></b>", "#FFAA00")
+					AppendLog("<b><font color=\"#FFAA00\">MATCH HAS CONCLUDED.</font></b>", "#FFAA00")
 				else
-					AppendLog("<b><font color='#FF5555'>YOU WERE DEFEATED.</font></b>", "#FF5555")
+					AppendLog("<b><font color=\"#FF5555\">YOU WERE DEFEATED.</font></b>", "#FF5555")
 				end
 			end
 			inputLocked = true
@@ -1360,7 +1346,7 @@ function CombatUI.Initialize(masterScreenGui)
 				end
 
 				if type(data.LogMsg) == "string" and data.LogMsg ~= "" then
-					AppendLog(data.LogMsg) -- Re-added cleanly to stop coloring interference
+					AppendLog(data.LogMsg) 
 
 					local targetBox = data.IsPlayerAttacking and GUI.eAvatar or GUI.pAvatar
 					if data.AllyIntervention then targetBox = GUI.eAvatar end
@@ -1400,7 +1386,7 @@ function CombatUI.Initialize(masterScreenGui)
 				if VFXManager and type(VFXManager.ToggleHeartbeat) == "function" then VFXManager.ToggleHeartbeat(false) end
 
 				UpdateState(data)
-				AppendLog("<b><font color='#55FF55'>WAVE CLEARED!</font></b>", "#55FF55")
+				AppendLog("<b><font color=\"#55FF55\">WAVE CLEARED!</font></b>", "#55FF55")
 				if data and type(data.LogMsg) == "string" and data.LogMsg ~= "" then AppendLog(data.LogMsg) end
 
 				local animRewards = {}
@@ -1438,7 +1424,7 @@ function CombatUI.Initialize(masterScreenGui)
 				if VFXManager and type(VFXManager.ToggleHeartbeat) == "function" then VFXManager.ToggleHeartbeat(false) end
 
 				UpdateState(data)
-				AppendLog("<b><font color='#55FF55'>VICTORY!</font></b>", "#55FF55")
+				AppendLog("<b><font color=\"#55FF55\">VICTORY!</font></b>", "#55FF55")
 
 				local animRewards = {}
 				if data and data.XP and data.XP > 0 then table.insert(animRewards, {Text = "+" .. data.XP .. " XP", Color = "#55FF55"}) end
@@ -1481,7 +1467,7 @@ function CombatUI.Initialize(masterScreenGui)
 				if VFXManager and type(VFXManager.ToggleHeartbeat) == "function" then VFXManager.ToggleHeartbeat(false) end
 
 				UpdateState(data)
-				AppendLog("<b><font color='#FF5555'>DEFEAT...</font></b> Your forces were wiped out.", "#FF5555")
+				AppendLog("<b><font color=\"#FF5555\">DEFEAT...</font></b> Your forces were wiped out.", "#FF5555")
 
 				if VFXManager and type(VFXManager.PlaySFX) == "function" then VFXManager.PlaySFX("Defeat", 1.0) end
 
@@ -1501,7 +1487,7 @@ function CombatUI.Initialize(masterScreenGui)
 				HideAlly()
 				if GUI.CombatantsFrame then GUI.CombatantsFrame.Visible = true end
 				if VFXManager and type(VFXManager.ToggleHeartbeat) == "function" then VFXManager.ToggleHeartbeat(false) end
-				AppendLog("<b><font color='#AAAAAA'>YOU FLED THE BATTLE.</font></b>", "#AAAAAA")
+				AppendLog("<b><font color=\"#AAAAAA\">YOU FLED THE BATTLE.</font></b>", "#AAAAAA")
 				task.wait(1.5)
 				CloseUI(wasPaths)
 			end
