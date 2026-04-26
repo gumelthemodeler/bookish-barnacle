@@ -175,7 +175,8 @@ UnlockPrestigeNode.OnServerEvent:Connect(function(player, nodeId)
 	if ActivePrestigeTransactions[player.UserId] then return end
 	ActivePrestigeTransactions[player.UserId] = true
 
-	local node = GameData.PrestigeNodes[nodeId]
+	-- Fetch from either registry to guarantee the node exists
+	local node = (GameData.PrestigeNodes and GameData.PrestigeNodes[nodeId]) or (SkillData.PrestigeNodes and SkillData.PrestigeNodes[nodeId])
 	if not node then ActivePrestigeTransactions[player.UserId] = nil; return end
 
 	if player:GetAttribute("PrestigeNode_" .. nodeId) then
@@ -197,21 +198,10 @@ UnlockPrestigeNode.OnServerEvent:Connect(function(player, nodeId)
 	player:SetAttribute("PrestigePoints", points - node.Cost)
 	player:SetAttribute("PrestigeNode_" .. nodeId, true)
 
-	if node.BuffType == "FlatStat" then
-		local currentPrestigeBonus = player:GetAttribute("Prestige_" .. node.BuffStat) or 0
-		player:SetAttribute("Prestige_" .. node.BuffStat, currentPrestigeBonus + node.BuffValue)
-
-		local currentTotal = player:GetAttribute(node.BuffStat) or 10
-		local investedStat = player:GetAttribute("Invested_" .. node.BuffStat)
-		if not investedStat then
-			investedStat = currentTotal - currentPrestigeBonus
-			player:SetAttribute("Invested_" .. node.BuffStat, investedStat)
-		end
-
-		player:SetAttribute(node.BuffStat, investedStat + currentPrestigeBonus + node.BuffValue)
-
-	elseif node.BuffType == "Special" then
-		player:SetAttribute("Prestige_" .. node.BuffStat, (player:GetAttribute("Prestige_" .. node.BuffStat) or 0) + node.BuffValue)
+	-- [[ THE FIX: Replaced obsolete BuffType logic with direct Attr application ]]
+	if node.Attr and node.Value then
+		local currentVal = player:GetAttribute(node.Attr) or 0
+		player:SetAttribute(node.Attr, currentVal + node.Value)
 	end
 
 	NotificationEvent:FireClient(player, "Unlocked " .. node.Name .. "!", "Success")
