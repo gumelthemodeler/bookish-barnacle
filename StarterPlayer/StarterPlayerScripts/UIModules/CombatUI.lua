@@ -262,8 +262,7 @@ local function AppendLog(message, colorHex)
 	if not GUI or not GUI.LogScroll or not message or message == "" then return end
 	GlobalLogCounter = GlobalLogCounter + 1
 
-	-- [[ BULLETPROOF REGEX FONT REPAIR ]]
-	-- Completely strips any broken attributes and enforces standard RichText formatting
+	-- Bulletproof regex font repair
 	message = string.gsub(message, "<font.-#(%w+).->", "<font color=\"#%1\">")
 
 	local logColor = colorHex and Color3.fromHex(colorHex:gsub("#", "")) or Color3.fromRGB(245, 245, 245)
@@ -286,7 +285,6 @@ local function AppendLog(message, colorHex)
 	pad.PaddingTop = UDim.new(0, 8)
 	pad.PaddingBottom = UDim.new(0, 8)
 
-	-- We build this completely from scratch to bypass UIHelpers, which was stripping RichText.
 	local lbl = Instance.new("TextLabel", panel)
 	lbl.Size = UDim2.new(1, 0, 0, 0)
 	lbl.BackgroundTransparency = 1
@@ -1218,6 +1216,8 @@ function CombatUI.Initialize(masterScreenGui)
 					DestroyWaitContainer()
 
 					if GUI.ActionGrid then
+						-- [[ FIX: Restored Visibility property so the buttons aren't hidden ]]
+						GUI.ActionGrid.Visible = true
 						for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
 						local continueBtn = CreateMinimalButton(GUI.ActionGrid, "CONTINUE EXPEDITION", UDim2.new(0, 0, 0, 0), "#55FF55")
 						continueBtn.MouseButton1Click:Connect(function() UpdatePvESkills() end)
@@ -1258,6 +1258,8 @@ function CombatUI.Initialize(masterScreenGui)
 				DestroyWaitContainer()
 
 				if GUI.ActionGrid then
+					-- [[ FIX: Restored Visibility property so the buttons aren't hidden ]]
+					GUI.ActionGrid.Visible = true
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
 					if data and data.Battle and data.Battle.Context and data.Battle.Context.IsStoryMission then
 						local continueCampBtn = CreateMinimalButton(GUI.ActionGrid, "CONTINUE CAMPAIGN", UDim2.new(0, 0, 0, 0), "#FFD700")
@@ -1289,6 +1291,8 @@ function CombatUI.Initialize(masterScreenGui)
 				DestroyWaitContainer()
 
 				if GUI.ActionGrid then
+					-- [[ FIX: Restored Visibility property so the buttons aren't hidden ]]
+					GUI.ActionGrid.Visible = true
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
 					local closeBtn = CreateMinimalButton(GUI.ActionGrid, "RETURN TO COMMAND", UDim2.new(0, 0, 0, 0), "#FF5555")
 					closeBtn.MouseButton1Click:Connect(function() CloseUI(wasPaths) end)
@@ -1312,6 +1316,8 @@ function CombatUI.Initialize(masterScreenGui)
 				inputLocked = true
 				DestroyWaitContainer()
 				if GUI and GUI.ActionGrid then
+					-- [[ FIX: Restored Visibility property so the buttons aren't hidden ]]
+					GUI.ActionGrid.Visible = true
 					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
 					GUI.ActionGrid.Position = UDim2.new(0, 0, 0, 0)
 					local closeBtn = CreateMinimalButton(GUI.ActionGrid, "FORCE RETURN", UDim2.new(0, 0, 0, 0), "#FF5555")
