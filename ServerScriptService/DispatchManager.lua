@@ -1,269 +1,219 @@
 -- @ScriptType: Script
 -- @ScriptType: Script
 -- Name: DispatchManager
+local DispatchManager = {}
+
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
-local LootManager = require(script.Parent:WaitForChild("LootManager"))
+local Network = ReplicatedStorage:WaitForChild("Network")
+local NotificationEvent = Network:WaitForChild("NotificationEvent")
 
-local RemotesFolder = ReplicatedStorage:WaitForChild("Network")
-
-local function GetDispatchData(player)
-	local raw = player:GetAttribute("DispatchData")
-	if not raw or raw == "" then return {} end
-	local success, decoded = pcall(function() return HttpService:JSONDecode(raw) end)
-	return success and decoded or {}
-end
-
-local function SaveDispatchData(player, dataTable)
-	local success, encoded = pcall(function() return HttpService:JSONEncode(dataTable) end)
-	if success then player:SetAttribute("DispatchData", encoded) end
-end
-
-local function GetAllyLevels(player)
-	local raw = player:GetAttribute("AllyLevels")
-	if not raw or raw == "" then return {} end
-	local success, decoded = pcall(function() return HttpService:JSONDecode(raw) end)
-	return success and decoded or {}
-end
-
-local function SaveAllyLevels(player, dataTable)
-	local success, encoded = pcall(function() return HttpService:JSONEncode(dataTable) end)
-	if success then player:SetAttribute("AllyLevels", encoded) end
-end
-
-local function UpdateBountyProgress(plr, taskType, amt)
-	for i = 1, 3 do
-		if plr:GetAttribute("D"..i.."_Task") == taskType and not plr:GetAttribute("D"..i.."_Claimed") then
-			local p = plr:GetAttribute("D"..i.."_Prog") or 0; local m = plr:GetAttribute("D"..i.."_Max") or 1
-			plr:SetAttribute("D"..i.."_Prog", math.min(p + amt, m))
-		end
-	end
-	if plr:GetAttribute("W1_Task") == taskType and not plr:GetAttribute("W1_Claimed") then
-		local p = plr:GetAttribute("W1_Prog") or 0; local m = plr:GetAttribute("W1_Max") or 1
-		plr:SetAttribute("W1_Prog", math.min(p + amt, m))
-	end
-end
-
-local DispatchEvents = {
-	{ Chance = 10, Name = "Aberrant Encounter", DewMod = 0.5, XPMod = 1.5, LootBonus = 0, Msg = "<font color='#FF5555'>Fought off an Aberrant! Lost some supplies but gained massive combat experience.</font>" },
-	{ Chance = 15, Name = "Hidden Cache", DewMod = 2.0, XPMod = 1.0, LootBonus = 2, Msg = "<font color='#55FF55'>Found an abandoned supply cache! Loot significantly increased.</font>" },
-	{ Chance = 10, Name = "Harsh Weather", DewMod = 0.8, XPMod = 0.8, LootBonus = -1, Msg = "<font color='#AAAAAA'>Caught in a severe rainstorm. Progress was painfully slow.</font>" },
-	{ Chance = 65, Name = "Routine", DewMod = 1.0, XPMod = 1.0, LootBonus = 0, Msg = "The expedition went smoothly." }
+-- Heavily squashed yields to fit the 15k economy reset
+local ALLIES = {
+	["Armin Arlert"] = { Cost = 1000, BaseYield = 2 },
+	["Sasha Braus"] = { Cost = 2500, BaseYield = 3 },
+	["Connie Springer"] = { Cost = 2500, BaseYield = 3 },
+	["Jean Kirstein"] = { Cost = 5000, BaseYield = 4 },
+	["Hange Zoe"] = { Cost = 10000, BaseYield = 6 },
+	["Erwin Smith"] = { Cost = 20000, BaseYield = 8 },
+	["Mikasa Ackerman"] = { Cost = 50000, BaseYield = 12 },
+	["Levi Ackerman"] = { Cost = 100000, BaseYield = 20 }
 }
 
-RemotesFolder:WaitForChild("DispatchAction").OnServerEvent:Connect(function(player, action, allyName)
-	local dData = GetDispatchData(player)
-	local allyLevels = GetAllyLevels(player)
-	local maxDeployments = player:GetAttribute("MaxDeployments") or 2
+local HORSE_RARITIES = {
+	{Name = "Old Mare", Rarity = "Common", Weight = 50, BaseEff = 0.05},
+	{Name = "Sturdy Stallion", Rarity = "Uncommon", Weight = 30, BaseEff = 0.10},
+	{Name = "Garrison Steed", Rarity = "Rare", Weight = 12, BaseEff = 0.20},
+	{Name = "Scout's Thoroughbred", Rarity = "Epic", Weight = 6, BaseEff = 0.35},
+	{Name = "Commander's Warhorse", Rarity = "Legendary", Weight = 1.5, BaseEff = 0.60},
+	{Name = "Phantom Destrier", Rarity = "Mythical", Weight = 0.5, BaseEff = 1.0}
+}
+
+local function DecodeJSON(attr)
+	if not attr or attr == "" then return {} end
+	local success, res = pcall(function() return HttpService:JSONDecode(attr) end)
+	return success and res or {}
+end
+
+local function EncodeJSON(data)
+	return HttpService:JSONEncode(data)
+end
+
+local function CalculateGlobalHorseEfficiency(player)
+	local hData = DecodeJSON(player:GetAttribute("HorseData"))
+	local totalBoost = 0
+	for _, h in ipairs(hData) do
+		totalBoost += (h.Efficiency + (h.Level * 0.02))
+	end
+	-- Hard cap to prevent infinite economy scaling
+	return math.min(2.0, totalBoost) 
+end
+
+Network:WaitForChild("DispatchAction").OnServerEvent:Connect(function(player, action, payload)
+	local dData = DecodeJSON(player:GetAttribute("DispatchData"))
+	local unlocked = player:GetAttribute("UnlockedAllies") or ""
+	local aLevels = DecodeJSON(player:GetAttribute("AllyLevels"))
+	local maxCap = player:GetAttribute("MaxDeployments") or 2
+	local dews = player.leaderstats and player.leaderstats:FindFirstChild("Dews")
 
 	if action == "UnlockAlly" then
-		local AllyCosts = {
-			["Armin Arlert"] = 1000, ["Sasha Braus"] = 2500, ["Connie Springer"] = 2500,
-			["Jean Kirstein"] = 5000, ["Hange Zoe"] = 10000, ["Erwin Smith"] = 20000,
-			["Mikasa Ackerman"] = 50000, ["Levi Ackerman"] = 100000
-		}
-
-		local cost = AllyCosts[allyName]
-		if not cost then return end
-
-		local unlocked = player:GetAttribute("UnlockedAllies") or ""
-		if string.find(unlocked, "%[" .. allyName .. "%]") then return end
-
-		if player.leaderstats.Dews.Value >= cost then
-			player.leaderstats.Dews.Value -= cost
-			player:SetAttribute("UnlockedAllies", unlocked .. "[" .. allyName .. "]")
-			RemotesFolder.NotificationEvent:FireClient(player, "Successfully recruited " .. allyName .. "!", "Success")
+		if not ALLIES[payload] or string.find(unlocked, "%[" .. payload .. "%]") then return end
+		if dews and dews.Value >= ALLIES[payload].Cost then
+			dews.Value -= ALLIES[payload].Cost
+			player:SetAttribute("UnlockedAllies", unlocked .. "[" .. payload .. "]")
+			NotificationEvent:FireClient(player, "Recruited " .. payload .. "!", "Success")
 		else
-			RemotesFolder.NotificationEvent:FireClient(player, "Not enough Dews to recruit!", "Error")
+			NotificationEvent:FireClient(player, "Not enough Dews to recruit " .. payload .. ".", "Error")
+		end
+
+	elseif action == "UpgradeAlly" then
+		if not ALLIES[payload] or not string.find(unlocked, "%[" .. payload .. "%]") then return end
+		local curLvl = aLevels[payload] or 1
+		if curLvl >= 10 then NotificationEvent:FireClient(player, "Ally is already Max Level.", "Error"); return end
+
+		local cost = curLvl * 5000
+		if dews and dews.Value >= cost then
+			dews.Value -= cost
+			aLevels[payload] = curLvl + 1
+			player:SetAttribute("AllyLevels", EncodeJSON(aLevels))
+			NotificationEvent:FireClient(player, "Upgraded " .. payload .. " to Level " .. (curLvl + 1) .. "!", "Success")
+		else
+			NotificationEvent:FireClient(player, "Not enough Dews to upgrade.", "Error")
 		end
 
 	elseif action == "Deploy" then
-		if dData[allyName] then return end
+		if not ALLIES[payload] or not string.find(unlocked, "%[" .. payload .. "%]") then return end
+		if dData[payload] then return end
 
-		local currentActive = 0
-		for _, _ in pairs(dData) do currentActive += 1 end
-		if currentActive >= maxDeployments then
-			RemotesFolder.NotificationEvent:FireClient(player, "Deployment capacity reached! Upgrade slots to send more.", "Error")
+		local currentDeploys = 0
+		for _, _ in pairs(dData) do currentDeploys += 1 end
+		if currentDeploys >= maxCap then
+			NotificationEvent:FireClient(player, "Maximum deployment capacity reached.", "Error")
 			return
 		end
 
-		dData[allyName] = { StartTime = os.time(), Type = "Ally" }
-		SaveDispatchData(player, dData)
-		RemotesFolder.NotificationEvent:FireClient(player, allyName .. " dispatched for expedition!", "Success")
+		dData[payload] = { StartTime = os.time() }
+		player:SetAttribute("DispatchData", EncodeJSON(dData))
 
 	elseif action == "Recall" then
-		local info = dData[allyName]
-		if not info then return end
+		if not dData[payload] then return end
 
-		if info.Type ~= nil and info.Type ~= "Ally" then return end
+		local elapsed = os.time() - dData[payload].StartTime
+		if elapsed >= 43200 then elapsed = 43200 end -- Cap at 12 hours
 
-		local elapsedMins = math.floor((os.time() - info.StartTime) / 60)
-		elapsedMins = math.min(elapsedMins, 720)
+		local mins = math.floor(elapsed / 60)
 
-		if elapsedMins < 1 then
-			RemotesFolder.NotificationEvent:FireClient(player, allyName .. " returned early and empty-handed.", "Error")
-			dData[allyName] = nil; SaveDispatchData(player, dData); return
-		end
-
-		local lvl = allyLevels[allyName] or 1
-		local lvlMultiplier = 1 + ((lvl - 1) * 0.20) 
-
-		local randEvent = nil
-		local roll = math.random(1, 100)
-		local cum = 0
-		for _, e in ipairs(DispatchEvents) do
-			cum += e.Chance
-			if roll <= cum then randEvent = e break end
-		end
-
-		-- [ECONOMY PATCH] Reduced base passive income scaling for Allies
-		local dewsGained = math.floor((elapsedMins * 3) * lvlMultiplier * randEvent.DewMod)
-		local xpGained = math.floor((elapsedMins * 5) * lvlMultiplier * randEvent.XPMod)
-
-		local winReg = RemotesFolder:FindFirstChild("WinningRegiment")
-		if winReg and winReg.Value ~= "None" and player:GetAttribute("Regiment") == winReg.Value then
-			dewsGained = math.floor(dewsGained * 1.15)
-			xpGained = math.floor(xpGained * 1.15)
-		end
-
-		local rolls = math.max(0, math.floor(elapsedMins / 30) + randEvent.LootBonus)
-		local itemsFound = {}
-
-		for i = 1, rolls do
-			local rng = math.random(1, 100)
-			if rng <= 10 then table.insert(itemsFound, "Standard Titan Serum")
-			elseif rng <= 30 then table.insert(itemsFound, "Garrison Supply Crate")
-			elseif rng <= 50 then table.insert(itemsFound, "Worn Trainee Badge")
-			end
-		end
-
-		player.leaderstats.Dews.Value += dewsGained
-		player:SetAttribute("XP", (player:GetAttribute("XP") or 0) + xpGained)
-		UpdateBountyProgress(player, "Dispatch", 1)
-
-		local dropLog = randEvent.Msg .. "\nCollected: " .. dewsGained .. " Dews, " .. xpGained .. " XP."
-		for _, item in ipairs(itemsFound) do
-			LootManager.GiveOrAutoSellItem(player, item, 1)
-			dropLog = dropLog .. "\nFound: " .. item
-		end
-
-		dData[allyName] = nil; SaveDispatchData(player, dData)
-		RemotesFolder.NotificationEvent:FireClient(player, allyName .. " returned!\n" .. dropLog, "Success")
-
-	elseif action == "RegimentDeploy" then
-		local regName = player:GetAttribute("Regiment") or "Cadet Corps"
-		if dData["RegimentSquad"] then return end
-
-		-- [ECONOMY PATCH] Regiment deployment cost lowered to match the squashed returns
-		local cost = 5000 
-		if player.leaderstats.Dews.Value < cost then
-			RemotesFolder.NotificationEvent:FireClient(player, "Requires 5,000 Dews to fund a Regiment Expedition!", "Error")
+		if mins < 1 then
+			dData[payload] = nil
+			player:SetAttribute("DispatchData", EncodeJSON(dData))
+			NotificationEvent:FireClient(player, payload .. " was recalled early. No rewards gathered.", "System")
 			return
 		end
 
-		player.leaderstats.Dews.Value -= cost
-		dData["RegimentSquad"] = { StartTime = os.time(), Type = "Regiment", Regiment = regName }
-		SaveDispatchData(player, dData)
-		RemotesFolder.NotificationEvent:FireClient(player, regName .. " Squad deployed! Supplies secured.", "Success")
+		local lvl = aLevels[payload] or 1
+		local baseYield = ALLIES[payload].BaseYield
+		local horseBonus = CalculateGlobalHorseEfficiency(player)
 
-	elseif action == "RegimentRecall" then
-		local info = dData["RegimentSquad"]
-		if not info or info.Type ~= "Regiment" then return end
+		-- Final formula respects levels and stable buffs
+		local gatheredDews = math.floor((mins * baseYield * (1 + (lvl * 0.1))) * (1 + horseBonus))
 
-		local elapsedMins = math.floor((os.time() - info.StartTime) / 60)
-		elapsedMins = math.min(elapsedMins, 1440) -- Cap to 24 Hours
+		-- HARD CAP: Limits the absolute maximum an ally can bring back to prevent economy destruction
+		local maxAllowed = baseYield * 1000
+		gatheredDews = math.min(gatheredDews, maxAllowed)
 
-		if elapsedMins < 60 then
-			RemotesFolder.NotificationEvent:FireClient(player, "Squad recalled too early. Only partial funds recovered.", "Error")
-			player.leaderstats.Dews.Value += 2500 -- Give back a partial refund for recalling early
-			dData["RegimentSquad"] = nil; SaveDispatchData(player, dData); return
-		end
+		dData[payload] = nil
+		player:SetAttribute("DispatchData", EncodeJSON(dData))
 
-		local regName = info.Regiment
-		local dewsGained = 0
-		local itemsFound = {}
-		local log = ""
-
-		local rolls = math.floor(elapsedMins / 60) -- 1 item roll per hour
-
-		if regName == "Scout Regiment" then
-			-- [ECONOMY PATCH] Regiment yields squashed drastically to prevent passive 100k farming
-			dewsGained = elapsedMins * 5
-			for i = 1, rolls do
-				local rng = math.random(1, 100)
-				if rng <= 10 then table.insert(itemsFound, "Abyssal Blood")
-				elseif rng <= 25 then table.insert(itemsFound, "Glowing Titan Crystal")
-				elseif rng <= 60 then table.insert(itemsFound, "Iron Bamboo Heart")
-				end
-			end
-			log = "<font color='#55AAFF'>Scouts successfully extracted core materials.</font>"
-
-		elseif regName == "Garrison" then
-			dewsGained = elapsedMins * 12
-			for i = 1, rolls do
-				local rng = math.random(1, 100)
-				if rng <= 15 then table.insert(itemsFound, "Titan Hardening Extract")
-				elseif rng <= 50 then table.insert(itemsFound, "Garrison Supply Crate")
-				end
-			end
-			log = "<font color='#FF5555'>Garrison successfully secured the perimeter.</font>"
-
-		elseif regName == "Military Police" then
-			dewsGained = elapsedMins * 20
-			for i = 1, rolls do
-				local rng = math.random(1, 100)
-				if rng <= 5 then table.insert(itemsFound, "Spinal Fluid Syringe")
-				elseif rng <= 15 then table.insert(itemsFound, "Clan Blood Vial")
-				elseif rng <= 40 then table.insert(itemsFound, "Standard Titan Serum")
-				end
-			end
-			log = "<font color='#55FF55'>Military Police secured inner-wall taxes.</font>"
-
-		else
-			dewsGained = elapsedMins * 3
-			log = "<font color='#AAAAAA'>Cadets finished their training march.</font>"
-		end
-
-		player.leaderstats.Dews.Value += dewsGained
-		local dropLog = log .. "\nSecured: " .. dewsGained .. " Dews."
-		for _, item in ipairs(itemsFound) do
-			LootManager.GiveOrAutoSellItem(player, item, 1)
-			dropLog = dropLog .. "\nFound: " .. item
-		end
-
-		dData["RegimentSquad"] = nil; SaveDispatchData(player, dData)
-		RemotesFolder.NotificationEvent:FireClient(player, "Regiment Squad returned safely!\n" .. dropLog, "Success")
-
-	elseif action == "UpgradeAlly" then
-		local lvl = allyLevels[allyName] or 1
-		if lvl >= 10 then
-			RemotesFolder.NotificationEvent:FireClient(player, allyName .. " is already MAX Level!", "Error")
-			return
-		end
-
-		local cost = 5000 * lvl
-		if player.leaderstats.Dews.Value >= cost then
-			player.leaderstats.Dews.Value -= cost
-			allyLevels[allyName] = lvl + 1
-			SaveAllyLevels(player, allyLevels)
-			RemotesFolder.NotificationEvent:FireClient(player, allyName .. " upgraded to Level " .. (lvl + 1) .. "!", "Success")
-		else
-			RemotesFolder.NotificationEvent:FireClient(player, "Not enough Dews to upgrade ally! (" .. cost .. " required)", "Error")
-		end
+		if dews then dews.Value += gatheredDews end
+		NotificationEvent:FireClient(player, payload .. " returned! Gathered " .. FormatNumber(gatheredDews) .. " Dews.", "Loot")
 
 	elseif action == "UpgradeCapacity" then
-		if maxDeployments >= 8 then
-			RemotesFolder.NotificationEvent:FireClient(player, "You have reached the maximum deployment capacity!", "Error")
+		local cost = maxCap * 25000
+		if dews and dews.Value >= cost then
+			dews.Value -= cost
+			player:SetAttribute("MaxDeployments", maxCap + 1)
+			NotificationEvent:FireClient(player, "Deployment Capacity increased!", "Success")
+		else
+			NotificationEvent:FireClient(player, "Not enough Dews. Need " .. FormatNumber(cost) .. ".", "Error")
+		end
+
+	elseif action == "RollHorse" then
+		local hData = DecodeJSON(player:GetAttribute("HorseData"))
+		if #hData >= 5 then
+			NotificationEvent:FireClient(player, "Your stables are full! (Max 5)", "Error")
 			return
 		end
 
-		local cost = 100000
-		if player.leaderstats.Dews.Value >= cost then
-			player.leaderstats.Dews.Value -= cost
-			player:SetAttribute("MaxDeployments", maxDeployments + 1)
-			RemotesFolder.NotificationEvent:FireClient(player, "Deployment capacity increased to " .. (maxDeployments + 1) .. "!", "Success")
+		if dews and dews.Value >= 25000 then
+			dews.Value -= 25000
+
+			local roll = math.random(1, 100)
+			local cumulative = 0
+			local chosenRarity = HORSE_RARITIES[1]
+
+			for _, r in ipairs(HORSE_RARITIES) do
+				cumulative += r.Weight
+				if roll <= cumulative then
+					chosenRarity = r
+					break
+				end
+			end
+
+			table.insert(hData, {
+				Id = HttpService:GenerateGUID(false),
+				Name = chosenRarity.Name,
+				Rarity = chosenRarity.Rarity,
+				Efficiency = chosenRarity.BaseEff,
+				Level = 1
+			})
+			player:SetAttribute("HorseData", EncodeJSON(hData))
+
+			if chosenRarity.Rarity == "Mythical" or chosenRarity.Rarity == "Legendary" then
+				NotificationEvent:FireAllClients(player.Name .. " tamed a " .. string.upper(chosenRarity.Rarity) .. " " .. chosenRarity.Name .. "!", "Loot")
+			else
+				NotificationEvent:FireClient(player, "You acquired a " .. chosenRarity.Name .. "!", "Success")
+			end
 		else
-			RemotesFolder.NotificationEvent:FireClient(player, "Not enough Dews! Needs 100,000.", "Error")
+			NotificationEvent:FireClient(player, "Not enough Dews to roll a horse.", "Error")
+		end
+
+	elseif action == "UpgradeHorse" then
+		local hData = DecodeJSON(player:GetAttribute("HorseData"))
+		local horseIndex = nil
+		for i, h in ipairs(hData) do
+			if h.Id == payload then horseIndex = i; break end
+		end
+
+		if horseIndex then
+			local h = hData[horseIndex]
+			if h.Level >= 10 then NotificationEvent:FireClient(player, "Horse is at max level.", "Error"); return end
+
+			local cost = h.Level * 10000
+			if dews and dews.Value >= cost then
+				dews.Value -= cost
+				h.Level += 1
+				player:SetAttribute("HorseData", EncodeJSON(hData))
+				NotificationEvent:FireClient(player, h.Name .. " leveled up to " .. h.Level .. "!", "Success")
+			else
+				NotificationEvent:FireClient(player, "Not enough Dews to upgrade horse. Need " .. FormatNumber(cost) .. " Dews.", "Error")
+			end
+		end
+
+	elseif action == "SellHorse" then
+		local hData = DecodeJSON(player:GetAttribute("HorseData"))
+		local horseIndex = nil
+		for i, h in ipairs(hData) do
+			if h.Id == payload then horseIndex = i; break end
+		end
+
+		if horseIndex then
+			table.remove(hData, horseIndex)
+			player:SetAttribute("HorseData", EncodeJSON(hData))
+			if dews then dews.Value += 5000 end
+			NotificationEvent:FireClient(player, "Horse sold for 5,000 Dews.", "System")
 		end
 	end
 end)
+
+return DispatchManager
