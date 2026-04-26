@@ -268,7 +268,7 @@ local function BuildMasterWindow()
 		local clTitle = UIHelpers.CreateLabel(ChangeLogBox, "CHANGELOG & CODES", UDim2.new(1, -20, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 16)
 		clTitle.Position = UDim2.new(0, 10, 0, 10); clTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-		local updatedChangelog = "<b>v1.7.0 - The Labyrinth Update</b>\n\n• The Labyrinth: Infinite shifting dungeon & Pouch extraction.\n• System Settings: Auto-Train, Music & Screen Flash Toggles.\n• Fully Responsive UI Architectures.\n• The Abyssal Bestiary added to Command Center.\n\n<b>ACTIVE CODES:</b>\n[LABYRINTH]\n[LUCKY]\n[GOJOHNNYGO]"
+		local updatedChangelog = "<b>v1.8.0 - The Rumbling Update</b>\n\n• THE RUMBLING: Defend the server against global Wall Titan invasions!\n• Doomsday Bounties & Leaderboard rewards overhauled.\n• The Labyrinth: Infinite shifting dungeon & Pouch extraction.\n• System Settings: Auto-Train, Music & Screen Flash Toggles.\n\n<b>ACTIVE CODES:</b>\n[RUMBLING]\n[LABYRINTH]\n[LUCKY]"
 		local clText = UIHelpers.CreateLabel(ChangeLogBox, updatedChangelog, UDim2.new(1, -20, 1, -50), Enum.Font.GothamMedium, UIHelpers.Colors.TextWhite, 14)
 		clText.Position = UDim2.new(0, 10, 0, 45); clText.TextXAlignment = Enum.TextXAlignment.Left; clText.TextYAlignment = Enum.TextYAlignment.Top; clText.RichText = true; clText.TextWrapped = true
 
