@@ -189,7 +189,6 @@ local function StartBattle(player, encounterType, requestedPartId)
 	elseif encounterType == "EngageWorldBoss" then
 		isWorldBoss = true
 
-		-- Safely grab the template from EnemyData, or construct a dynamic fallback
 		eTemplate = EnemyData.WorldBosses and EnemyData.WorldBosses[requestedPartId]
 		if not eTemplate and requestedPartId == "Rumbling Horde" then
 			eTemplate = {
@@ -568,16 +567,24 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 	local autoSoldDews = 0
 
 	if not battle.Enemy.IsRumblingBoss then
-		droppedItems, autoSoldDews = LootManager.ProcessDrops(player, battle.Enemy.Drops or {}, battle.Context.IsEndless, battle.Context.CurrentWave)
+		local success, retItems, retDews = pcall(function()
+			return LootManager.ProcessDrops(player, battle.Enemy.Drops or {}, battle.Context.IsEndless, battle.Context.CurrentWave)
+		end)
+		if success then
+			droppedItems = retItems or {}
+			autoSoldDews = retDews or 0
+		else
+			warn("[CombatManager] LootManager Error: " .. tostring(retItems))
+		end
 	end
 
 	if dialogueRewards and dialogueRewards.ItemName then
 		local amountGiven = dialogueRewards.Amount or 1
-		LootManager.GiveOrAutoSellItem(player, dialogueRewards.ItemName, amountGiven)
+		pcall(function() LootManager.GiveOrAutoSellItem(player, dialogueRewards.ItemName, amountGiven) end)
 		table.insert(droppedItems, {Name = dialogueRewards.ItemName, Amount = amountGiven})
 	end
 
-	if autoSoldDews > 0 then killMsg = killMsg .. "\n<font color=\"#FFD700\">[Inventory Full: Auto-sold new drops for " .. autoSoldDews .. " Dews]</font>" end
+	if autoSoldDews and autoSoldDews > 0 then killMsg = killMsg .. "\n<font color=\"#FFD700\">[Inventory Full: Auto-sold new drops for " .. autoSoldDews .. " Dews]</font>" end
 
 	if battle.Player.AwakenedStats and battle.Player.AwakenedStats.HealOnKill > 0 then
 		local pMax = tonumber(battle.Player.MaxHP) or 100
@@ -603,7 +610,6 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		battle.Context.CurrentWave += 1
 		local nextWave = battle.Context.CurrentWave
 
-		-- Safely grab template, or dynamically build it if EnemyData is outdated
 		local eTemplate = EnemyData.WorldBosses and EnemyData.WorldBosses["Rumbling Horde"]
 		if not eTemplate then
 			eTemplate = {
@@ -1140,7 +1146,18 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 		end
 
 		local success, msg, didHit, shakeType = pcall(function() 
-			return CombatCore.ExecuteStrike(attacker, defender, strikeSkill, aimLimb, attacker.IsPlayer and "You" or attacker.Name, defender.IsPlayer and "you" or defender.Name, attacker.IsPlayer and "#FFFFFF" or "#FF5555", battle.Context) 
+			-- [[ THE FIX: Added 8th parameter `defColor` to prevent battle.Context table from shifting into color log string ]]
+			return CombatCore.ExecuteStrike(
+				attacker, 
+				defender, 
+				strikeSkill, 
+				aimLimb, 
+				attacker.IsPlayer and "You" or attacker.Name, 
+				defender.IsPlayer and "you" or defender.Name, 
+				attacker.IsPlayer and "#FFFFFF" or "#FF5555", 
+				defender.IsPlayer and "#FFFFFF" or "#FF5555", 
+				battle.Context
+			) 
 		end)
 
 		if success then 
@@ -1337,7 +1354,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 							local allyQuotes = {
 								["Levi Ackerman"] = "Tch. Try not to die on me, brat.",
 								["Mikasa Ackerman"] = "I won't let you die. Not here.",
-								["Erwin Smith"] = "Advance! Dedicate your heart!",
+								["Erwin Smith"] = "Advance! Dedicate heart!",
 								["Hange Zoe"] = "Ooh, a new test subject! Leave it to me!",
 								["Armin Arlert"] = "I'll cover you! Strike now!"
 							}
