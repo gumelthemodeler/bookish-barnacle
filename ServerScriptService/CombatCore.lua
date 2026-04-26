@@ -490,13 +490,11 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 	skillName = tostring(skillName or "Brutal Swipe")
 	targetLimb = tostring(targetLimb or "Body")
 
-	-- [[ FIX: INTERCEPT SHIFTED ARGUMENTS TO PREVENT TABLE ADDRESS LOGGING ]]
 	if type(defColor) == "table" and battleContext == nil then
 		battleContext = defColor
 		defColor = defender.IsPlayer and "#FFFFFF" or "#FF5555"
 	end
 
-	-- Extract colors safely so strings are guaranteed to be proper hex formats
 	local safeLogColor = (type(logColor) == "string" and string.match(logColor, "^#%w+")) and logColor or "#FFFFFF"
 	local safeDefColor = (type(defColor) == "string" and string.match(defColor, "^#%w+")) and defColor or "#FF5555"
 
@@ -506,7 +504,6 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 	local fallbackSkill = { Mult = 1.0, Cooldown = 0, Hits = 1, Effect = "None", Description = "A basic attack." }
 	local skill = SkillData.Skills[skillName] or SkillData.Skills["Brutal Swipe"] or fallbackSkill
 
-	-- Pre-build the base strings
 	local aName = tostring(logName or "Attacker")
 	local dName = tostring(defName or "Defender")
 	local fLogName = "<font color=\"" .. safeLogColor .. "\">" .. aName .. "</font>"
@@ -529,7 +526,6 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 
 	local mult = tonumber(skill.Mult) or 1.0
 
-	-- [[ FIX: REPLACED FLOGNAME WITH ANAME INSIDE FONT TAGS TO PREVENT NESTING CRASHES ]]
 	if mult == 0 then
 		if skill.Effect == "CloseGap" or skillName == "Close In" or skillName == "Advance" or skillName == "Charge" then
 			attacker.LastSkill = skillName
@@ -949,6 +945,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 						appliedThisStrike["TrueBlind"] = true
 					elseif blStatus == 0 then 
 						if not appliedThisStrike["Blinded"] then
+							defender.Globals = nil
 							defender.Statuses["Blinded"] = defender.IsBoss and 1 or 2
 							effectLog = effectLog .. " <font color=\"#DDDDDD\">[BLINDED]</font>" 
 							appliedThisStrike["Blinded"] = true
