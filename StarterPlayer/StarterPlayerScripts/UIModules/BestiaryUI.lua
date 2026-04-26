@@ -75,34 +75,32 @@ local function UpdateLayoutForScreen()
 
 		GUI.cfLayout.FillDirection = Enum.FillDirection.Vertical
 
-		-- Use absolute pixel heights so mobile scrolling works perfectly
 		GUI.ListPanel.Size = UDim2.new(1, 0, 0, 350)
 		GUI.DisplayPanel.Size = UDim2.new(1, 0, 0, 500)
 
-		GUI.EnemyName.TextSize = 20
-		GUI.EnemyName.Size = UDim2.new(1, -90, 0, 45)
-
-		GUI.WeaknessText.Size = UDim2.new(1, -90, 0, 50)
-
-		GUI.EnemyImage.Size = UDim2.new(0, 70, 0, 70)
-		GUI.EnemyImage.Position = UDim2.new(1, -85, 0, 0)
+		if GUI.EnemyName then
+			GUI.EnemyName.TextSize = 20
+			GUI.EnemyName.Size = UDim2.new(1, -90, 1, 0)
+		end
+		if GUI.EnemyImage then
+			GUI.EnemyImage.Size = UDim2.new(0, 70, 0, 70)
+		end
 	else
 		GUI.ContentFrame.Size = UDim2.new(1, -40, 1, -40)
 		GUI.ContentFrame.Position = UDim2.new(0, 20, 0, 20)
 
 		GUI.cfLayout.FillDirection = Enum.FillDirection.Horizontal
 
-		-- Revert to side-by-side relative scaling
 		GUI.ListPanel.Size = UDim2.new(0.35, -15, 1, 0)
 		GUI.DisplayPanel.Size = UDim2.new(0.65, 0, 1, 0)
 
-		GUI.EnemyName.TextSize = 26
-		GUI.EnemyName.Size = UDim2.new(1, -130, 0, 45)
-
-		GUI.WeaknessText.Size = UDim2.new(1, -130, 0, 50)
-
-		GUI.EnemyImage.Size = UDim2.new(0, 95, 0, 95)
-		GUI.EnemyImage.Position = UDim2.new(1, -115, 0, 0)
+		if GUI.EnemyName then
+			GUI.EnemyName.TextSize = 28
+			GUI.EnemyName.Size = UDim2.new(1, -110, 1, 0)
+		end
+		if GUI.EnemyImage then
+			GUI.EnemyImage.Size = UDim2.new(0, 100, 0, 100)
+		end
 	end
 end
 
@@ -137,7 +135,6 @@ function BestiaryUI.Initialize(masterScreenGui)
 	innerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	innerStroke.LineJoinMode = Enum.LineJoinMode.Miter
 
-	-- Master scroll container so mobile users can scroll down to the Display Panel
 	GUI.ScrollContainer = Instance.new("ScrollingFrame", GUI.ContentFrame)
 	GUI.ScrollContainer.Size = UDim2.new(1, 0, 1, 0)
 	GUI.ScrollContainer.BackgroundTransparency = 1
@@ -159,6 +156,9 @@ function BestiaryUI.Initialize(masterScreenGui)
 	local cPad = Instance.new("UIPadding", GUI.ScrollContainer)
 	cPad.PaddingTop = UDim.new(0, 15); cPad.PaddingBottom = UDim.new(0, 15); cPad.PaddingLeft = UDim.new(0, 15); cPad.PaddingRight = UDim.new(0, 15)
 
+	-- ===================================
+	-- LEFT PANEL: ENEMY LIST
+	-- ===================================
 	GUI.ListPanel = Instance.new("ScrollingFrame", GUI.ScrollContainer)
 	GUI.ListPanel.LayoutOrder = 1
 	GUI.ListPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
@@ -179,41 +179,43 @@ function BestiaryUI.Initialize(masterScreenGui)
 		GUI.ListPanel.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
 	end)
 
-	GUI.DisplayPanel = Instance.new("Frame", GUI.ScrollContainer)
+	-- ===================================
+	-- RIGHT PANEL: CLEAN OVERHAUL
+	-- ===================================
+	GUI.DisplayPanel = Instance.new("ScrollingFrame", GUI.ScrollContainer)
 	GUI.DisplayPanel.BackgroundTransparency = 1
 	GUI.DisplayPanel.LayoutOrder = 2
+	GUI.DisplayPanel.ScrollBarThickness = 4
+	GUI.DisplayPanel.BorderSizePixel = 0
 
-	GUI.EnemyName = Instance.new("TextLabel", GUI.DisplayPanel)
-	GUI.EnemyName.Size = UDim2.new(1, -130, 0, 45)
-	GUI.EnemyName.Position = UDim2.new(0, 20, 0, 0)
+	local dpLayout = Instance.new("UIListLayout", GUI.DisplayPanel)
+	dpLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	dpLayout.Padding = UDim.new(0, 15)
+	dpLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		GUI.DisplayPanel.CanvasSize = UDim2.new(0, 0, 0, dpLayout.AbsoluteContentSize.Y + 20)
+	end)
+
+	-- 1. Header (Name + Image)
+	local dHeader = Instance.new("Frame", GUI.DisplayPanel)
+	dHeader.Size = UDim2.new(1, 0, 0, 100)
+	dHeader.BackgroundTransparency = 1
+	dHeader.LayoutOrder = 1
+
+	GUI.EnemyName = Instance.new("TextLabel", dHeader)
+	GUI.EnemyName.Size = UDim2.new(1, -110, 1, 0)
 	GUI.EnemyName.BackgroundTransparency = 1
 	GUI.EnemyName.Text = "SELECT TARGET"
 	GUI.EnemyName.Font = Enum.Font.GothamBlack
 	GUI.EnemyName.TextColor3 = C_TEXT_BRIGHT
-	GUI.EnemyName.TextSize = 26
+	GUI.EnemyName.TextSize = 28
 	GUI.EnemyName.TextXAlignment = Enum.TextXAlignment.Left
+	GUI.EnemyName.TextYAlignment = Enum.TextYAlignment.Center
+	GUI.EnemyName.TextWrapped = true
 
-	local nameDivider = Instance.new("Frame", GUI.EnemyName)
-	nameDivider.Size = UDim2.new(1, 0, 0, 2)
-	nameDivider.Position = UDim2.new(0, 0, 1, -5)
-	nameDivider.BackgroundColor3 = C_RUST
-	nameDivider.BorderSizePixel = 0
-
-	GUI.WeaknessText = Instance.new("TextLabel", GUI.DisplayPanel)
-	GUI.WeaknessText.Size = UDim2.new(1, -130, 0, 50)
-	GUI.WeaknessText.Position = UDim2.new(0, 20, 0, 50)
-	GUI.WeaknessText.BackgroundTransparency = 1
-	GUI.WeaknessText.Text = "Awaiting cross-reference..."
-	GUI.WeaknessText.Font = Enum.Font.GothamMedium
-	GUI.WeaknessText.TextColor3 = C_TEXT_MUTED
-	GUI.WeaknessText.TextSize = 14
-	GUI.WeaknessText.TextWrapped = true
-	GUI.WeaknessText.TextYAlignment = Enum.TextYAlignment.Top
-	GUI.WeaknessText.TextXAlignment = Enum.TextXAlignment.Left
-
-	GUI.EnemyImage = Instance.new("ImageLabel", GUI.DisplayPanel)
-	GUI.EnemyImage.Size = UDim2.new(0, 95, 0, 95)
-	GUI.EnemyImage.Position = UDim2.new(1, -115, 0, 0)
+	GUI.EnemyImage = Instance.new("ImageLabel", dHeader)
+	GUI.EnemyImage.Size = UDim2.new(0, 100, 0, 100)
+	GUI.EnemyImage.Position = UDim2.new(1, 0, 0, 0)
+	GUI.EnemyImage.AnchorPoint = Vector2.new(1, 0)
 	GUI.EnemyImage.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
 	GUI.EnemyImage.ScaleType = Enum.ScaleType.Crop
 	GUI.EnemyImage.Image = EnemyData.BossIcons["System"] or ""
@@ -222,19 +224,50 @@ function BestiaryUI.Initialize(masterScreenGui)
 	imgStroke.Color = C_STEEL
 	imgStroke.Thickness = 2
 	imgStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	imgStroke.LineJoinMode = Enum.LineJoinMode.Miter
 
+	-- 2. Divider
+	local div1 = Instance.new("Frame", GUI.DisplayPanel)
+	div1.Size = UDim2.new(1, 0, 0, 2)
+	div1.BackgroundColor3 = C_RUST
+	div1.BorderSizePixel = 0
+	div1.LayoutOrder = 2
+
+	-- 3. Tactics Header
+	local tacHeader = Instance.new("TextLabel", GUI.DisplayPanel)
+	tacHeader.Size = UDim2.new(1, 0, 0, 20)
+	tacHeader.BackgroundTransparency = 1
+	tacHeader.LayoutOrder = 3
+	tacHeader.Text = "TACTICAL REPORT"
+	tacHeader.Font = Enum.Font.GothamBlack
+	tacHeader.TextColor3 = C_GOLD
+	tacHeader.TextSize = 16
+	tacHeader.TextXAlignment = Enum.TextXAlignment.Left
+
+	-- 4. Tactics Description
+	GUI.WeaknessText = Instance.new("TextLabel", GUI.DisplayPanel)
+	GUI.WeaknessText.Size = UDim2.new(1, 0, 0, 0)
+	GUI.WeaknessText.AutomaticSize = Enum.AutomaticSize.Y
+	GUI.WeaknessText.BackgroundTransparency = 1
+	GUI.WeaknessText.LayoutOrder = 4
+	GUI.WeaknessText.Text = "Awaiting cross-reference..."
+	GUI.WeaknessText.Font = Enum.Font.GothamMedium
+	GUI.WeaknessText.TextColor3 = C_TEXT_MUTED
+	GUI.WeaknessText.TextSize = 14
+	GUI.WeaknessText.TextWrapped = true
+	GUI.WeaknessText.TextYAlignment = Enum.TextYAlignment.Top
+	GUI.WeaknessText.TextXAlignment = Enum.TextXAlignment.Left
+
+	-- 5. Loot Header Box
 	local LootHeaderFrame = Instance.new("Frame", GUI.DisplayPanel)
-	LootHeaderFrame.Size = UDim2.new(1, -40, 0, 30)
-	LootHeaderFrame.Position = UDim2.new(0, 20, 0, 120)
+	LootHeaderFrame.Size = UDim2.new(1, 0, 0, 30)
 	LootHeaderFrame.BackgroundColor3 = Color3.fromRGB(20, 15, 15)
 	LootHeaderFrame.BorderSizePixel = 0
+	LootHeaderFrame.LayoutOrder = 5
 
 	local lootHeaderStroke = Instance.new("UIStroke", LootHeaderFrame)
 	lootHeaderStroke.Color = C_STEEL
 	lootHeaderStroke.Thickness = 1
 	lootHeaderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	lootHeaderStroke.LineJoinMode = Enum.LineJoinMode.Miter
 
 	local LootHeader = Instance.new("TextLabel", LootHeaderFrame)
 	LootHeader.Size = UDim2.new(1, -15, 1, 0)
@@ -246,19 +279,15 @@ function BestiaryUI.Initialize(masterScreenGui)
 	LootHeader.TextSize = 14
 	LootHeader.TextXAlignment = Enum.TextXAlignment.Left
 
-	GUI.LootScroll = Instance.new("ScrollingFrame", GUI.DisplayPanel)
-	GUI.LootScroll.Size = UDim2.new(1, -40, 1, -165)
-	GUI.LootScroll.Position = UDim2.new(0, 20, 0, 155)
+	-- 6. Loot Container
+	GUI.LootScroll = Instance.new("Frame", GUI.DisplayPanel)
+	GUI.LootScroll.Size = UDim2.new(1, 0, 0, 0)
+	GUI.LootScroll.AutomaticSize = Enum.AutomaticSize.Y
 	GUI.LootScroll.BackgroundTransparency = 1
-	GUI.LootScroll.ScrollBarThickness = 4
-	GUI.LootScroll.ScrollBarImageColor3 = C_STEEL
-	GUI.LootScroll.BorderSizePixel = 0
+	GUI.LootScroll.LayoutOrder = 6
 
-	local lootLayout = Instance.new("UIListLayout", GUI.LootScroll)
-	lootLayout.Padding = UDim.new(0, 4)
-	lootLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		GUI.LootScroll.CanvasSize = UDim2.new(0, 0, 0, lootLayout.AbsoluteContentSize.Y + 10)
-	end)
+	local lootInnerLayout = Instance.new("UIListLayout", GUI.LootScroll)
+	lootInnerLayout.Padding = UDim.new(0, 4)
 
 	local currentLayoutOrder = 1 
 
@@ -432,13 +461,13 @@ end
 
 function BestiaryUI.LoadEnemyData(GUI, formattedData)
 	GUI.EnemyName.Text = string.upper(formattedData.Name)
-	GUI.WeaknessText.Text = "TACTICAL REPORT:\n" .. formattedData.Tactics
+	GUI.WeaknessText.Text = formattedData.Tactics
 
 	local fallbackIcon = EnemyData.BossIcons["System"] or ""
 	GUI.EnemyImage.Image = EnemyData.BossIcons[formattedData.Key] or EnemyData.BossIcons[formattedData.Name] or fallbackIcon
 
 	for _, child in ipairs(GUI.LootScroll:GetChildren()) do
-		if child:IsA("Frame") then child:Destroy() end
+		if child:IsA("Frame") or child:IsA("TextLabel") then child:Destroy() end
 	end
 
 	if #formattedData.Drops == 0 then
