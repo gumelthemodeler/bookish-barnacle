@@ -5,7 +5,7 @@ local PrestigeWebUI = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
-local SkillData = require(ReplicatedStorage:WaitForChild("SkillData"))
+local GameData = require(ReplicatedStorage:WaitForChild("GameData"))
 local Network = ReplicatedStorage:WaitForChild("Network")
 
 local SharedUI = script.Parent.Parent:WaitForChild("SharedUI")
@@ -122,7 +122,7 @@ function PrestigeWebUI.Build(parentPanel)
 	generatedNodes = {}
 	nodeLines = {}
 
-	for id, nodeData in pairs(SkillData.PrestigeNodes or {}) do
+	for id, nodeData in pairs(GameData.PrestigeNodes or {}) do
 		local nodeBase = Instance.new("TextButton", Canvas)
 		nodeBase.Name = id
 		nodeBase.Size = UDim2.new(0, 44, 0, 44)
@@ -177,7 +177,7 @@ function PrestigeWebUI.Build(parentPanel)
 				UnlockBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 				UBtnStroke.Color = UIHelpers.Colors.BorderMuted
 			elseif not hasReq then 
-				DReq.Text = "REQUIRES: " .. (SkillData.PrestigeNodes[nodeData.Req] and SkillData.PrestigeNodes[nodeData.Req].Name or nodeData.Req)
+				DReq.Text = "REQUIRES: " .. (GameData.PrestigeNodes[nodeData.Req] and GameData.PrestigeNodes[nodeData.Req].Name or nodeData.Req)
 				DReq.TextColor3 = UIHelpers.Colors.Border
 				UnlockBtn.Text = "LOCKED"
 				UnlockBtn.TextColor3 = UIHelpers.Colors.Border
@@ -194,7 +194,7 @@ function PrestigeWebUI.Build(parentPanel)
 
 	UnlockBtn.MouseButton1Click:Connect(function()
 		if selectedNode and UnlockBtn.Text == "UNLOCK" then 
-			Network:WaitForChild("UnlockPrestigeNode"):FireServer(selectedNode)
+			Network:WaitForChild("PurchasePrestigeNode"):FireServer(selectedNode)
 		end
 	end)
 
@@ -240,7 +240,7 @@ function PrestigeWebUI.Build(parentPanel)
 		local canvasSize = Canvas.AbsoluteSize
 		if canvasSize.X == 0 then canvasSize = Vector2.new(2000, 2000) end 
 
-		for id, nodeData in pairs(SkillData.PrestigeNodes or {}) do
+		for id, nodeData in pairs(GameData.PrestigeNodes or {}) do
 			local targetData = generatedNodes[id]
 			if nodeData.Req and targetData then
 				local sourceData = generatedNodes[nodeData.Req]
@@ -269,7 +269,7 @@ function PrestigeWebUI.Build(parentPanel)
 		PointsLabel.Text = "AVAILABLE POINTS: " .. pts
 
 		for id, nodeObj in pairs(generatedNodes) do
-			local nodeData = SkillData.PrestigeNodes[id]
+			local nodeData = GameData.PrestigeNodes[id]
 			local isOwned = player:GetAttribute("PrestigeNode_" .. id)
 			local hasReq = (not nodeData.Req) or player:GetAttribute("PrestigeNode_" .. nodeData.Req)
 			local customColor = Color3.fromHex((nodeObj.NodeColor or "#FFFFFF"):gsub("#", ""))
@@ -312,7 +312,7 @@ function PrestigeWebUI.Build(parentPanel)
 		end
 
 		if selectedNode and DetailPanel.Visible then
-			local nodeData = SkillData.PrestigeNodes[selectedNode]
+			local nodeData = GameData.PrestigeNodes[selectedNode]
 			local isOwned = player:GetAttribute("PrestigeNode_" .. selectedNode)
 			local hasReq = (not nodeData.Req) or player:GetAttribute("PrestigeNode_" .. nodeData.Req)
 
@@ -323,7 +323,7 @@ function PrestigeWebUI.Build(parentPanel)
 				UnlockBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 				UBtnStroke.Color = UIHelpers.Colors.BorderMuted
 			elseif not hasReq then 
-				DReq.Text = "REQUIRES: " .. (SkillData.PrestigeNodes[nodeData.Req] and SkillData.PrestigeNodes[nodeData.Req].Name or nodeData.Req)
+				DReq.Text = "REQUIRES: " .. (GameData.PrestigeNodes[nodeData.Req] and GameData.PrestigeNodes[nodeData.Req].Name or nodeData.Req)
 				DReq.TextColor3 = UIHelpers.Colors.Border
 				UnlockBtn.Text = "LOCKED"
 				UnlockBtn.TextColor3 = UIHelpers.Colors.Border
