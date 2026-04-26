@@ -286,12 +286,13 @@ function ExpeditionsTab.Initialize(parentFrame)
 		elseif bones > 0 then
 			local triggerCard = CreateModeCard(GridContainer, "INITIATE RUMBLING", "Consume your Founder's Bone to summon a global Wall Titan invasion.", CONFIG.Decals.WorldBoss, 0, function() 
 				Network:WaitForChild("TriggerRumbling"):FireServer()
-				if NotificationManager and type(NotificationManager.Show) == "function" then NotificationManager.Show("Initiating the Rumbling...", "Success") end
 			end, Color3.fromRGB(255, 85, 255))
 			triggerCard.Name = "RumblingCard_Trigger"
 		end
 	end
 
+	-- Listen for Rumbling State Sync
+	Network:WaitForChild("SyncRumbling").OnClientEvent:Connect(RefreshMainGrid)
 	ReplicatedStorage:GetAttributeChangedSignal("RumblingActive"):Connect(RefreshMainGrid)
 	player.AttributeChanged:Connect(function(attr) if attr == "FoundersBoneCount" then RefreshMainGrid() end end)
 	RefreshMainGrid()
@@ -315,7 +316,10 @@ function ExpeditionsTab.Initialize(parentFrame)
 			if NotificationManager and type(NotificationManager.Show) == "function" then NotificationManager.Show("The Paths are currently closed. Returns Sat, Sun & Mon.", "Error") end
 		end
 	end, CONFIG.Colors.Event)
-	if not isPathsOpen then pathsCardLbl:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(255, 100, 100) end
+	if not isPathsOpen then 
+		local d = pathsCardLbl:FindFirstChildOfClass("TextLabel")
+		if d then d.TextColor3 = Color3.fromRGB(255, 100, 100) end 
+	end
 
 	CreateModeCard(GridContainer, "ENDLESS FRONTIER", "Fight infinite waves to continually harvest Dews, XP, and materials.", CONFIG.Decals.Endless, 3, function() InitiateDeployment("CombatAction", "EngageEndless") end, CONFIG.Colors.Event)
 
