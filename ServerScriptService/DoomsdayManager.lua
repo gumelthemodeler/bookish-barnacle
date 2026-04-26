@@ -28,38 +28,55 @@ local rumblingActive = false
 local rumblingKills = 0
 local RUMBLING_TARGET = 1000 
 local rumblingLeaderboard = {} 
+local rumblingTimeLeft = 600
 
 local function SortLeaderboard(lb)
 	table.sort(lb, function(a, b) return a.Damage > b.Damage end)
 end
 
 local function PayoutRumbling()
-	if #rumblingLeaderboard == 0 then return end
+	if not rumblingActive then return end 
+
+	rumblingActive = false
+	ReplicatedStorage:SetAttribute("RumblingActive", false)
+	SyncRumbling:FireAllClients(false)
+
+	if #rumblingLeaderboard == 0 then 
+		NotificationEvent:FireAllClients("THE RUMBLING SURVIVED... No heroes deployed in time.", "Error")
+		return 
+	end
+
 	SortLeaderboard(rumblingLeaderboard)
 
-	NotificationEvent:FireAllClients("THE RUMBLING HAS BEEN HALTED! Top fighters have been rewarded.", "Success")
+	if rumblingKills >= RUMBLING_TARGET then
+		NotificationEvent:FireAllClients("THE RUMBLING HAS BEEN HALTED! Top fighters have been rewarded.", "Success")
+	else
+		NotificationEvent:FireAllClients("TIME EXPIRED! The Wall Titans trampled the continent. Partial rewards distributed.", "Error")
+	end
+
 	for i, data in ipairs(rumblingLeaderboard) do
 		local plr = Players:GetPlayerByUserId(data.UserId)
 		if plr then
 			if i == 1 then
 				plr.leaderstats.Dews.Value += 250000
-				local attr = "FoundersSandCount"
-				plr:SetAttribute(attr, (plr:GetAttribute(attr) or 0) + 3)
-				NotificationEvent:FireClient(plr, "Rank 1 Reward: 250K Dews + 3x Founder's Sand!", "Loot")
+				plr:SetAttribute("CoordinatesSandCount", (plr:GetAttribute("CoordinatesSandCount") or 0) + 1)
+				plr:SetAttribute("AbyssalBloodCount", (plr:GetAttribute("AbyssalBloodCount") or 0) + 5)
+				NotificationEvent:FireClient(plr, "Rank 1 Reward: 250K Dews, 1x Coordinate's Sand, 5x Abyssal Blood!", "Loot")
 			elseif i <= 5 then
 				plr.leaderstats.Dews.Value += 100000
-				local attr = "FoundersSandCount"
-				plr:SetAttribute(attr, (plr:GetAttribute(attr) or 0) + 1)
-				NotificationEvent:FireClient(plr, "Top 5 Reward: 100K Dews + 1x Founder's Sand!", "Loot")
+				plr:SetAttribute("YmirsClayFragmentCount", (plr:GetAttribute("YmirsClayFragmentCount") or 0) + 2)
+				plr:SetAttribute("SpinalFluidSyringeCount", (plr:GetAttribute("SpinalFluidSyringeCount") or 0) + 1)
+				NotificationEvent:FireClient(plr, "Top 5 Reward: 100K Dews, 2x Ymir's Clay Fragment, 1x Spinal Fluid Syringe!", "Loot")
+			elseif i <= 20 then
+				plr.leaderstats.Dews.Value += 50000
+				plr:SetAttribute("SpinalFluidSyringeCount", (plr:GetAttribute("SpinalFluidSyringeCount") or 0) + 1)
+				NotificationEvent:FireClient(plr, "Top 20 Reward: 50K Dews, 1x Spinal Fluid Syringe!", "Loot")
 			else
 				plr.leaderstats.Dews.Value += 25000
+				NotificationEvent:FireClient(plr, "Participant Reward: 25,000 Dews!", "Loot")
 			end
 		end
 	end
-
-	rumblingActive = false
-	ReplicatedStorage:SetAttribute("RumblingActive", false)
-	SyncRumbling:FireAllClients(false)
 end
 
 local function PayoutDoomsday()
@@ -143,6 +160,7 @@ GetRumblingData.OnServerInvoke = function()
 		IsActive = rumblingActive,
 		Kills = rumblingKills,
 		Target = RUMBLING_TARGET,
+		TimeLeft = rumblingTimeLeft,
 		Leaderboard = rumblingLeaderboard
 	}
 end
@@ -161,13 +179,14 @@ TriggerRumbling.OnServerEvent:Connect(function(player)
 
 		rumblingActive = true
 		rumblingKills = 0
+		rumblingTimeLeft = 600
 		rumblingLeaderboard = {}
 		ReplicatedStorage:SetAttribute("RumblingActive", true)
 
 		-- BROADCAST TO ALL CLIENTS
 		SyncRumbling:FireAllClients(true)
 
-		NotificationEvent:FireAllClients(player.Name .. " HAS TRIGGERED THE RUMBLING! RACE TO STOP THE WALL TITANS!", "Error")
+		NotificationEvent:FireAllClients(string.upper(player.Name) .. " HAS TRIGGERED THE RUMBLING! RACE TO STOP THE WALL TITANS!", "Error")
 	else
 		NotificationEvent:FireClient(player, "You need a Founder's Bone to trigger this event.", "Error")
 	end
@@ -176,6 +195,14 @@ end)
 task.spawn(function()
 	while true do
 		task.wait(1)
+
+		if rumblingActive then
+			rumblingTimeLeft -= 1
+			if rumblingTimeLeft <= 0 or rumblingKills >= RUMBLING_TARGET then
+				PayoutRumbling()
+			end
+		end
+
 		if not ddActive then
 			ddTimeUntilNext -= 1
 			if ddTimeUntilNext <= 0 then
