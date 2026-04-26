@@ -32,7 +32,7 @@ local requiredRemotes = {
 	"GachaRoll", "GachaRollAuto", "GachaResult", "AwakenAction", "ManageStorage", "VIPFreeReroll", "RedeemCode", "ClaimBounty", "ForgeItem", "ConsumeItem", "JoinRegiment", "ShowRegimentUI",
 	"FuseTitan", "PathsShopBuy", "AwakenWeapon", "DispatchAction", "TradeAction", "TradeUpdate", "TradeRequest", "DeployToDistrict", "EquipSkill",
 	"PathsShopEvent", "UpgradeRune", "LabyrinthAction", "LabyrinthUpdate",
-	"TriggerRumbling", "SyncRumbling" -- Rumbling Remotes
+	"TriggerRumbling", "SyncRumbling", "PvPAction", "PvPUpdate", "PvPTaunt" -- PvP Remotes initialized
 }
 
 for _, remoteName in ipairs(requiredRemotes) do
@@ -53,6 +53,7 @@ InitRF("GetLeaderboardData")
 InitRF("PrestigeAction")
 InitRF("GetDoomsdayData")
 InitRF("GetRumblingData")
+InitRF("GetLiveMatches") -- Init for PvP Manager
 
 local lbRf = RemotesFolder:WaitForChild("GetLeaderboardData")
 
