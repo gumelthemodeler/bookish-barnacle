@@ -19,7 +19,7 @@ end
 
 function LootManager.GiveOrAutoSellItem(player, itemName, amount)
 	local iData = ItemData.Equipment[itemName] or ItemData.Consumables[itemName]
-	if not iData then return end
+	if not iData then return 0 end
 
 	local rarity = iData.Rarity or "Common"
 	local isAutoSellEnabled = player:GetAttribute("AutoSell_" .. rarity)
@@ -41,6 +41,8 @@ function LootManager.GiveOrAutoSellItem(player, itemName, amount)
 		local currentAmt = player:GetAttribute(safeName) or 0
 		player:SetAttribute(safeName, currentAmt + finalAmount)
 	end
+
+	return finalAmount
 end
 
 function LootManager.ProcessDrops(player, enemyDrops, isEndless, currentWave)
@@ -102,8 +104,9 @@ function LootManager.ProcessDrops(player, enemyDrops, isEndless, currentWave)
 				elseif isEquipment and not isProtected and currentAmt == 0 and currentSlots >= MAX_INVENTORY_CAPACITY then
 					autoSoldDewsCapacity += (SellValues[rarity] or 2) * dropMultiplier
 				else
-					local nameTag = (dropMultiplier > 1) and (itemName .. " (x" .. dropMultiplier .. ")") or itemName
-					table.insert(droppedItems, nameTag)
+					-- [[ THE FIX: Passed as a structured table so CombatUI natively renders +2 ]]
+					table.insert(droppedItems, {Name = itemName, Amount = dropMultiplier})
+
 					player:SetAttribute(attrName, currentAmt + dropMultiplier)
 					if isEquipment and currentAmt == 0 then currentSlots += 1 end
 				end
