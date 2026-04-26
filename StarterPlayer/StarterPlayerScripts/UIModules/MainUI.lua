@@ -10,8 +10,9 @@ local Network = ReplicatedStorage:WaitForChild("Network")
 local SharedUI = script.Parent.Parent:WaitForChild("SharedUI")
 local UIHelpers = require(SharedUI:WaitForChild("UIHelpers"))
 
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-local isAdmin = player:GetAttribute("IsAdmin") or player.Name == "girthbender1209"
+local isAdmin = player:GetAttribute("IsAdmin") or player.Name == "girthbender1209" or RunService:IsStudio()
 
 local MasterGui, MasterWindow, WindowScale, WindowTitle, CurrentOpenTab, Dock
 local TabContainers = {}
