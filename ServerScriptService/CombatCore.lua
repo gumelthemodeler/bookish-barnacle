@@ -263,9 +263,6 @@ function CombatCore.TakeDamage(combatant, damage, attackerStyle)
 	return survivalTriggered, hitGate, gateBroken, actualDmg, gateName
 end
 
--- ==========================================
--- PVP STRIKE ENGINE
--- ==========================================
 function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, qteMultiplier)
 	skillName = tostring(skillName or "Basic Slash")
 	targetLimb = tostring(targetLimb or "Body")
@@ -280,7 +277,6 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 
 	local mult = tonumber(skill.Mult) or 1.0
 
-	-- [[ UTILITY & INSTANT MOVES ]]
 	if mult == 0 then
 		if skill.Effect == "CloseGap" or skillName == "Close In" or skillName == "Advance" or skillName == "Charge" then
 			attacker.LastSkill = skillName
@@ -326,7 +322,6 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 		end
 	end
 
-	-- [[ PVP DAMAGE RESOLUTION ]]
 	local hitsToDo = tonumber(skill.Hits) or 1
 	local hitLogs = {}
 	local didHitAtAll = false
@@ -489,9 +484,6 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 	return finalMsg, didHitAtAll, overallShake, totalDmgDealt
 end
 
--- ==========================================
--- PVE STRIKE ENGINE
--- ==========================================
 function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, logName, defName, logColor, defColor, battleContext)
 	skillName = tostring(skillName or "Brutal Swipe")
 	targetLimb = tostring(targetLimb or "Body")
@@ -522,7 +514,6 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 
 	local mult = tonumber(skill.Mult) or 1.0
 
-	-- [[ UTILITY & INSTANT MOVES ]]
 	if mult == 0 then
 		if skill.Effect == "CloseGap" or skillName == "Close In" or skillName == "Advance" or skillName == "Charge" then
 			attacker.LastSkill = skillName
@@ -605,7 +596,6 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		end
 	end
 
-	-- [[ PVE DAMAGE RESOLUTION ]]
 	local hitsToDo = tonumber(skill.Hits) or 1; local hitLogs = {}; local didHitAtAll = false; local overallShake = "None"
 
 	local synergyTag = isSequenceCombo and " <font color=\"#FFD700\">[SYNERGY: " .. lastAtkSkill .. " -> " .. skillName .. "]</font>" or ""
@@ -792,21 +782,9 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		local survivalTriggered, hitGate, gateBroken, hpDmg, gateName = CombatCore.TakeDamage(defender, baseDmg, attacker.Style)
 
 		local isArmored = defender.GateType == "Reinforced Skin" and (tonumber(defender.GateHP) or 0) > 0
-
 		local globalDmgLog = ""
-		if defender.IsRumblingBoss and attacker.IsPlayer and attacker.PlayerObj then
-			if baseDmg > 0 then
-				local success, err = pcall(function()
-					local DoomsdayManager = require(game:GetService("ServerScriptService"):WaitForChild("DoomsdayManager"))
-					DoomsdayManager.RegisterRumblingDamage(attacker.PlayerObj, baseDmg)
-				end)
-				if success then
-					globalDmgLog = " <font color=\"#FF55FF\"><b>[WALL TITAN FELLED]</b></font>"
-				else
-					warn("[RUMBLING ERROR]: " .. tostring(err))
-				end
-			end
-		elseif defender.IsDoomsdayBoss and attacker.IsPlayer and attacker.PlayerObj then
+
+		if defender.IsDoomsdayBoss and attacker.IsPlayer and attacker.PlayerObj then
 			if baseDmg > 0 then
 				local success, err = pcall(function()
 					local DoomsdayManager = require(game:GetService("ServerScriptService"):WaitForChild("DoomsdayManager"))
