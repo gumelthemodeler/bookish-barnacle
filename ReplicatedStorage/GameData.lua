@@ -4,7 +4,7 @@ local GameData = {}
 
 GameData.TitanRanks = { ["E"] = 5, ["D"] = 10, ["C"] = 15, ["B"] = 20, ["A"] = 25, ["S"] = 30, ["None"] = 0 }
 
--- [[ THE FIX: Raised starting defaults to 10 so players start with 100 HP and 100 Gas ]]
+-- [[ Raised starting defaults to 10 so players start with 100 HP and 100 Gas ]]
 GameData.BaseStats = { Health = 10, Gas = 10, Strength = 10, Defense = 10, Speed = 10, Resolve = 10 }
 
 GameData.TitanStats = { "Titan_Power_Val", "Titan_Speed_Val", "Titan_Hardening_Val", "Titan_Endurance_Val", "Titan_Precision_Val", "Titan_Potential_Val" }
@@ -43,6 +43,7 @@ GameData.BattleConditions = {
 	["The Rumbling"] = { Description = "Absolute chaos. Everyone (Player and Enemies) deals +50% damage.", Color = "#FF0000" }
 }
 
+-- [[ THE MERGED PRESTIGE WEB ]]
 GameData.PrestigeNodes = {
 	-- CORE (Start at bottom center)
 	["Core_1"] = { Name = "Awakened Potential", Cost = 1, Req = nil, BuffType = "FlatStat", BuffStat = "Health", BuffValue = 50, Desc = "Increases Base Health by 50.", Pos = UDim2.new(0.5, 0, 0.85, 0), Color = "#FFFFFF" },
@@ -71,7 +72,40 @@ GameData.PrestigeNodes = {
 
 	-- TITAN SUB-BRANCH (Energy & Precision)
 	["Titan_Sub1"] = { Name = "Boiling Blood", Cost = 1, Req = "Titan_1", BuffType = "FlatStat", BuffStat = "Titan_Potential_Val", BuffValue = 20, Desc = "Increases Max Titan Energy by 20.", Pos = UDim2.new(0.75, 0, 0.85, 0), Color = "#FF55FF" },
-	["Titan_Sub2"] = { Name = "Nape Targeting", Cost = 2, Req = "Titan_2", BuffType = "FlatStat", BuffStat = "Titan_Precision_Val", BuffValue = 15, Desc = "Increases Base Titan Precision by 15.", Pos = UDim2.new(0.7, 0, 0.55, 0), Color = "#FF55FF" }
+	["Titan_Sub2"] = { Name = "Nape Targeting", Cost = 2, Req = "Titan_2", BuffType = "FlatStat", BuffStat = "Titan_Precision_Val", BuffValue = 15, Desc = "Increases Base Titan Precision by 15.", Pos = UDim2.new(0.7, 0, 0.55, 0), Color = "#FF55FF" },
+
+	-- NEW EXTENSION: ECONOMY BRANCH (Far Left)
+	["DewGain1"] = { Name = "Flesh Harvesting I", Cost = 1, Req = "Core_1", BuffType = "Special", BuffStat = "DewBonus", BuffValue = 0.05, Desc = "+5% Dew Gain", Pos = UDim2.new(0.15, 0, 0.95, 0), Color = "#55FF55" },
+	["DewGain2"] = { Name = "Flesh Harvesting II", Cost = 1, Req = "DewGain1", BuffType = "Special", BuffStat = "DewBonus", BuffValue = 0.10, Desc = "+10% Dew Gain", Pos = UDim2.new(0.05, 0, 0.85, 0), Color = "#55FF55" },
+	["DewGain3"] = { Name = "Flesh Harvesting III", Cost = 2, Req = "DewGain2", BuffType = "Special", BuffStat = "DewBonus", BuffValue = 0.15, Desc = "+15% Dew Gain", Pos = UDim2.new(0.05, 0, 0.70, 0), Color = "#55FF55" },
+	["MaterialYield"] = { Name = "Scavenger's Eye", Cost = 2, Req = "DewGain2", BuffType = "Special", BuffStat = "MaterialYield", BuffValue = 0.05, Desc = "+5% Chance for double material drops.", Pos = UDim2.new(0.05, 0, 0.55, 0), Color = "#55AAFF" },
+
+	-- NEW EXTENSION: TITAN COMBAT BRANCH (Far Right)
+	["TitanPunchBleed"] = { Name = "Jagged Knuckles", Cost = 1, Req = "Core_1", BuffType = "Special", BuffStat = "TitanPunchBleed", BuffValue = 1, Desc = "Titan Punch permanently applies Bleed.", Pos = UDim2.new(0.85, 0, 0.95, 0), Color = "#FF5555" },
+	["ArmorPiercingKick"] = { Name = "Shattering Impact", Cost = 1, Req = "TitanPunchBleed", BuffType = "Special", BuffStat = "IgnoreArmor", BuffValue = 0.10, Desc = "Titan Kick ignores 10% of enemy armor.", Pos = UDim2.new(0.95, 0, 0.85, 0), Color = "#FF5555" },
+	["TitanPunchCrush"] = { Name = "Heavy Hands", Cost = 2, Req = "ArmorPiercingKick", BuffType = "Special", BuffStat = "TitanDmg", BuffValue = 0.15, Desc = "Titan Punch deals +15% base damage.", Pos = UDim2.new(0.95, 0, 0.70, 0), Color = "#FF3333" },
+	["TitanKickShockwave"] = { Name = "Tremor Kick", Cost = 3, Req = "TitanPunchCrush", BuffType = "Special", BuffStat = "TitanKickAoE", BuffValue = 1, Desc = "Titan Kick gains a small AoE shockwave.", Pos = UDim2.new(0.95, 0, 0.55, 0), Color = "#FF3333" },
+
+	-- NEW EXTENSION: ODM / HUMAN BRANCH
+	["GasEfficiency1"] = { Name = "Pressurized Canisters I", Cost = 1, Req = "Scout_Sub1", BuffType = "Special", BuffStat = "GasEfficiency", BuffValue = 0.05, Desc = "-5% Gas consumption on Maneuver.", Pos = UDim2.new(0.15, 0, 0.75, 0), Color = "#AAAAAA" },
+	["GasEfficiency2"] = { Name = "Pressurized Canisters II", Cost = 1, Req = "GasEfficiency1", BuffType = "Special", BuffStat = "GasEfficiency", BuffValue = 0.10, Desc = "-10% Gas consumption on all ODM moves.", Pos = UDim2.new(0.15, 0, 0.60, 0), Color = "#AAAAAA" },
+	["BladeDurability"] = { Name = "Tempered Steel", Cost = 2, Req = "GasEfficiency2", BuffType = "Special", BuffStat = "BladeDmg", BuffValue = 0.10, Desc = "Ultrahard Steel Blades deal +10% flat damage.", Pos = UDim2.new(0.15, 0, 0.45, 0), Color = "#AAAAAA" },
+	["ODMSpeed"] = { Name = "Wind Rider", Cost = 2, Req = "GasEfficiency2", BuffType = "Special", BuffStat = "ODMSpeed", BuffValue = 1, Desc = "Increases 'Close In' rush speed.", Pos = UDim2.new(0.25, 0, 0.45, 0), Color = "#55AAFF" },
+
+	-- NEW EXTENSION: TITAN SHIFTER UTILITY BRANCH
+	["HeatManagement1"] = { Name = "Venting Pores I", Cost = 1, Req = "Titan_Sub1", BuffType = "Special", BuffStat = "HeatReduction", BuffValue = 0.05, Desc = "Generate 5% less heat per Titan action.", Pos = UDim2.new(0.85, 0, 0.75, 0), Color = "#FF88FF" },
+	["HeatManagement2"] = { Name = "Venting Pores II", Cost = 1, Req = "HeatManagement1", BuffType = "Special", BuffStat = "HeatReduction", BuffValue = 0.10, Desc = "Generate 10% less heat per Titan action.", Pos = UDim2.new(0.85, 0, 0.60, 0), Color = "#FF88FF" },
+	["RapidTransform"] = { Name = "Flash Shift", Cost = 2, Req = "HeatManagement2", BuffType = "Special", BuffStat = "TransformCD", BuffValue = 2, Desc = "Reduces 'Transform' cooldown by 2 seconds.", Pos = UDim2.new(0.85, 0, 0.45, 0), Color = "#CC44FF" },
+	["NapeHardening"] = { Name = "Subconscious Guard", Cost = 2, Req = "HeatManagement2", BuffType = "Special", BuffStat = "NapeDefense", BuffValue = 0.10, Desc = "Permanently reduces incoming Nape damage by 10%.", Pos = UDim2.new(0.75, 0, 0.45, 0), Color = "#FFD700" },
+
+	-- NEW EXTENSION: THE CROSSROADS (Mid-Late Game Convergence)
+	["FleshAndSteel"] = { Name = "Hybrid Warrior", Cost = 3, Req = "Titan_4", BuffType = "Special", BuffStat = "HybridDmg", BuffValue = 0.15, Desc = "Gain +15% damage for 2 turns after using Eject.", Pos = UDim2.new(0.70, 0, 0.15, 0), Color = "#FF3333" },
+	["RelentlessAssault"] = { Name = "Relentless", Cost = 3, Req = "Scout_4", BuffType = "Special", BuffStat = "HumanHeatRegen", BuffValue = 1, Desc = "Using 'Recover' as a human slightly restores Titan Heat.", Pos = UDim2.new(0.30, 0, 0.15, 0), Color = "#CC44FF" },
+	["ScavengerKing"] = { Name = "Scavenger King", Cost = 3, Req = "DewGain3", BuffType = "Special", BuffStat = "DewBonus", BuffValue = 0.25, Desc = "+25% total Dew Gain multiplier.", Pos = UDim2.new(0.15, 0, 0.15, 0), Color = "#55FF55" },
+	["WindGod"] = { Name = "Wind God", Cost = 3, Req = "ODMSpeed", BuffType = "Special", BuffStat = "DodgeBonus", BuffValue = 10, Desc = "+10% Base Dodge Chance.", Pos = UDim2.new(0.25, 0, 0.25, 0), Color = "#55AAFF" },
+
+	-- NEW EXTENSION: THE PINNACLE
+	["PathConvergence"] = { Name = "The Founding's Call", Cost = 5, Req = "Cmdr_4", BuffType = "Special", BuffStat = "TruePrestige", BuffValue = 1, Desc = "Caps the tree. Unlocks the True Prestige.", Pos = UDim2.new(0.5, 0, -0.15, 0), Color = "#FF55FF" }
 }
 
 function GameData.GetStatCap(prestige) return 100 + ((prestige or 0) * 10) end
