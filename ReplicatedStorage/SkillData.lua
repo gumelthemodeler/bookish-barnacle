@@ -110,4 +110,36 @@ SkillData.Skills = {
 	["Idle"] = { Requirement = "Enemy", Range = "Any", Type = "Basic", Mult = 0, Effect = "None", Cooldown = 0, SFX = "None", VFX = "None", Description = "Stands perfectly still." }
 }
 
+-- [[ PRESTIGE SKILL WEB NODES ]]
+SkillData.PrestigeNodes = {
+	-- CORE NODES (Start here)
+	["Core_Damage"] = { Name = "Foundational Strength", Cost = 1, X = 0, Y = 0, Attr = "Prestige_DmgMult", Value = 0.10, Desc = "+10% Base Damage" },
+	["Core_Health"] = { Name = "Foundational Vitality", Cost = 1, X = 0, Y = -1, Attr = "Prestige_HealthMult", Value = 0.15, Desc = "+15% Max HP", Req = {"Core_Damage"} },
+	["Core_Dodge"] = { Name = "Foundational Agility", Cost = 2, X = 0, Y = 1, Attr = "Prestige_DodgeBonus", Value = 5, Desc = "+5% Base Dodge Chance", Req = {"Core_Damage"} },
+
+	-- THE CRAFTSMAN's ROUTE (Left Branch)
+	["Craft_1"] = { Name = "Efficient Forging", Cost = 2, X = -1, Y = 0, Attr = "Prestige_ForgeDiscount", Value = 0.10, Desc = "Reduces Dew cost of Forging by 10%", Req = {"Core_Damage"} },
+	["Craft_2"] = { Name = "Master Blacksmith", Cost = 3, X = -2, Y = 0, Attr = "Prestige_FlawlessChance", Value = 0.05, Desc = "+5% chance to roll Flawless gear", Req = {"Craft_1"} },
+	["Craft_3"] = { Name = "Durable Edges", Cost = 4, X = -3, Y = 0, Attr = "Prestige_DurabilityDecay", Value = -0.50, Desc = "Weapon durability decays 50% slower", Req = {"Craft_2"} },
+	["Craft_Ultimate"] = { Name = "God Forge", Cost = 10, X = -4, Y = 0, Attr = "Prestige_DoubleCraft", Value = 0.05, Desc = "5% chance to craft a duplicate item for free", Req = {"Craft_3"} },
+
+	-- THE HUNTER'S ROUTE (Top Branch)
+	["Hunt_1"] = { Name = "Lethal Precision", Cost = 2, X = 0, Y = -2, Attr = "Prestige_CritBonus", Value = 5, Desc = "+5% Base Crit Chance", Req = {"Core_Health"} },
+	["Hunt_2"] = { Name = "Armor Piercing", Cost = 3, X = 0, Y = -3, Attr = "Prestige_IgnoreArmor", Value = 0.15, Desc = "Attacks ignore 15% of enemy Defense", Req = {"Hunt_1"} },
+	["Hunt_3"] = { Name = "Titan Slayer", Cost = 4, X = 0, Y = -4, Attr = "Prestige_BossDamage", Value = 0.20, Desc = "+20% Damage against Doomsday & World Bosses", Req = {"Hunt_2"} },
+	["Hunt_Ultimate"] = { Name = "Executioner", Cost = 10, X = 0, Y = -5, Attr = "Prestige_ExecuteThreshold", Value = 0.05, Desc = "Attacks instantly execute enemies below 5% HP", Req = {"Hunt_3"} },
+
+	-- THE SHIFTER'S ROUTE (Right Branch)
+	["Shift_1"] = { Name = "Endless Stamina", Cost = 2, X = 1, Y = 0, Attr = "Prestige_MaxHeat", Value = 50, Desc = "+50 Max Titan Heat", Req = {"Core_Damage"} },
+	["Shift_2"] = { Name = "Rapid Regeneration", Cost = 3, X = 2, Y = 0, Attr = "Prestige_TransformCooldown", Value = -2, Desc = "Reduces Transform cooldown by 2 turns", Req = {"Shift_1"} },
+	["Shift_3"] = { Name = "Boiling Blood", Cost = 4, X = 3, Y = 0, Attr = "Prestige_TitanDamage", Value = 0.25, Desc = "+25% Damage while Transformed", Req = {"Shift_2"} },
+	["Shift_Ultimate"] = { Name = "The Coordinate", Cost = 10, X = 4, Y = 0, Attr = "Prestige_RetainLineage", Value = 1, Desc = "Retain your current Bloodline upon next Prestige", Req = {"Shift_3"} },
+
+	-- THE SURVIVOR'S ROUTE (Bottom Branch)
+	["Surv_1"] = { Name = "Iron Will", Cost = 2, X = 0, Y = 2, Attr = "Prestige_ResolveMult", Value = 0.20, Desc = "+20% Total Resolve", Req = {"Core_Dodge"} },
+	["Surv_2"] = { Name = "Thick Skinned", Cost = 3, X = 0, Y = 3, Attr = "Prestige_DefenseMult", Value = 0.25, Desc = "+25% Total Defense", Req = {"Surv_1"} },
+	["Surv_3"] = { Name = "Tatakae", Cost = 4, X = 0, Y = 4, Attr = "Prestige_Survivals", Value = 1, Desc = "+1 Guaranteed Death Defiance", Req = {"Surv_2"} },
+	["Surv_Ultimate"] = { Name = "Unkillable", Cost = 10, X = 0, Y = 5, Attr = "Prestige_Lifesteal", Value = 0.05, Desc = "Heal for 5% of all damage dealt", Req = {"Surv_3"} }
+}
+
 return SkillData
