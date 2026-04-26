@@ -256,7 +256,7 @@ function ExpeditionsTab.Initialize(parentFrame)
 		end)
 
 		actionBtn.MouseButton1Click:Connect(onClick)
-		return lblDesc
+		return cardBtn
 	end
 
 	local GridContainer = Instance.new("ScrollingFrame", MissionsPanel)
@@ -270,13 +270,40 @@ function ExpeditionsTab.Initialize(parentFrame)
 	listLayout.SortOrder = Enum.SortOrder.LayoutOrder; listLayout.Padding = UDim.new(0, 12); listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() GridContainer.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 20) end)
 
+	local function RefreshMainGrid()
+		for _, c in ipairs(GridContainer:GetChildren()) do
+			if c.Name == "RumblingCard_Active" or c.Name == "RumblingCard_Trigger" then c:Destroy() end
+		end
+
+		local isRumblingActive = ReplicatedStorage:GetAttribute("RumblingActive")
+		local bones = tonumber(player:GetAttribute("FoundersBoneCount")) or 0
+
+		if isRumblingActive then
+			local rumblingCard = CreateModeCard(GridContainer, "THE RUMBLING (ACTIVE)", "The world is being trampled. Deploy to the frontline to stop the Wall Titans!", CONFIG.Decals.WorldBoss, -1, function() 
+				InitiateDeployment("CombatAction", "EngageWorldBoss", {BossId = "Rumbling Horde"})
+			end, Color3.fromRGB(255, 0, 0))
+			rumblingCard.Name = "RumblingCard_Active"
+		elseif bones > 0 then
+			local triggerCard = CreateModeCard(GridContainer, "INITIATE RUMBLING", "Consume your Founder's Bone to summon a global Wall Titan invasion.", CONFIG.Decals.WorldBoss, 0, function() 
+				Network:WaitForChild("TriggerRumbling"):FireServer()
+				if NotificationManager and type(NotificationManager.Show) == "function" then NotificationManager.Show("Initiating the Rumbling...", "Success") end
+			end, Color3.fromRGB(255, 85, 255))
+			triggerCard.Name = "RumblingCard_Trigger"
+		end
+	end
+
+	ReplicatedStorage:GetAttributeChangedSignal("RumblingActive"):Connect(RefreshMainGrid)
+	player.AttributeChanged:Connect(function(attr) if attr == "FoundersBoneCount" then RefreshMainGrid() end end)
+	RefreshMainGrid()
+
 	local cPart = player:GetAttribute("CurrentPart") or 1
 	local cMiss = player:GetAttribute("CurrentMission") or 1
 	local campaignDescLbl = CreateModeCard(GridContainer, "STORY CAMPAIGN", string.format("Part %d - Mission %d\nProgress through the main storyline.", cPart, cMiss), CONFIG.Decals.Campaign, 1, function() InitiateDeployment("CombatAction", "EngageStory") end, CONFIG.Colors.Story)
 
 	player.AttributeChanged:Connect(function(attr)
 		if attr == "CurrentPart" or attr == "CurrentMission" then
-			campaignDescLbl.Text = string.format("Part %d - Mission %d\nProgress through the main storyline.", player:GetAttribute("CurrentPart") or 1, player:GetAttribute("CurrentMission") or 1)
+			local desc = campaignDescLbl:FindFirstChildOfClass("TextLabel")
+			if desc then desc.Text = string.format("Part %d - Mission %d\nProgress through the main storyline.", player:GetAttribute("CurrentPart") or 1, player:GetAttribute("CurrentMission") or 1) end
 		end
 	end)
 
@@ -288,7 +315,7 @@ function ExpeditionsTab.Initialize(parentFrame)
 			if NotificationManager and type(NotificationManager.Show) == "function" then NotificationManager.Show("The Paths are currently closed. Returns Sat, Sun & Mon.", "Error") end
 		end
 	end, CONFIG.Colors.Event)
-	if not isPathsOpen then pathsCardLbl.TextColor3 = Color3.fromRGB(255, 100, 100) end
+	if not isPathsOpen then pathsCardLbl:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(255, 100, 100) end
 
 	CreateModeCard(GridContainer, "ENDLESS FRONTIER", "Fight infinite waves to continually harvest Dews, XP, and materials.", CONFIG.Decals.Endless, 3, function() InitiateDeployment("CombatAction", "EngageEndless") end, CONFIG.Colors.Event)
 
@@ -334,7 +361,9 @@ function ExpeditionsTab.Initialize(parentFrame)
 	EngageBtn.Position = UDim2.new(0.5, 0, 0, 95); EngageBtn.AnchorPoint = Vector2.new(0.5, 0)
 
 	EngageBtn.MouseButton1Click:Connect(function() 
-		if EngageBtn.Text == "DEPLOY TO FRONTLINE" then InitiateDeployment("CombatAction", "EngageDoomsday") end
+		if EngageBtn.Text == "DEPLOY TO FRONTLINE" then 
+			InitiateDeployment("CombatAction", "EngageDoomsday") 
+		end
 	end)
 
 	local DDHeaderRow = Instance.new("Frame", DoomsdayPage)
@@ -391,9 +420,11 @@ function ExpeditionsTab.Initialize(parentFrame)
 	local WorldBossPage = CreateSubPage("WorldBoss")
 	local wIndex = 1
 	for id, boss in pairs(EnemyData.WorldBosses or {}) do
-		local icon = EnemyData.BossIcons and EnemyData.BossIcons[id] or CONFIG.Decals.WorldBoss
-		CreateModeCard(WorldBossPage, string.upper(boss.Name), boss.Desc or "A massive threat approaches.", icon, wIndex, function() InitiateDeployment("CombatAction", "EngageWorldBoss", {BossId = id}) end, CONFIG.Colors.Multiplayer)
-		wIndex = wIndex + 1
+		if not boss.IsRumblingBoss then
+			local icon = EnemyData.BossIcons and EnemyData.BossIcons[id] or CONFIG.Decals.WorldBoss
+			CreateModeCard(WorldBossPage, string.upper(boss.Name), boss.Desc or "A massive threat approaches.", icon, wIndex, function() InitiateDeployment("CombatAction", "EngageWorldBoss", {BossId = id}) end, CONFIG.Colors.Multiplayer)
+			wIndex = wIndex + 1
+		end
 	end
 
 	local RaidPage = CreateSubPage("Raids")
