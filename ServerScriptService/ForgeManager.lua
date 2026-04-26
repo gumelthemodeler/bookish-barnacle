@@ -11,6 +11,9 @@ local NotificationEvent = Network:WaitForChild("NotificationEvent")
 local FusionComplete = Network:FindFirstChild("FusionComplete") or Instance.new("RemoteEvent", Network)
 FusionComplete.Name = "FusionComplete"
 
+local MutateTitan = Network:FindFirstChild("MutateTitan") or Instance.new("RemoteFunction", Network)
+MutateTitan.Name = "MutateTitan"
+
 local FusionRecipes = { 
 	["Female Titan"] = { ["Founding Titan"] = "Founding Female Titan" }, 
 	["Founding Titan"] = { ["Female Titan"] = "Founding Female Titan", ["Attack Titan"] = "Founding Attack Titan" }, 
@@ -21,6 +24,32 @@ local FusionRecipes = {
 	["Jaw Titan"] = { ["Colossal Titan"] = "Colossal Jaw Titan" } 
 }
 
+local function GetItemCount(plr, matName)
+	local safe1 = matName:gsub("[^%w]", "") .. "Count"
+	local safe2 = matName:gsub("[^%w]", "")
+	local safe3 = matName .. "Count"
+	local safe4 = matName
+	return tonumber(plr:GetAttribute(safe1)) or 
+		tonumber(plr:GetAttribute(safe2)) or 
+		tonumber(plr:GetAttribute(safe3)) or 
+		tonumber(plr:GetAttribute(safe4)) or 0
+end
+
+local function DeductItem(plr, matName, amt)
+	local safe1 = matName:gsub("[^%w]", "") .. "Count"
+	local safe2 = matName:gsub("[^%w]", "")
+	local safe3 = matName .. "Count"
+	local safe4 = matName
+
+	local targetAttr = safe1
+	if plr:GetAttribute(safe2) then targetAttr = safe2
+	elseif plr:GetAttribute(safe3) then targetAttr = safe3
+	elseif plr:GetAttribute(safe4) then targetAttr = safe4 end
+
+	local current = tonumber(plr:GetAttribute(targetAttr)) or 0
+	plr:SetAttribute(targetAttr, math.max(0, current - amt))
+end
+
 Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeName, quality)
 	local recipe = ItemData.ForgeRecipes[recipeName]
 	if not recipe then return end
@@ -30,11 +59,10 @@ Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeN
 
 	local canForge = true
 	for reqItemName, reqAmt in pairs(recipe.ReqItems) do
-		local safeReq = reqItemName:gsub("[^%w]", "") .. "Count"
-		if (player:GetAttribute(safeReq) or 0) < reqAmt then canForge = false; break end
+		local current = GetItemCount(player, reqItemName)
+		if current < reqAmt then canForge = false; break end
 	end
 
-	-- [[ THE FIX: Updated to burn Itemized Abyssal Variants instead of Vaulted Slots ]]
 	local clansToConsume = {}
 	if recipe.SpecialType == "AbyssalClanRequirement" then
 		local abyssalClans = {
@@ -60,13 +88,13 @@ Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeN
 
 	if not canForge then NotificationEvent:FireClient(player, "Missing required materials or Itemized Abyssal lineages!", "Error"); return end
 
+	-- DEDUCT MATERIALS
 	player.leaderstats.Dews.Value -= recipe.DewCost
 
 	for reqItemName, reqAmt in pairs(recipe.ReqItems) do
-		local safeReq = reqItemName:gsub("[^%w]", "") .. "Count"
-		local newCount = (player:GetAttribute(safeReq) or 0) - reqAmt
-		player:SetAttribute(safeReq, newCount)
+		DeductItem(player, reqItemName, reqAmt)
 
+		local newCount = GetItemCount(player, reqItemName)
 		if newCount <= 0 then
 			if player:GetAttribute("EquippedWeapon") == reqItemName then
 				player:SetAttribute("EquippedWeapon", "None")
@@ -83,8 +111,9 @@ Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeN
 		end
 	end
 
-	local resSafeName = recipe.Result:gsub("[^%w]", "") .. "Count"
-	player:SetAttribute(resSafeName, (player:GetAttribute(resSafeName) or 0) + 1)
+	-- GIVE RESULT
+	local resSafeName = recipe.Result:gsub("[^%w]", "")
+	player:SetAttribute(resSafeName .. "Count", (player:GetAttribute(resSafeName .. "Count") or 0) + 1)
 
 	local resData = ItemData.Equipment[recipe.Result] or ItemData.Consumables[recipe.Result]
 
@@ -99,47 +128,98 @@ Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeN
 			local v2 = math.random(5, 15) * mult
 
 			local statStr = "+" .. v1 .. (stat1 == "MAX HP" and "" or "%") .. " " .. stat1 .. " | +" .. v2 .. (stat2 == "MAX HP" and "" or "%") .. " " .. stat2
-			player:SetAttribute(recipe.Result:gsub("[^%w]", "") .. "_Awakened", statStr)
+			player:SetAttribute(resSafeName .. "_Awakened", statStr)
+			player:SetAttribute(resSafeName .. "_AwakenLevel", 1)
 		end
 	end
 
+	-- Global announcements (stripped of raw HTML tags to prevent string bugs)
 	if quality == "Flawless" then
-		NotificationEvent:FireAllClients("<font color='#FFD700'><b>" .. player.Name .. " forged a FLAWLESS " .. recipe.Result .. "!</b></font>", "Loot")
+		NotificationEvent:FireAllClients(player.Name .. " forged a FLAWLESS " .. recipe.Result .. "!", "Loot")
 	elseif resData and resData.Rarity == "Transcendent" then 
-		NotificationEvent:FireAllClients("<font color='#FF55FF'><b>" .. player.Name .. " has forged the " .. recipe.Result .. "!</b></font>", "Success")
-	else 
-		NotificationEvent:FireClient(player, "Forged " .. recipe.Result .. " (" .. (quality or "Standard") .. ")!", "Success") 
+		NotificationEvent:FireAllClients(player.Name .. " has forged the " .. recipe.Result .. "!", "Success")
 	end
 end)
 
-Network:WaitForChild("AwakenWeapon").OnServerEvent:Connect(function(player, weaponName)
-	local extracts = player:GetAttribute("TitanHardeningExtractCount") or 0
-	if extracts >= 1 then
-		local safeWpn = weaponName:gsub("[^%w]", "")
-		if (player:GetAttribute(safeWpn .. "Count") or 0) > 0 then
-			player:SetAttribute("TitanHardeningExtractCount", extracts - 1)
-			local possibleStats = { "DMG", "DODGE", "CRIT", "MAX HP", "SPEED", "GAS CAP", "IGNORE ARMOR" }
-			local stat1, stat2 = possibleStats[math.random(1, #possibleStats)], possibleStats[math.random(1, #possibleStats)]
-			local statStr = "+" .. math.random(5, 25) .. (stat1 == "MAX HP" and "" or "%") .. " " .. stat1 .. " | +" .. math.random(5, 25) .. (stat2 == "MAX HP" and "" or "%") .. " " .. stat2
-			player:SetAttribute(safeWpn .. "_Awakened", statStr)
-			NotificationEvent:FireClient(player, weaponName .. " Awakened!", "Success")
-		end
+-- [[ GEAR REFINERY BACKEND (Infinite Multi-Upgrades) ]]
+local RefineGear = Network:FindFirstChild("RefineGear") or Instance.new("RemoteEvent", Network)
+RefineGear.Name = "RefineGear"
+RefineGear.OnServerEvent:Connect(function(player, weaponName)
+	local iData = ItemData.Equipment[weaponName]
+	if not iData or string.find(weaponName, "Abyssal") or iData.Rarity == "Transcendent" then return end
+
+	local safeWpn = weaponName:gsub("[^%w]", "")
+	if GetItemCount(player, weaponName) <= 0 then return end
+
+	local currentLevel = player:GetAttribute(safeWpn .. "_AwakenLevel") or 0
+
+	local dewsNeeded = 50000 + (currentLevel * 25000)
+	local extractsNeeded = 5 + (currentLevel * 2)
+
+	local dews = player.leaderstats.Dews.Value
+	local extracts = GetItemCount(player, "Titan Hardening Extract")
+
+	if dews >= dewsNeeded and extracts >= extractsNeeded then
+		player.leaderstats.Dews.Value -= dewsNeeded
+		DeductItem(player, "Titan Hardening Extract", extractsNeeded)
+
+		local newLevel = currentLevel + 1
+		player:SetAttribute(safeWpn .. "_AwakenLevel", newLevel)
+
+		local possibleStats = { "DMG", "DODGE", "CRIT", "MAX HP", "SPEED", "GAS CAP", "IGNORE ARMOR" }
+		local stat1, stat2 = possibleStats[math.random(1, #possibleStats)], possibleStats[math.random(1, #possibleStats)]
+
+		local v1 = math.random(5, 25) + (newLevel * 5)
+		local v2 = math.random(5, 25) + (newLevel * 5)
+
+		local statStr = "+" .. v1 .. (stat1 == "MAX HP" and "" or "%") .. " " .. stat1 .. " | +" .. v2 .. (stat2 == "MAX HP" and "" or "%") .. " " .. stat2
+		player:SetAttribute(safeWpn .. "_Awakened", statStr)
+
+		NotificationEvent:FireClient(player, weaponName .. " awakened to Level " .. newLevel .. "!", "Success")
+	else
+		NotificationEvent:FireClient(player, "Not enough Dews or Titan Hardening Extracts!", "Error")
 	end
 end)
+
+-- [[ TITAN VARIANT BACKEND ]]
+MutateTitan.OnServerInvoke = function(player)
+	local dews = player.leaderstats.Dews.Value
+	local abyssalBlood = GetItemCount(player, "Abyssal Blood")
+
+	if dews >= 100000 and abyssalBlood >= 1 then
+		local currentTitan = player:GetAttribute("Titan") or "None"
+		if currentTitan == "None" then
+			return false, "You must inherit a Titan first to awaken a variant!"
+		end
+
+		player.leaderstats.Dews.Value -= 100000
+		DeductItem(player, "Abyssal Blood", 1)
+
+		local variants = {"Titan Hardening", "Crimson Steam", "Abyssal Eyes", "Beast Fur", "Crystalline Nape"}
+		local chosen = variants[math.random(1, #variants)]
+
+		player:SetAttribute("TitanVariant", chosen)
+		return true, chosen
+	else
+		return false, "Not enough Dews or Abyssal Blood to awaken a variant!"
+	end
+end
 
 Network:WaitForChild("AwakenAction").OnServerEvent:Connect(function(player, actionType)
 	if actionType == "Clan" then
-		local count = player:GetAttribute("AncestralAwakeningSerumCount") or 0
+		local count = GetItemCount(player, "Ancestral Awakening Serum")
 		local currentClan = player:GetAttribute("Clan") or "None"
 		local validClans = {["Ackerman"] = true, ["Yeager"] = true, ["Tybur"] = true, ["Braun"] = true, ["Galliard"] = true, ["Reiss"] = true}
 		if count >= 1 and validClans[currentClan] then
-			player:SetAttribute("AncestralAwakeningSerumCount", count - 1); player:SetAttribute("Clan", "Awakened " .. currentClan)
+			DeductItem(player, "Ancestral Awakening Serum", 1)
+			player:SetAttribute("Clan", "Awakened " .. currentClan)
 			NotificationEvent:FireClient(player, currentClan .. " Bloodline Awakened!", "Success")
 		elseif count >= 1 then NotificationEvent:FireClient(player, "Your bloodline is too weak to awaken.", "Error") end
 	elseif actionType == "Titan" then
-		local count = player:GetAttribute("YmirsClayFragmentCount") or 0
+		local count = GetItemCount(player, "Ymir's Clay Fragment")
 		if count >= 1 and player:GetAttribute("Titan") == "Attack Titan" then
-			player:SetAttribute("YmirsClayFragmentCount", count - 1); player:SetAttribute("Titan", "Founding Attack Titan")
+			DeductItem(player, "Ymir's Clay Fragment", 1)
+			player:SetAttribute("Titan", "Founding Attack Titan")
 			NotificationEvent:FireClient(player, "You have reached the Coordinate!", "Success")
 		end
 	end
@@ -153,7 +233,6 @@ FuseTitan.OnServerEvent:Connect(function(player, baseSlot, sacSlot)
 	if not validSlots[tostring(baseSlot)] or not validSlots[tostring(sacSlot)] then return end
 
 	local dews = player.leaderstats.Dews.Value
-	-- [ECONOMY PATCH] 300,000 -> 50,000
 	if dews >= 50000 then
 		local baseAttr = (baseSlot == "Equipped") and "Titan" or ("Titan_Slot" .. baseSlot)
 		local sacAttr = (sacSlot == "Equipped") and "Titan" or ("Titan_Slot" .. sacSlot)
@@ -181,7 +260,6 @@ ItemizeTitan.Name = "ItemizeTitan"
 ItemizeTitan.OnServerEvent:Connect(function(player, slotId)
 	if not slotId then return end
 	local dews = player.leaderstats.Dews.Value
-	-- [ECONOMY PATCH] 100,000 -> 25,000
 	if dews >= 25000 then
 		local attrName = (slotId == "Equipped") and "Titan" or ("Titan_Slot" .. slotId)
 		local titanName = player:GetAttribute(attrName) or "None"
@@ -202,7 +280,6 @@ ItemizeClan.Name = "ItemizeClan"
 ItemizeClan.OnServerEvent:Connect(function(player, slotId)
 	if not slotId then return end
 	local dews = player.leaderstats.Dews.Value
-	-- [ECONOMY PATCH] 100,000 -> 25,000
 	if dews >= 25000 then
 		local attrName = (slotId == "Equipped") and "Clan" or ("Clan_Slot" .. slotId)
 		local clanName = player:GetAttribute(attrName) or "None"
