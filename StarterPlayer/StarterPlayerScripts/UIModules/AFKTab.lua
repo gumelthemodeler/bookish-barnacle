@@ -69,19 +69,15 @@ local function UpdateLayoutForScreen()
 
 	if isMobile then
 		LayoutRefs.MainLayout.FillDirection = Enum.FillDirection.Vertical
-
 		LayoutRefs.LeftPanel.Size = UDim2.new(0.95, 0, 0, 500)
 		LayoutRefs.MapContainer.Size = UDim2.new(1, 0, 0, 300)
 		LayoutRefs.LogContainer.Size = UDim2.new(1, 0, 0, 185)
-
 		LayoutRefs.RosterContainer.Size = UDim2.new(0.95, 0, 0, 600)
 	else
 		LayoutRefs.MainLayout.FillDirection = Enum.FillDirection.Horizontal
-
 		LayoutRefs.LeftPanel.Size = UDim2.new(0.5, 0, 0, 500)
 		LayoutRefs.MapContainer.Size = UDim2.new(1, 0, 0, 300)
 		LayoutRefs.LogContainer.Size = UDim2.new(1, 0, 0, 185)
-
 		LayoutRefs.RosterContainer.Size = UDim2.new(0.45, 0, 0, 500)
 	end
 end
@@ -139,10 +135,8 @@ function AFKTab.Initialize(parentFrame, InitiateDeploymentCallback)
 	MapSquare.Position = UDim2.new(0.5, 0, 0.5, 0)
 	MapSquare.AnchorPoint = Vector2.new(0.5, 0.5)
 	MapSquare.BackgroundTransparency = 1
-
 	local mapAsp = Instance.new("UIAspectRatioConstraint", MapSquare)
-	mapAsp.AspectRatio = 1.0
-	mapAsp.AspectType = Enum.AspectType.FitWithinMaxSize 
+	mapAsp.AspectRatio = 1.0; mapAsp.AspectType = Enum.AspectType.FitWithinMaxSize 
 
 	local crossV = Instance.new("Frame", MapSquare); crossV.Size = UDim2.new(0, 2, 0.85, 0); crossV.Position = UDim2.new(0.5, 0, 0.5, 0); crossV.AnchorPoint = Vector2.new(0.5, 0.5); crossV.BackgroundColor3 = Color3.fromRGB(60, 80, 60); crossV.BorderSizePixel = 0
 	local crossH = Instance.new("Frame", MapSquare); crossH.Size = UDim2.new(0.85, 0, 0, 2); crossH.Position = UDim2.new(0.5, 0, 0.5, 0); crossH.AnchorPoint = Vector2.new(0.5, 0.5); crossH.BackgroundColor3 = Color3.fromRGB(60, 80, 60); crossH.BorderSizePixel = 0
@@ -179,20 +173,59 @@ function AFKTab.Initialize(parentFrame, InitiateDeploymentCallback)
 	end
 
 	Network:WaitForChild("NotificationEvent").OnClientEvent:Connect(function(msg, typeStr)
-		if string.find(msg, "returned!") then AppendLog("<font color='#55FF55'>[" .. os.date("%X") .. "]</font> " .. string.gsub(msg, "\n", " | ")) end
+		if string.find(msg, "returned!") then AppendLog("<font color=\"#55FF55\">[" .. os.date("%X") .. "]</font> " .. string.gsub(msg, "\n", " | ")) end
 	end)
 
-	local RosterHeader = Instance.new("Frame", RosterContainer); RosterHeader.Size = UDim2.new(1, 0, 0, 45); RosterHeader.BackgroundColor3 = Color3.fromRGB(18, 18, 22); RosterHeader.BorderSizePixel = 0
+	local NavHeader = Instance.new("Frame", RosterContainer)
+	NavHeader.Size = UDim2.new(1, 0, 0, 40)
+	NavHeader.BackgroundTransparency = 1
+	local navLayout = Instance.new("UIListLayout", NavHeader)
+	navLayout.FillDirection = Enum.FillDirection.Horizontal
+	navLayout.Padding = UDim.new(0, 5)
+
+	local RosterBtn, rStrk = CreateSharpButton(NavHeader, "SCOUTS", UDim2.new(0.48, 0, 1, 0), Enum.Font.GothamBlack, 14)
+	local StablesBtn, sStrk = CreateSharpButton(NavHeader, "STABLES", UDim2.new(0.48, 0, 1, 0), Enum.Font.GothamBlack, 14)
+
+	local ContentFrame = Instance.new("Frame", RosterContainer)
+	ContentFrame.Size = UDim2.new(1, 0, 1, -45)
+	ContentFrame.Position = UDim2.new(0, 0, 0, 45)
+	ContentFrame.BackgroundTransparency = 1
+
+	local RosterView = Instance.new("Frame", ContentFrame)
+	RosterView.Size = UDim2.new(1, 0, 1, 0)
+	RosterView.BackgroundTransparency = 1
+
+	local StablesView = Instance.new("Frame", ContentFrame)
+	StablesView.Size = UDim2.new(1, 0, 1, 0)
+	StablesView.BackgroundTransparency = 1
+	StablesView.Visible = false
+
+	RosterBtn.TextColor3 = UIHelpers.Colors.Gold; rStrk.Color = UIHelpers.Colors.Gold
+	StablesBtn.TextColor3 = UIHelpers.Colors.TextMuted; sStrk.Color = UIHelpers.Colors.BorderMuted
+
+	RosterBtn.MouseButton1Click:Connect(function()
+		RosterView.Visible = true; StablesView.Visible = false
+		RosterBtn.TextColor3 = UIHelpers.Colors.Gold; rStrk.Color = UIHelpers.Colors.Gold
+		StablesBtn.TextColor3 = UIHelpers.Colors.TextMuted; sStrk.Color = UIHelpers.Colors.BorderMuted
+	end)
+	StablesBtn.MouseButton1Click:Connect(function()
+		RosterView.Visible = false; StablesView.Visible = true
+		StablesBtn.TextColor3 = UIHelpers.Colors.Gold; sStrk.Color = UIHelpers.Colors.Gold
+		RosterBtn.TextColor3 = UIHelpers.Colors.TextMuted; rStrk.Color = UIHelpers.Colors.BorderMuted
+	end)
+
+	-- [[ ROSTER VIEW ]]
+	local RosterHeader = Instance.new("Frame", RosterView); RosterHeader.Size = UDim2.new(1, 0, 0, 45); RosterHeader.BackgroundColor3 = Color3.fromRGB(18, 18, 22); RosterHeader.BorderSizePixel = 0
 	Instance.new("UIStroke", RosterHeader).Color = Color3.fromRGB(70, 70, 80)
 
 	local lblCap = UIHelpers.CreateLabel(RosterHeader, "DEPLOYED: 0 / 2", UDim2.new(0.5, 0, 1, 0), Enum.Font.GothamBlack, UIHelpers.Colors.TextWhite, 12); lblCap.Position = UDim2.new(0, 10, 0, 0); lblCap.TextXAlignment = Enum.TextXAlignment.Left
 	local CapBtn, _ = CreateSharpButton(RosterHeader, "EXPAND SLOT", UDim2.new(0, 110, 0, 28), Enum.Font.GothamBlack, 10); CapBtn.Position = UDim2.new(1, -10, 0.5, 0); CapBtn.AnchorPoint = Vector2.new(1, 0.5); CapBtn.TextColor3 = UIHelpers.Colors.Gold
 	CapBtn.MouseButton1Click:Connect(function() Network:WaitForChild("DispatchAction"):FireServer("UpgradeCapacity") end)
 
-	local RecallAllBtn, _ = CreateSharpButton(RosterContainer, "RECALL ALL DEPLOYED", UDim2.new(1, 0, 0, 35), Enum.Font.GothamBlack, 14); RecallAllBtn.Position = UDim2.new(0, 0, 1, 0); RecallAllBtn.AnchorPoint = Vector2.new(0, 1); RecallAllBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+	local RecallAllBtn, _ = CreateSharpButton(RosterView, "RECALL ALL DEPLOYED", UDim2.new(1, 0, 0, 35), Enum.Font.GothamBlack, 14); RecallAllBtn.Position = UDim2.new(0, 0, 1, 0); RecallAllBtn.AnchorPoint = Vector2.new(0, 1); RecallAllBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
 	RecallAllBtn.MouseButton1Click:Connect(function() local dData = DecodeJSON("DispatchData"); for aName, _ in pairs(dData) do Network:WaitForChild("DispatchAction"):FireServer("Recall", aName) end end)
 
-	local RosterScroll = Instance.new("ScrollingFrame", RosterContainer)
+	local RosterScroll = Instance.new("ScrollingFrame", RosterView)
 	RosterScroll.Size = UDim2.new(1, 0, 1, -95) 
 	RosterScroll.Position = UDim2.new(0, 0, 0, 50)
 	RosterScroll.BackgroundTransparency = 1
@@ -204,18 +237,79 @@ function AFKTab.Initialize(parentFrame, InitiateDeploymentCallback)
 	rsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	rsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() RosterScroll.CanvasSize = UDim2.new(0, 0, 0, rsLayout.AbsoluteContentSize.Y + 10) end)
 
+	-- [[ STABLES VIEW ]]
+	local StablesTop = Instance.new("Frame", StablesView)
+	StablesTop.Size = UDim2.new(1, 0, 0, 80)
+	StablesTop.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+	StablesTop.BorderSizePixel = 0
+	Instance.new("UIStroke", StablesTop).Color = Color3.fromRGB(70, 70, 80)
+
+	local sTitle = UIHelpers.CreateLabel(StablesTop, "EXPEDITION MOUNTS (0/5)", UDim2.new(1, 0, 0, 25), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 16)
+	sTitle.Position = UDim2.new(0, 10, 0, 5); sTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+	local sDesc = UIHelpers.CreateLabel(StablesTop, "Horses passively boost the loot efficiency of deployed scouts.", UDim2.new(1, -20, 0, 20), Enum.Font.GothamMedium, UIHelpers.Colors.TextMuted, 12)
+	sDesc.Position = UDim2.new(0, 10, 0, 25); sDesc.TextXAlignment = Enum.TextXAlignment.Left
+
+	local RollHorseBtn, _ = CreateSharpButton(StablesTop, "ROLL STEED (25K DEWS)", UDim2.new(1, -20, 0, 30), Enum.Font.GothamBlack, 12)
+	RollHorseBtn.Position = UDim2.new(0, 10, 0, 45); RollHorseBtn.TextColor3 = UIHelpers.Colors.Gold
+	RollHorseBtn.MouseButton1Click:Connect(function() Network:WaitForChild("DispatchAction"):FireServer("RollHorse") end)
+
+	local StablesScroll = Instance.new("ScrollingFrame", StablesView)
+	StablesScroll.Size = UDim2.new(1, 0, 1, -90)
+	StablesScroll.Position = UDim2.new(0, 0, 0, 90)
+	StablesScroll.BackgroundTransparency = 1
+	StablesScroll.ScrollBarThickness = 4
+	StablesScroll.BorderSizePixel = 0
+
+	local stLayout = Instance.new("UIListLayout", StablesScroll)
+	stLayout.Padding = UDim.new(0, 8)
+	stLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	stLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() StablesScroll.CanvasSize = UDim2.new(0, 0, 0, stLayout.AbsoluteContentSize.Y + 10) end)
+
 	local ActiveTimers = {}; local DeployedAlliesCache = {}; local AllyToNode = {}
 
 	local function UpdateAFKUI()
 		for _, c in ipairs(RosterScroll:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
+		for _, c in ipairs(StablesScroll:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
 		ActiveTimers = {}
 
 		local dData = DecodeJSON("DispatchData")
 		local aLevels = DecodeJSON("AllyLevels")
+		local hData = DecodeJSON("HorseData")
 		local unlocked = player:GetAttribute("UnlockedAllies") or ""
 		local maxCap = player:GetAttribute("MaxDeployments") or 2
 		local deployedCount = 0; for _, _ in pairs(dData) do deployedCount += 1 end
 		lblCap.Text = string.format("DEPLOYED: %d / %d", deployedCount, maxCap)
+
+		-- Update Horses (Now with proper layout for Sell/Upgrade)
+		sTitle.Text = "EXPEDITION MOUNTS (" .. #hData .. "/5)"
+		for _, h in ipairs(hData) do
+			local hCard = Instance.new("Frame", StablesScroll); hCard.Size = UDim2.new(1, -10, 0, 60); hCard.BackgroundColor3 = Color3.fromRGB(22, 22, 26); hCard.BorderSizePixel = 0
+			local hStrk = Instance.new("UIStroke", hCard); hStrk.Color = UIHelpers.Colors.BorderMuted
+
+			local rColor = UIHelpers.Colors.TextWhite
+			if h.Rarity == "Mythical" then rColor = Color3.fromRGB(255, 85, 255)
+			elseif h.Rarity == "Legendary" then rColor = UIHelpers.Colors.Gold
+			elseif h.Rarity == "Epic" then rColor = Color3.fromRGB(170, 85, 255)
+			elseif h.Rarity == "Rare" then rColor = Color3.fromRGB(85, 85, 255) end
+
+			local hName = UIHelpers.CreateLabel(hCard, "[" .. string.upper(h.Rarity) .. "] " .. string.upper(h.Name), UDim2.new(0.5, 0, 0, 20), Enum.Font.GothamBlack, rColor, 14); hName.Position = UDim2.new(0, 10, 0, 5); hName.TextXAlignment = Enum.TextXAlignment.Left
+			local hStats = UIHelpers.CreateLabel(hCard, "Level " .. h.Level .. " | +" .. math.floor(h.Efficiency * 100) .. "% Efficiency", UDim2.new(0.5, 0, 0, 20), Enum.Font.GothamBold, UIHelpers.Colors.TextMuted, 11); hStats.Position = UDim2.new(0, 10, 0, 25); hStats.TextXAlignment = Enum.TextXAlignment.Left
+
+			local hSellBtn, ssStrk = CreateSharpButton(hCard, "SELL", UDim2.new(0, 50, 0, 30), Enum.Font.GothamBlack, 11)
+			hSellBtn.Position = UDim2.new(1, -10, 0.5, 0); hSellBtn.AnchorPoint = Vector2.new(1, 0.5); hSellBtn.TextColor3 = Color3.fromRGB(255, 100, 100); ssStrk.Color = Color3.fromRGB(255, 100, 100)
+			hSellBtn.MouseButton1Click:Connect(function() Network:WaitForChild("DispatchAction"):FireServer("SellHorse", h.Id) end)
+
+			if h.Level < 10 then
+				local upgCost = h.Level * 10000
+				local hUpgBtn, _ = CreateSharpButton(hCard, "UPG (" .. FormatNumber(upgCost) .. ")", UDim2.new(0, 90, 0, 30), Enum.Font.GothamBlack, 10)
+				hUpgBtn.Position = UDim2.new(1, -70, 0.5, 0); hUpgBtn.AnchorPoint = Vector2.new(1, 0.5); hUpgBtn.TextColor3 = UIHelpers.Colors.Gold
+				hUpgBtn.MouseButton1Click:Connect(function() Network:WaitForChild("DispatchAction"):FireServer("UpgradeHorse", h.Id) end)
+			else
+				local maxLbl = UIHelpers.CreateLabel(hCard, "MAX LVL", UDim2.new(0, 90, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 11)
+				maxLbl.Position = UDim2.new(1, -70, 0.5, 0); maxLbl.AnchorPoint = Vector2.new(1, 0.5); maxLbl.TextXAlignment = Enum.TextXAlignment.Right
+			end
+		end
 
 		for aName, idx in pairs(AllyToNode) do
 			if not dData[aName] then
@@ -266,7 +360,7 @@ function AFKTab.Initialize(parentFrame, InitiateDeploymentCallback)
 			if not isUnlocked then
 				cName.TextColor3 = UIHelpers.Colors.TextMuted
 				local lockLbl = UIHelpers.CreateLabel(card, "LOCKED - COST: " .. FormatNumber(config.Cost), UDim2.new(0.6, 0, 0, 20), Enum.Font.GothamMedium, UIHelpers.Colors.TextMuted, 11); lockLbl.Position = UDim2.new(0, 65, 0, 30); lockLbl.TextXAlignment = Enum.TextXAlignment.Left
-				local unlBtn = CreateSharpButton(card, "RECRUIT", UDim2.new(0, 75, 0, 30), Enum.Font.GothamBlack, 11); unlBtn.Position = UDim2.new(1, -10, 0.5, 0); unlBtn.AnchorPoint = Vector2.new(1, 0.5)
+				local unlBtn, _ = CreateSharpButton(card, "RECRUIT", UDim2.new(0, 75, 0, 30), Enum.Font.GothamBlack, 11); unlBtn.Position = UDim2.new(1, -10, 0.5, 0); unlBtn.AnchorPoint = Vector2.new(1, 0.5)
 				unlBtn.MouseButton1Click:Connect(function() Network:WaitForChild("DispatchAction"):FireServer("UnlockAlly", config.Name) end)
 			else
 				local lvlLbl = UIHelpers.CreateLabel(card, "LEVEL " .. lvl, UDim2.new(0.5, 0, 0, 20), Enum.Font.GothamBold, UIHelpers.Colors.Gold, 12); lvlLbl.Position = UDim2.new(0, 65, 0, 30); lvlLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -274,15 +368,15 @@ function AFKTab.Initialize(parentFrame, InitiateDeploymentCallback)
 					card.BackgroundColor3 = Color3.fromRGB(20, 35, 20); cStrk.Color = Color3.fromRGB(50, 150, 50)
 					lvlLbl.Text = "GATHERING... 00:00"; lvlLbl.TextColor3 = Color3.fromRGB(100, 255, 100)
 					ActiveTimers[config.Name] = {Label = lvlLbl, StartTime = dData[config.Name].StartTime}
-					local recBtn = CreateSharpButton(card, "RECALL", UDim2.new(0, 75, 0, 30), Enum.Font.GothamBlack, 11); recBtn.Position = UDim2.new(1, -10, 0.5, 0); recBtn.AnchorPoint = Vector2.new(1, 0.5); recBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+					local recBtn, _ = CreateSharpButton(card, "RECALL", UDim2.new(0, 75, 0, 30), Enum.Font.GothamBlack, 11); recBtn.Position = UDim2.new(1, -10, 0.5, 0); recBtn.AnchorPoint = Vector2.new(1, 0.5); recBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
 					recBtn.MouseButton1Click:Connect(function() Network:WaitForChild("DispatchAction"):FireServer("Recall", config.Name) end)
 				else
-					local depBtn = CreateSharpButton(card, "DEPLOY", UDim2.new(0, 65, 0, 26), Enum.Font.GothamBlack, 11); depBtn.Position = UDim2.new(1, -10, 0.5, 0); depBtn.AnchorPoint = Vector2.new(1, 0.5)
+					local depBtn, _ = CreateSharpButton(card, "DEPLOY", UDim2.new(0, 65, 0, 26), Enum.Font.GothamBlack, 11); depBtn.Position = UDim2.new(1, -10, 0.5, 0); depBtn.AnchorPoint = Vector2.new(1, 0.5)
 					depBtn.MouseButton1Click:Connect(function() Network:WaitForChild("DispatchAction"):FireServer("Deploy", config.Name) end)
 
 					if lvl < 10 then
 						local upgCost = 5000 * lvl
-						local upgBtn = CreateSharpButton(card, "UPG (" .. FormatNumber(upgCost) .. ")", UDim2.new(0, 85, 0, 26), Enum.Font.GothamBold, 10); upgBtn.Position = UDim2.new(1, -85, 0.5, 0); upgBtn.AnchorPoint = Vector2.new(1, 0.5); upgBtn.TextColor3 = UIHelpers.Colors.Gold
+						local upgBtn, _ = CreateSharpButton(card, "UPG (" .. FormatNumber(upgCost) .. ")", UDim2.new(0, 85, 0, 26), Enum.Font.GothamBold, 10); upgBtn.Position = UDim2.new(1, -85, 0.5, 0); upgBtn.AnchorPoint = Vector2.new(1, 0.5); upgBtn.TextColor3 = UIHelpers.Colors.Gold
 						upgBtn.MouseButton1Click:Connect(function() Network:WaitForChild("DispatchAction"):FireServer("UpgradeAlly", config.Name) end)
 					else
 						local maxLbl = UIHelpers.CreateLabel(card, "MAX LEVEL", UDim2.new(0, 85, 0, 26), Enum.Font.GothamBold, UIHelpers.Colors.Gold, 10); maxLbl.Position = UDim2.new(1, -85, 0.5, 0); maxLbl.AnchorPoint = Vector2.new(1, 0.5)
@@ -318,7 +412,7 @@ function AFKTab.Initialize(parentFrame, InitiateDeploymentCallback)
 	end)
 
 	player.AttributeChanged:Connect(function(attr)
-		if attr == "DispatchData" or attr == "UnlockedAllies" or attr == "AllyLevels" or attr == "MaxDeployments" then
+		if attr == "DispatchData" or attr == "UnlockedAllies" or attr == "AllyLevels" or attr == "MaxDeployments" or attr == "HorseData" then
 			if parentFrame.Visible then UpdateAFKUI() end
 		end
 	end)
