@@ -85,7 +85,6 @@ local function EndMatch(matchId, winnerTeam)
 					local elo = p.leaderstats:FindFirstChild("Elo")
 					if elo then elo.Value = elo.Value + (match.Is3v3 and 35 or 25) end
 
-					-- [ECONOMY PATCH] Heavily squashed win-trading Dew exploits
 					p.leaderstats.Dews.Value += (match.Is3v3 and 1000 or 500)
 					p:SetAttribute("XP", (p:GetAttribute("XP") or 0) + (match.Is3v3 and 1000 or 500))
 
@@ -350,6 +349,19 @@ task.spawn(function()
 	end
 end)
 
+-- The missing server hook to let players view live matches!
+GetLiveMatches.OnServerInvoke = function(player)
+	local activeList = {}
+	for mId, mData in pairs(ActiveMatches) do
+		table.insert(activeList, {
+			MatchId = mId,
+			Player1 = mData.Team1[1] and mData.Team1[1].Name or "Unknown",
+			Player2 = mData.Team2[1] and mData.Team2[1].Name or "Unknown"
+		})
+	end
+	return activeList
+end
+
 PvPAction.OnServerEvent:Connect(function(player, actionType, matchId, data1, data2)
 	if actionType == "JoinQueue" then
 		local myParty = nil
@@ -369,9 +381,11 @@ PvPAction.OnServerEvent:Connect(function(player, actionType, matchId, data1, dat
 			end
 			partyElo = math.floor(partyElo / #validPlayers)
 			table.insert(PvPQueue, {IsParty = true, Players = validPlayers, Elo = partyElo, JoinTime = os.time()})
+			Network.NotificationEvent:FireClient(player, "Party entered Ranked Matchmaking...", "System")
 		else
 			local pElo = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Elo") and player.leaderstats.Elo.Value or 1000
 			table.insert(PvPQueue, {IsParty = false, Player = player, Elo = pElo, JoinTime = os.time()})
+			Network.NotificationEvent:FireClient(player, "Entered Ranked Matchmaking...", "System")
 		end
 		return
 	elseif actionType == "LeaveQueue" then
@@ -380,6 +394,7 @@ PvPAction.OnServerEvent:Connect(function(player, actionType, matchId, data1, dat
 				table.remove(PvPQueue, i); break 
 			end 
 		end
+		Network.NotificationEvent:FireClient(player, "Left Matchmaking Queue.", "System")
 		return
 	end
 
