@@ -12,6 +12,8 @@ local CombatCore = require(script.Parent:WaitForChild("CombatCore"))
 local LootManager = require(script.Parent:WaitForChild("LootManager")) 
 local LabyrinthManager = require(script.Parent:WaitForChild("LabyrinthManager"))
 
+local DoomsdayManager = require(script.Parent:WaitForChild("DoomsdayManager"))
+
 local Network = ReplicatedStorage:FindFirstChild("Network") or Instance.new("Folder", ReplicatedStorage)
 Network.Name = "Network"
 
@@ -186,9 +188,23 @@ local function StartBattle(player, encounterType, requestedPartId)
 
 	elseif encounterType == "EngageWorldBoss" then
 		isWorldBoss = true
-		eTemplate = EnemyData.WorldBosses[requestedPartId]
+
+		-- Safely grab the template from EnemyData, or construct a dynamic fallback
+		eTemplate = EnemyData.WorldBosses and EnemyData.WorldBosses[requestedPartId]
+		if not eTemplate and requestedPartId == "Rumbling Horde" then
+			eTemplate = {
+				Name = "Wall Titan", IsMinigame = false, IsBoss = true, IsRumblingBoss = true, IsDoomsdayBoss = false,
+				Health = 400, GateType = "Steam", GateHP = 2, Strength = 300, Defense = 80, Speed = 20, Resolve = 60,
+				Skills = {"Colossal Steam", "Stomp", "Brutal Swipe"}, Drops = {}
+			}
+		end
 		if not eTemplate then return end
-		logFlavor = "<font color=\"#FFAA00\">[WORLD EVENT]</font>\n" .. eTemplate.Name .. " has appeared!"
+
+		if eTemplate.IsRumblingBoss then
+			logFlavor = "<font color=\"#FF0000\">[THE RUMBLING]</font>\nYou dive into the advancing horde of Wall Titans!"
+		else
+			logFlavor = "<font color=\"#FFAA00\">[WORLD EVENT]</font>\n" .. eTemplate.Name .. " has appeared!"
+		end
 		targetPart = 1 
 
 	elseif encounterType == "EngageNightmare" then
@@ -366,7 +382,11 @@ local function StartBattle(player, encounterType, requestedPartId)
 		local expectedHitsToDie = 8 
 
 		if encounterType == "EngageWorldBoss" then 
-			baseDifficulty = 6.0; expectedTurnsToKill = 35; expectedHitsToDie = 3 
+			if eTemplate.IsRumblingBoss then
+				baseDifficulty = 0.2; expectedTurnsToKill = 2; expectedHitsToDie = 2
+			else
+				baseDifficulty = 6.0; expectedTurnsToKill = 35; expectedHitsToDie = 3 
+			end
 		elseif encounterType == "EngageNightmare" then 
 			baseDifficulty = 3.5; expectedTurnsToKill = 20; expectedHitsToDie = 4
 		elseif encounterType == "EngageRaid" then 
@@ -393,7 +413,9 @@ local function StartBattle(player, encounterType, requestedPartId)
 			eGateHP = math.floor(eHP * gateRatio)
 		end
 
-		logFlavor = logFlavor .. "\n<font color=\"#AAAAAA\">[Dynamic Encounter: Attuned to Party Size " .. groupMult .. "x]</font>"
+		if not eTemplate.IsRumblingBoss then
+			logFlavor = logFlavor .. "\n<font color=\"#AAAAAA\">[Dynamic Encounter: Attuned to Party Size " .. groupMult .. "x]</font>"
+		end
 	end
 
 	if isPaths or isLabyrinth then
@@ -433,7 +455,7 @@ local function StartBattle(player, encounterType, requestedPartId)
 			MomentumStacks = 0,
 			Statuses = {}, Cooldowns = {}, LastSkill = "None", AwakenedStats = awakenedStats 
 		},
-		Enemy = { IsMinigame = eTemplate.IsMinigame, IsPlayer = false, Name = eTemplate.Name, IsHuman = isPaths and false or (eTemplate.IsHuman or false), IsNightmare = isNightmare, IsBoss = eTemplate.IsBoss or false, IsDoomsdayBoss = (encounterType == "EngageDoomsday"), HP = eHP, MaxHP = eHP, GateType = eGateType, GateHP = eGateHP, MaxGateHP = eGateHP, TotalStrength = eStr, TotalDefense = eDef, TotalSpeed = eSpd, Statuses = {}, Cooldowns = initCooldowns, Skills = eSkills, Drops = { XP = math.floor((eTemplate.Drops and eTemplate.Drops.XP or 15) * dropMult), Dews = math.floor((eTemplate.Drops and eTemplate.Drops.Dews or 10) * dropMult), ItemChance = eTemplate.Drops and eTemplate.Drops.ItemChance or {} }, AwakenedStats = enemyAwakenedStats, LastSkill = "None", AIPoints = 0 }
+		Enemy = { IsMinigame = eTemplate.IsMinigame, IsPlayer = false, Name = eTemplate.Name, IsHuman = isPaths and false or (eTemplate.IsHuman or false), IsNightmare = isNightmare, IsBoss = eTemplate.IsBoss or false, IsDoomsdayBoss = (encounterType == "EngageDoomsday"), IsRumblingBoss = eTemplate.IsRumblingBoss, HP = eHP, MaxHP = eHP, GateType = eGateType, GateHP = eGateHP, MaxGateHP = eGateHP, TotalStrength = eStr, TotalDefense = eDef, TotalSpeed = eSpd, Statuses = {}, Cooldowns = initCooldowns, Skills = eSkills, Drops = { XP = math.floor((eTemplate.Drops and eTemplate.Drops.XP or 15) * dropMult), Dews = math.floor((eTemplate.Drops and eTemplate.Drops.Dews or 10) * dropMult), ItemChance = eTemplate.Drops and eTemplate.Drops.ItemChance or {} }, AwakenedStats = enemyAwakenedStats, LastSkill = "None", AIPoints = 0 }
 	}
 
 	if eTemplate.IsMinigame then CombatUpdate:FireClient(player, "StartMinigame", { Battle = ActiveBattles[player.UserId], LogMsg = logFlavor, MinigameType = eTemplate.IsMinigame })
@@ -461,7 +483,7 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		return
 	end
 
-	if battle.Enemy.IsBoss and not battle.Context.ExecutionTriggered then
+	if battle.Enemy.IsBoss and not battle.Context.ExecutionTriggered and not battle.Enemy.IsRumblingBoss then
 		battle.Context.ExecutionTriggered = true
 		CombatUpdate:FireClient(player, "ExecutionPhase", {Battle = battle})
 		battle.IsProcessing = false
@@ -513,6 +535,11 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 	local xpGain = (battle.Enemy.Drops and battle.Enemy.Drops.XP or 0) + (dialogueRewards and dialogueRewards.XP or 0)
 	local dewsGain = (battle.Enemy.Drops and battle.Enemy.Drops.Dews or 0) + (dialogueRewards and dialogueRewards.Dews or 0)
 
+	if battle.Enemy.IsRumblingBoss then
+		xpGain = 0
+		dewsGain = 0
+	end
+
 	if player:GetAttribute("HasDoubleXP") then xpGain *= 2; dewsGain *= 2 end
 
 	local winReg = Network:FindFirstChild("WinningRegiment")
@@ -537,7 +564,12 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 	player.leaderstats.Dews.Value += dewsGain
 
 	local killMsg = ""
-	local droppedItems, autoSoldDews = LootManager.ProcessDrops(player, battle.Enemy.Drops or {}, battle.Context.IsEndless, battle.Context.CurrentWave)
+	local droppedItems = {}
+	local autoSoldDews = 0
+
+	if not battle.Enemy.IsRumblingBoss then
+		droppedItems, autoSoldDews = LootManager.ProcessDrops(player, battle.Enemy.Drops or {}, battle.Context.IsEndless, battle.Context.CurrentWave)
+	end
 
 	if dialogueRewards and dialogueRewards.ItemName then
 		local amountGiven = dialogueRewards.Amount or 1
@@ -554,6 +586,68 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		battle.Player.HP = math.min(pMax, pCur + healAmt)
 		killMsg = killMsg .. "\n<font color=\"#55FF55\">[Awakened: Healed " .. healAmt .. " HP!]</font>"
 		PlayVFX:FireClient(player, "Heal", "Self")
+	end
+
+	if battle.Enemy.IsRumblingBoss then
+		pcall(function() DoomsdayManager.RegisterRumblingDamage(player, 1) end)
+		killMsg = killMsg .. "\n<font color=\"#FF55FF\"><b>[WALL TITAN FELLED]</b></font>"
+
+		if not ReplicatedStorage:GetAttribute("RumblingActive") then
+			killMsg = killMsg .. "\n<font color=\"#FFD700\"><b>[EVENT ENDED] The Rumbling has halted.</b></font>"
+			CombatUpdate:FireClient(player, "Victory", {Battle = battle, XP = 0, Dews = 0, Items = {}, ExtraLog = killMsg})
+			ActiveBattles[player.UserId] = nil
+			player:SetAttribute("InCombat", false)
+			return
+		end
+
+		battle.Context.CurrentWave += 1
+		local nextWave = battle.Context.CurrentWave
+
+		-- Safely grab template, or dynamically build it if EnemyData is outdated
+		local eTemplate = EnemyData.WorldBosses and EnemyData.WorldBosses["Rumbling Horde"]
+		if not eTemplate then
+			eTemplate = {
+				Name = "Wall Titan", IsMinigame = false, IsBoss = true, IsRumblingBoss = true, IsDoomsdayBoss = false,
+				Health = 400, GateType = "Steam", GateHP = 2, Strength = 300, Defense = 80, Speed = 20, Resolve = 60,
+				Skills = {"Colossal Steam", "Stomp", "Brutal Swipe"}, Drops = {}
+			}
+		end
+
+		local hpMult = 1.0 + (nextWave * 0.1)
+		local dmgMult = 1.0 + (nextWave * 0.1)
+		local defMult = 1.0 + (nextWave * 0.05)
+		local spdMult = 1.0 + (math.pow(nextWave, 0.5) * 0.05)
+
+		local eHP = math.floor((eTemplate.Health or 400) * hpMult)
+		local eGateType = eTemplate.GateType
+		local eGateHP = math.floor((eTemplate.GateHP or 0) * (eGateType == "Steam" and 1 or hpMult))
+		local eStr = math.floor((eTemplate.Strength or 10) * dmgMult)
+		local eDef = math.floor((eTemplate.Defense or 10) * defMult)
+		local eSpd = math.floor((eTemplate.Speed or 10) * spdMult)
+
+		local flavorText = "<font color=\"#FF0000\">[THE RUMBLING - KILLS: " .. (nextWave - 1) .. "]</font>\nAnother Wall Titan emerges from the steam!"
+		battle.Context.Range = "Close"
+
+		local eSkills = eTemplate.Skills or {"Colossal Steam", "Stomp", "Brutal Swipe"}
+		local initCooldowns = {}
+		for _, s in ipairs(eSkills) do
+			local sd = SkillData.Skills[s]
+			if sd and sd.Telegraphed then initCooldowns[s] = math.random(2, 4) end
+		end
+
+		battle.Context.TurnCount = 0; battle.Context.StoredBoss = nil
+		battle.Enemy = {
+			IsMinigame = eTemplate.IsMinigame, IsPlayer = false, Name = eTemplate.Name, IsHuman = false, IsNightmare = false, IsBoss = true, IsRumblingBoss = true, IsDoomsdayBoss = false,
+			HP = eHP, MaxHP = eHP, GateType = eGateType, GateHP = eGateHP, MaxGateHP = eGateHP, TotalStrength = eStr, TotalDefense = eDef, TotalSpeed = eSpd,
+			Statuses = {}, Cooldowns = initCooldowns, Skills = eSkills, Drops = { XP = 0, Dews = 0, ItemChance = {} }, LastSkill = "None", AIPoints = 0
+		}
+
+		battle.Player.Cooldowns = {}; battle.Player.Statuses = {} 
+		battle.Player.HP = battle.Player.MaxHP; battle.Player.Gas = battle.Player.MaxGas; battle.Player.TitanEnergy = math.min(battle.Player.MaxTitanEnergy or 100, (battle.Player.TitanEnergy or 0) + 30); battle.Player.LastSkill = "None"
+
+		CombatUpdate:FireClient(player, "WaveComplete", {Battle = battle, LogMsg = flavorText .. "\n" .. killMsg, XP = 0, Dews = 0, Items = {}})
+		battle.IsProcessing = false
+		return
 	end
 
 	if battle.Context.IsPaths then
