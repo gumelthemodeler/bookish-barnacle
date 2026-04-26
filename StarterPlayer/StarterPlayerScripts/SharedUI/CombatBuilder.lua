@@ -1,6 +1,5 @@
 -- @ScriptType: ModuleScript
 -- @ScriptType: ModuleScript
--- Name: CombatBuilder
 local CombatBuilder = {}
 
 local Players = game:GetService("Players")
@@ -262,7 +261,8 @@ function CombatBuilder.Build(masterScreenGui, player)
 
 	-- LOG AREA
 	GUI.LogContainer, _ = CreateFlatPanel(GUI.CombatWindow)
-	GUI.LogContainer.Size = UDim2.new(1, -40, 0, 180) 
+	-- Starts generic, dynamically reshaped below
+	GUI.LogContainer.Size = UDim2.new(1, -40, 0, 100) 
 	GUI.LogContainer.Position = UDim2.new(0, 20, 0, 210)
 
 	GUI.LogScroll = Instance.new("ScrollingFrame", GUI.LogContainer)
@@ -282,9 +282,10 @@ function CombatBuilder.Build(masterScreenGui, player)
 
 	-- ACTION AREA
 	GUI.ActionContainer = Instance.new("Frame", GUI.CombatWindow)
-	GUI.ActionContainer.Size = UDim2.new(1, -40, 0, 120)
-	GUI.ActionContainer.Position = UDim2.new(0, 20, 1, -140)
+	GUI.ActionContainer.Size = UDim2.new(1, -40, 0, 280)
+	GUI.ActionContainer.Position = UDim2.new(0, 20, 1, -300)
 	GUI.ActionContainer.BackgroundTransparency = 1
+	GUI.ActionContainer.ClipsDescendants = true
 
 	GUI.ActionGrid = Instance.new("ScrollingFrame", GUI.ActionContainer)
 	GUI.ActionGrid.Size = UDim2.new(1, 0, 1, 0)
@@ -302,11 +303,10 @@ function CombatBuilder.Build(masterScreenGui, player)
 		GUI.ActionGrid.CanvasSize = UDim2.new(0, 0, 0, acLayout.AbsoluteContentSize.Y + 10)
 	end)
 
-	-- TARGET MENU (Moved up to CombatWindow directly to allow MASSIVE scaling)
-	GUI.TargetMenu = Instance.new("Frame", GUI.CombatWindow)
-	GUI.TargetMenu.Size = UDim2.new(1, -40, 0, 360) 
-	GUI.TargetMenu.Position = UDim2.new(0, 20, 1, 50) -- Hidden off bottom
-	GUI.TargetMenu.AnchorPoint = Vector2.new(0, 0)
+	-- TARGET MENU
+	GUI.TargetMenu = Instance.new("Frame", GUI.ActionContainer)
+	GUI.TargetMenu.Size = UDim2.new(0.6, -10, 1, 0) 
+	GUI.TargetMenu.Position = UDim2.new(1, 0, 0, 0) 
 	GUI.TargetMenu.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 	GUI.TargetMenu.Visible = false
 	GUI.TargetMenu.ZIndex = 50 
@@ -353,44 +353,40 @@ function CombatBuilder.Build(masterScreenGui, player)
 				GUI.CombatantsFrame.Position = UDim2.new(0, 10, 0, 45)
 			end
 			if GUI.LogContainer then
-				GUI.LogContainer.Size = UDim2.new(0.38, 0, 1, -165)
+				GUI.LogContainer.Size = UDim2.new(1, -20, 1, -425) 
 				GUI.LogContainer.Position = UDim2.new(0, 10, 0, 160)
 			end
 			if GUI.ActionContainer then
-				GUI.ActionContainer.Size = UDim2.new(0.6, -20, 1, -165)
-				GUI.ActionContainer.Position = UDim2.new(0.4, 10, 0, 160)
+				GUI.ActionContainer.Size = UDim2.new(1, -20, 0, 250) 
+				GUI.ActionContainer.Position = UDim2.new(0, 10, 1, -260)
 			end
 
 			if GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout") then
-				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellSize = UDim2.new(1, -10, 0, 45)
-				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellPadding = UDim2.new(0, 0, 0, 10)
+				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellSize = UDim2.new(0.48, 0, 0, 45)
+				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellPadding = UDim2.new(0.02, 0, 0, 10)
 			end
 
-			-- Mobile Target Menu layout
-			GUI.TargetMenu.Size = UDim2.new(0.6, -20, 1, -165)
-			GUI.TargetMenu.Position = UDim2.new(1, 20, 0, 160) 
-			GUI.TargetMenu.AnchorPoint = Vector2.new(0, 0)
-
+			GUI.TargetMenu.Size = UDim2.new(0.6, -10, 1, 0)
 			InfoPanel.Size = UDim2.new(0.45, 0, 1, 0)
 			InfoPanel.Position = UDim2.new(0, 0, 0, 0)
 
 			GUI.tHoverTitle.Size = UDim2.new(1, 0, 0, 20)
-			GUI.tHoverTitle.Position = UDim2.new(0, 0, 0, 10)
+			GUI.tHoverTitle.Position = UDim2.new(0, 10, 0, 10)
 			GUI.tHoverTitle.TextSize = 14
 			GUI.tHoverTitle.TextXAlignment = Enum.TextXAlignment.Center
 
-			GUI.tHoverDesc.Size = UDim2.new(1, 0, 0, 40)
-			GUI.tHoverDesc.Position = UDim2.new(0, 0, 0, 35)
+			GUI.tHoverDesc.Size = UDim2.new(1, -10, 0, 40)
+			GUI.tHoverDesc.Position = UDim2.new(0, 10, 0, 35)
 			GUI.tHoverDesc.TextSize = 11
 			GUI.tHoverDesc.TextXAlignment = Enum.TextXAlignment.Center
 
 			GUI.CancelBtn.Size = UDim2.new(0.8, 0, 0, 30)
-			GUI.CancelBtn.Position = UDim2.new(0.5, 0, 1, -40)
-			GUI.CancelBtn.AnchorPoint = Vector2.new(0.5, 0)
+			GUI.CancelBtn.Position = UDim2.new(0.5, 0, 1, -10)
+			GUI.CancelBtn.AnchorPoint = Vector2.new(0.5, 1)
 
-			BodyContainer.Size = UDim2.new(0, 140, 0, 175)
-			BodyContainer.Position = UDim2.new(0.75, 0, 0.5, 0)
-			BodyContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+			BodyContainer.Size = UDim2.new(0.55, 0, 1, -10)
+			BodyContainer.Position = UDim2.new(1, -10, 0.5, 0)
+			BodyContainer.AnchorPoint = Vector2.new(1, 0.5)
 		else
 			-- PC Layout
 			GUI.CombatWindow.Size = UDim2.new(0, 1000, 0, 580)
@@ -401,44 +397,45 @@ function CombatBuilder.Build(masterScreenGui, player)
 				GUI.CombatantsFrame.Position = UDim2.new(0, 20, 0, 20)
 			end
 			if GUI.LogContainer then
-				GUI.LogContainer.Size = UDim2.new(1, -40, 0, 180) 
-				GUI.LogContainer.Position = UDim2.new(0, 20, 0, 170)
+				GUI.LogContainer.Size = UDim2.new(1, -40, 0, 110) 
+				GUI.LogContainer.Position = UDim2.new(0, 20, 0, 165)
 			end
 			if GUI.ActionContainer then
-				GUI.ActionContainer.Size = UDim2.new(1, -40, 0, 120) 
-				GUI.ActionContainer.Position = UDim2.new(0, 20, 1, -140)
+				GUI.ActionContainer.Size = UDim2.new(1, -40, 0, 240) 
+				GUI.ActionContainer.Position = UDim2.new(0, 20, 1, -260)
 			end
 
+			-- Dynamic Grid Layout based on TargetMenu state
 			if GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout") then
-				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellSize = UDim2.new(0.15, 0, 0, 45)
+				if GUI.TargetMenu and GUI.TargetMenu.Visible then
+					GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellSize = UDim2.new(0.48, 0, 0, 45)
+				else
+					GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellSize = UDim2.new(0.23, 0, 0, 45)
+				end
 				GUI.ActionGrid:FindFirstChildOfClass("UIGridLayout").CellPadding = UDim2.new(0.016, 0, 0, 10)
 			end
 
-			-- Massive PC Target Menu
-			GUI.TargetMenu.Size = UDim2.new(1, -40, 0, 370)
-			GUI.TargetMenu.Position = UDim2.new(0, 20, 1, 50) 
-			GUI.TargetMenu.AnchorPoint = Vector2.new(0, 0)
-
-			InfoPanel.Size = UDim2.new(0.4, 0, 1, 0)
+			GUI.TargetMenu.Size = UDim2.new(0.6, -10, 1, 0)
+			InfoPanel.Size = UDim2.new(0.45, 0, 1, 0)
 			InfoPanel.Position = UDim2.new(0, 0, 0, 0)
 
-			GUI.tHoverTitle.Size = UDim2.new(1, -40, 0, 40)
-			GUI.tHoverTitle.Position = UDim2.new(0, 40, 0, 40)
-			GUI.tHoverTitle.TextSize = 24
+			GUI.tHoverTitle.Size = UDim2.new(1, -40, 0, 30)
+			GUI.tHoverTitle.Position = UDim2.new(0, 30, 0, 15)
+			GUI.tHoverTitle.TextSize = 20
 			GUI.tHoverTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-			GUI.tHoverDesc.Size = UDim2.new(1, -40, 0, 80)
-			GUI.tHoverDesc.Position = UDim2.new(0, 40, 0, 90)
-			GUI.tHoverDesc.TextSize = 14
+			GUI.tHoverDesc.Size = UDim2.new(1, -40, 0, 40)
+			GUI.tHoverDesc.Position = UDim2.new(0, 30, 0, 45)
+			GUI.tHoverDesc.TextSize = 13
 			GUI.tHoverDesc.TextXAlignment = Enum.TextXAlignment.Left
 
-			GUI.CancelBtn.Size = UDim2.new(0, 180, 0, 45)
-			GUI.CancelBtn.Position = UDim2.new(0, 40, 1, -80)
-			GUI.CancelBtn.AnchorPoint = Vector2.new(0, 0)
+			GUI.CancelBtn.Size = UDim2.new(0, 150, 0, 30)
+			GUI.CancelBtn.Position = UDim2.new(0, 30, 1, -15)
+			GUI.CancelBtn.AnchorPoint = Vector2.new(0, 1)
 
-			BodyContainer.Size = UDim2.new(0, 240, 0, 300) 
-			BodyContainer.Position = UDim2.new(0.75, 0, 0.5, 0)
-			BodyContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+			BodyContainer.Size = UDim2.new(0.55, 0, 1, -20) 
+			BodyContainer.Position = UDim2.new(1, -10, 0.5, 0)
+			BodyContainer.AnchorPoint = Vector2.new(1, 0.5)
 		end
 	end
 
@@ -458,7 +455,7 @@ function CombatBuilder.Build(masterScreenGui, player)
 		limb.AnchorPoint = Vector2.new(0.5, 0.5)
 
 		local tsc = Instance.new("UITextSizeConstraint", limb)
-		tsc.MaxTextSize = 16 -- Increased max size to look better scaled up
+		tsc.MaxTextSize = 22 -- Scaled up to fill the extra space!
 		tsc.MinTextSize = 6
 
 		local strk = Instance.new("UIStroke", limb)
@@ -530,6 +527,9 @@ function CombatBuilder.Build(masterScreenGui, player)
 	local ccLayout = Instance.new("UIListLayout", GUI.ChoicesContainer)
 	ccLayout.Padding = UDim.new(0, 10)
 	ccLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+	-- Store dynamic layout re-evaluator for the module
+	GUI.UpdateLayout = UpdateLayoutForScreen
 
 	return GUI
 end
