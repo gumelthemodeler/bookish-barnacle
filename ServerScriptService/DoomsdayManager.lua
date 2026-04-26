@@ -9,15 +9,11 @@ local Network = ReplicatedStorage:WaitForChild("Network")
 local EnemyData = require(ReplicatedStorage:WaitForChild("EnemyData"))
 local NotificationEvent = Network:WaitForChild("NotificationEvent")
 
--- [[ INITIALIZE REMOTES ]]
-local TriggerRumbling = Network:FindFirstChild("TriggerRumbling") or Instance.new("RemoteEvent", Network)
-TriggerRumbling.Name = "TriggerRumbling"
-
-local GetDoomsdayData = Network:FindFirstChild("GetDoomsdayData") or Instance.new("RemoteFunction", Network)
-GetDoomsdayData.Name = "GetDoomsdayData"
-
-local GetRumblingData = Network:FindFirstChild("GetRumblingData") or Instance.new("RemoteFunction", Network)
-GetRumblingData.Name = "GetRumblingData"
+-- Remotes created by DataManager
+local TriggerRumbling = Network:WaitForChild("TriggerRumbling")
+local GetDoomsdayData = Network:WaitForChild("GetDoomsdayData")
+local GetRumblingData = Network:WaitForChild("GetRumblingData")
+local SyncRumbling = Network:WaitForChild("SyncRumbling")
 
 -- [[ DOOMSDAY STATE ]]
 local ddActive = false
@@ -60,6 +56,10 @@ local function PayoutRumbling()
 			end
 		end
 	end
+
+	rumblingActive = false
+	ReplicatedStorage:SetAttribute("RumblingActive", false)
+	SyncRumbling:FireAllClients(false)
 end
 
 local function PayoutDoomsday()
@@ -122,8 +122,6 @@ function DoomsdayManager.RegisterRumblingDamage(player, amount)
 
 	if rumblingKills >= RUMBLING_TARGET then
 		PayoutRumbling()
-		rumblingActive = false
-		ReplicatedStorage:SetAttribute("RumblingActive", false)
 	end
 end
 
@@ -165,6 +163,9 @@ TriggerRumbling.OnServerEvent:Connect(function(player)
 		rumblingKills = 0
 		rumblingLeaderboard = {}
 		ReplicatedStorage:SetAttribute("RumblingActive", true)
+
+		-- BROADCAST TO ALL CLIENTS
+		SyncRumbling:FireAllClients(true)
 
 		NotificationEvent:FireAllClients(player.Name .. " HAS TRIGGERED THE RUMBLING! RACE TO STOP THE WALL TITANS!", "Error")
 	else
