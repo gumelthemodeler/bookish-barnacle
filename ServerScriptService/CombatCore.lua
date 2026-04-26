@@ -1,6 +1,5 @@
 -- @ScriptType: ModuleScript
 -- @ScriptType: ModuleScript
--- Name: CombatCore
 local CombatCore = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SkillData = require(ReplicatedStorage:WaitForChild("SkillData"))
@@ -75,7 +74,11 @@ function CombatCore.TickStatuses(combatant)
 		for _, rem in ipairs(toRemove) do
 			combatant.Statuses[rem] = nil
 			if not string.find(rem, "Immunity") and not string.find(rem, "SynergyMark_") then
-				if rem == "Stun" or rem == "Bleed" or rem == "Burn" or rem == "Crippled" or rem == "Immobilized" or rem == "Weakened" or rem == "Blinded" or rem == "TrueBlind" or rem == "Debuff_Defense" or rem == "Confusion" or rem == "Terror" then
+				if rem == "Stun" or rem == "Immobilized" or rem == "TrueBlind" or rem == "Confusion" or rem == "Terror" then
+					local immDuration = 3
+					if combatant.IsBoss then immDuration = 5 end 
+					immunitiesToAdd[rem .. "Immunity"] = immDuration
+				elseif rem == "Bleed" or rem == "Burn" or rem == "Crippled" or rem == "Weakened" or rem == "Blinded" or rem == "Debuff_Defense" then
 					local immDuration = 2
 					if combatant.IsBoss then immDuration = 4 end 
 					immunitiesToAdd[rem .. "Immunity"] = immDuration
@@ -452,7 +455,11 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 					effectLog = effectLog .. " <font color=\"#FF5555\">[BLEED]</font>"
 				end
 			elseif currentEffect == 0 then
-				defender.Statuses[safeEffect] = (tonumber(skill.Duration) or 2) + 1
+				local appliedDur = tonumber(skill.Duration) or 2
+				if safeEffect == "Stun" or safeEffect == "Immobilized" or safeEffect == "TrueBlind" or safeEffect == "Confusion" or safeEffect == "Terror" then
+					appliedDur = 1 
+				end
+				defender.Statuses[safeEffect] = appliedDur + 1
 				effectLog = effectLog .. " <font color=\"#AA55FF\">[" .. safeEffect:upper() .. "]</font>"
 			end
 		end
@@ -787,7 +794,19 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 		local isArmored = defender.GateType == "Reinforced Skin" and (tonumber(defender.GateHP) or 0) > 0
 
 		local globalDmgLog = ""
-		if defender.IsDoomsdayBoss and attacker.IsPlayer and attacker.PlayerObj then
+		if defender.IsRumblingBoss and attacker.IsPlayer and attacker.PlayerObj then
+			if baseDmg > 0 then
+				local success, err = pcall(function()
+					local DoomsdayManager = require(game:GetService("ServerScriptService"):WaitForChild("DoomsdayManager"))
+					DoomsdayManager.RegisterRumblingDamage(attacker.PlayerObj, baseDmg)
+				end)
+				if success then
+					globalDmgLog = " <font color=\"#FF55FF\"><b>[WALL TITAN FELLED]</b></font>"
+				else
+					warn("[RUMBLING ERROR]: " .. tostring(err))
+				end
+			end
+		elseif defender.IsDoomsdayBoss and attacker.IsPlayer and attacker.PlayerObj then
 			if baseDmg > 0 then
 				local success, err = pcall(function()
 					local DoomsdayManager = require(game:GetService("ServerScriptService"):WaitForChild("DoomsdayManager"))
@@ -796,7 +815,7 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 				if success then
 					globalDmgLog = " <font color=\"#FF55FF\"><b>[GLOBAL DMG LOGGED: " .. math.floor(baseDmg) .. "]</b></font>"
 				else
-					warn("[DOOMSDAY ERROR]: Failed to log damage! Ensure DoomsdayManager is a ModuleScript. Error: " .. tostring(err))
+					warn("[DOOMSDAY ERROR]: " .. tostring(err))
 				end
 			end
 		end
@@ -865,9 +884,14 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 						appliedThisStrike["Bleed"] = true
 					elseif not appliedThisStrike[safeEffect] then
 						local appliedDur = tonumber(skill.Duration) or 2
-						if weather == "Rain" and safeEffect == "Burn" then appliedDur = math.ceil(appliedDur / 2) end
 
-						if defender.IsBoss and (safeEffect == "Stun" or safeEffect == "Blinded" or safeEffect == "TrueBlind" or safeEffect == "Crippled") then
+						if safeEffect == "Stun" or safeEffect == "Immobilized" or safeEffect == "TrueBlind" or safeEffect == "Confusion" or safeEffect == "Terror" then
+							appliedDur = 1 
+						elseif weather == "Rain" and safeEffect == "Burn" then 
+							appliedDur = math.ceil(appliedDur / 2) 
+						end
+
+						if defender.IsBoss and (safeEffect == "Blinded" or safeEffect == "Crippled") then
 							appliedDur = 1
 						elseif safeEffect ~= "Bleed" and safeEffect ~= "Burn" then 
 							appliedDur = appliedDur + 1 
