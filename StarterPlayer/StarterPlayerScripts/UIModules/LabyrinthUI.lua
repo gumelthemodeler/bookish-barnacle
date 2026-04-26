@@ -1,6 +1,5 @@
 -- @ScriptType: ModuleScript
 -- @ScriptType: ModuleScript
--- Name: LabyrinthUI
 local LabyrinthUI = {}
 
 local Players = game:GetService("Players")
@@ -36,17 +35,22 @@ local function AbbreviateNumber(n)
 	return str .. (Suffixes[suffixIndex + 1] or "")
 end
 
+-- DUNGEON THEMES
 local function GetFloorTheme(floor)
 	local cycle = floor % 3
 	if cycle == 1 then
-		return Color3.fromRGB(150, 180, 255), Color3.fromRGB(30, 45, 65), Color3.fromRGB(20, 25, 30) 
+		-- The Dungeon (Cold, Bleak)
+		return Color3.fromRGB(120, 140, 180), Color3.fromRGB(20, 25, 35), Color3.fromRGB(15, 18, 22) 
 	elseif cycle == 2 then
-		return Color3.fromRGB(150, 255, 150), Color3.fromRGB(40, 60, 40), Color3.fromRGB(20, 25, 20) 
+		-- The Overgrown Ruins (Rotting Green)
+		return Color3.fromRGB(120, 170, 120), Color3.fromRGB(25, 35, 25), Color3.fromRGB(18, 22, 18) 
 	else
-		return Color3.fromRGB(255, 120, 120), Color3.fromRGB(60, 25, 25), Color3.fromRGB(25, 20, 20) 
+		-- The Blood Crypts (Deep Crimson)
+		return Color3.fromRGB(190, 80, 80), Color3.fromRGB(40, 15, 15), Color3.fromRGB(22, 12, 12) 
 	end
 end
 
+-- HEAVY DUNGEON ATMOSPHERE
 local function ToggleAtmosphere(state, floorLevel)
 	local cc = Lighting:FindFirstChild("LabyrinthCC")
 	local blur = Lighting:FindFirstChild("LabyrinthBlur")
@@ -56,15 +60,15 @@ local function ToggleAtmosphere(state, floorLevel)
 		if not blur then blur = Instance.new("BlurEffect", Lighting); blur.Name = "LabyrinthBlur" end
 
 		local tint, _, _ = GetFloorTheme(floorLevel or 1)
-		TweenService:Create(cc, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {Brightness = -0.3, Contrast = 0.4, Saturation = -0.4, TintColor = tint}):Play()
-		TweenService:Create(blur, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {Size = 24}):Play()
+		-- Much harsher contrast and darkness for that claustrophobic dungeon feel
+		TweenService:Create(cc, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {Brightness = -0.45, Contrast = 0.5, Saturation = -0.5, TintColor = tint}):Play()
+		TweenService:Create(blur, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {Size = 28}):Play()
 	else
 		if cc then TweenService:Create(cc, TweenInfo.new(1, Enum.EasingStyle.Sine), {Brightness = 0, Contrast = 0, Saturation = 0, TintColor = Color3.fromRGB(255, 255, 255)}):Play() end
 		if blur then TweenService:Create(blur, TweenInfo.new(1, Enum.EasingStyle.Sine), {Size = 0}):Play() end
 	end
 end
 
--- [[ THE FIX: dynamically pulls floor level so we don't spawn duplicate loops ]]
 local function SpawnPathDust()
 	task.spawn(function()
 		while GUI and GUI.Visible do
@@ -129,17 +133,23 @@ local function BuildGrid()
 			local btn = Instance.new("TextButton", MapContainer)
 			btn.Text = ""
 			btn.BackgroundColor3 = tileColor
-			btn.BackgroundTransparency = 1
-			btn.BorderSizePixel = 0
-			btn.Size = UDim2.new(0, cellSize, 0, cellSize)
-			btn.Position = UDim2.new(0, (x - 1) * cellSize, 0, (y - 1) * cellSize)
+			-- Creates a 4px gap between tiles so it looks like distinct stone blocks
+			btn.Size = UDim2.new(0, cellSize - 4, 0, cellSize - 4)
+			btn.Position = UDim2.new(0, ((x - 1) * cellSize) + 2, 0, ((y - 1) * cellSize) + 2)
 			btn.AutoButtonColor = false
 
+			-- 3D Bevel effect for the stone tiles
+			local grad = Instance.new("UIGradient", btn)
+			grad.Rotation = 90
+			grad.Color = ColorSequence.new{
+				ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+				ColorSequenceKeypoint.new(1, Color3.new(0.5, 0.5, 0.5))
+			}
+
 			local strk = Instance.new("UIStroke", btn)
-			strk.Thickness = 1
+			strk.Thickness = 2
 			strk.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-			strk.Color = Color3.fromRGB(50, 50, 60)
-			strk.Transparency = 1
+			strk.Color = Color3.fromRGB(20, 20, 25)
 
 			local iconFrame = Instance.new("Frame", btn)
 			iconFrame.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -148,45 +158,48 @@ local function BuildGrid()
 			iconFrame.BorderSizePixel = 0
 			iconFrame.Visible = false
 
-			if cellVal == 1 then 
+			if cellVal == 1 then -- ENEMY (Menacing Red Pulse)
 				iconFrame.Size = UDim2.new(0.45, 0, 0.45, 0)
-				iconFrame.BackgroundColor3 = Color3.fromRGB(220, 40, 40)
+				iconFrame.BackgroundColor3 = Color3.fromRGB(220, 30, 30)
 				iconFrame.Rotation = 45
 
 				local inner = Instance.new("Frame", iconFrame)
-				inner.Size = UDim2.new(0.5, 0, 0.5, 0)
+				inner.Size = UDim2.new(0.6, 0, 0.6, 0)
 				inner.AnchorPoint = Vector2.new(0.5, 0.5)
 				inner.Position = UDim2.new(0.5, 0, 0.5, 0)
-				inner.BackgroundColor3 = Color3.fromRGB(255, 120, 120)
+				inner.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 				inner.BorderSizePixel = 0
 
+				-- Heartbeat animation for enemies
 				task.spawn(function()
 					while iconFrame.Parent do
-						local t = TweenService:Create(iconFrame, TweenInfo.new(2, Enum.EasingStyle.Linear), {Rotation = iconFrame.Rotation + 90})
-						t:Play(); t.Completed:Wait()
+						local t1 = TweenService:Create(iconFrame, TweenInfo.new(0.3, Enum.EasingStyle.Sine), {Size = UDim2.new(0.55, 0, 0.55, 0)})
+						local t2 = TweenService:Create(iconFrame, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {Size = UDim2.new(0.45, 0, 0.45, 0)})
+						t1:Play(); t1.Completed:Wait(); t2:Play(); t2.Completed:Wait()
+						task.wait(0.5)
 					end
 				end)
 
-			elseif cellVal == 2 then 
+			elseif cellVal == 2 then -- LOOT / REST (Green Glow)
 				iconFrame.Size = UDim2.new(0.4, 0, 0.4, 0)
-				iconFrame.BackgroundColor3 = Color3.fromRGB(40, 200, 40)
+				iconFrame.BackgroundColor3 = Color3.fromRGB(40, 200, 80)
 
 				local inner = Instance.new("Frame", iconFrame)
-				inner.Size = UDim2.new(0.5, 0, 0.5, 0)
+				inner.Size = UDim2.new(0.6, 0, 0.6, 0)
 				inner.AnchorPoint = Vector2.new(0.5, 0.5)
 				inner.Position = UDim2.new(0.5, 0, 0.5, 0)
 				inner.BackgroundColor3 = UIHelpers.Colors.Gold
 				inner.BorderSizePixel = 0
 
-			elseif cellVal == 3 then 
-				iconFrame.Size = UDim2.new(0.55, 0, 0.55, 0)
+			elseif cellVal == 3 then -- EXIT (Glowing White Gateway)
+				iconFrame.Size = UDim2.new(0.5, 0, 0.6, 0)
 				iconFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 
 				local inner = Instance.new("Frame", iconFrame)
-				inner.Size = UDim2.new(0.6, 0, 0.8, 0)
+				inner.Size = UDim2.new(0.7, 0, 0.8, 0)
 				inner.AnchorPoint = Vector2.new(0.5, 1)
 				inner.Position = UDim2.new(0.5, 0, 1, 0)
-				inner.BackgroundColor3 = tileColor
+				inner.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 				inner.BorderSizePixel = 0
 			end
 
@@ -196,9 +209,10 @@ local function BuildGrid()
 					if (math.abs(px - x) == 1 and py == y) or (math.abs(py - y) == 1 and px == x) then
 						isMoving = true
 
+						-- Sharp Footstep Ripple
 						local ripple = Instance.new("Frame", btn)
 						ripple.AnchorPoint = Vector2.new(0.5, 0.5); ripple.Position = UDim2.new(0.5, 0, 0.5, 0); ripple.Size = UDim2.new(0, 0, 0, 0)
-						ripple.BackgroundColor3 = Color3.fromRGB(200, 200, 255); ripple.BackgroundTransparency = 0.5; ripple.ZIndex = 15; ripple.BorderSizePixel = 0
+						ripple.BackgroundColor3 = Color3.fromRGB(255, 220, 150); ripple.BackgroundTransparency = 0.2; ripple.ZIndex = 15; ripple.BorderSizePixel = 0
 						local t = TweenService:Create(ripple, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(2.5, 0, 2.5, 0), BackgroundTransparency = 1})
 						t:Play(); t.Completed:Connect(function() ripple:Destroy() end)
 
@@ -213,10 +227,36 @@ local function BuildGrid()
 		end
 	end
 
-	PlayerAvatar.BackgroundColor3 = playerColor
+	-- Player Torch Avatar (Sharp Block)
+	PlayerAvatar.BackgroundColor3 = Color3.fromRGB(255, 200, 100)
+	PlayerAvatar.Size = UDim2.new(0, 45, 0, 45) -- Fits inside the tiles
+
 	local paStroke = PlayerAvatar:FindFirstChild("UIStroke") or Instance.new("UIStroke", PlayerAvatar)
 	paStroke.Color = Color3.fromRGB(255, 255, 255)
 	paStroke.Thickness = 2
+
+	local avatarGlow = PlayerAvatar:FindFirstChild("TorchGlow")
+	if not avatarGlow then
+		avatarGlow = Instance.new("ImageLabel", PlayerAvatar)
+		avatarGlow.Name = "TorchGlow"
+		avatarGlow.Size = UDim2.new(5, 0, 5, 0)
+		avatarGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+		avatarGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
+		avatarGlow.BackgroundTransparency = 1
+		avatarGlow.Image = "rbxassetid://2001828033" -- Radial glow image
+		avatarGlow.ImageColor3 = Color3.fromRGB(255, 180, 50)
+		avatarGlow.ZIndex = 0
+
+		-- Flickering torch effect
+		task.spawn(function()
+			while GUI do
+				local tIn = TweenService:Create(avatarGlow, TweenInfo.new(math.random(8,15)/10, Enum.EasingStyle.Sine), {Size = UDim2.new(4.5, 0, 4.5, 0), ImageTransparency = 0.6})
+				tIn:Play(); tIn.Completed:Wait()
+				local tOut = TweenService:Create(avatarGlow, TweenInfo.new(math.random(8,15)/10, Enum.EasingStyle.Sine), {Size = UDim2.new(5.5, 0, 5.5, 0), ImageTransparency = 0.3})
+				tOut:Play(); tOut.Completed:Wait()
+			end
+		end)
+	end
 
 	local targetX = -((CurrentSession.PlayerX - 0.5) * cellSize)
 	local targetY = -((CurrentSession.PlayerY - 0.5) * cellSize)
@@ -232,7 +272,7 @@ local function UpdateGridVisibility()
 
 	local targetX = -((px - 0.5) * cellSize)
 	local targetY = -((py - 0.5) * cellSize)
-	TweenService:Create(MapContainer, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+	TweenService:Create(MapContainer, TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
 		Position = UDim2.new(0.5, targetX, 0.5, targetY)
 	}):Play()
 
@@ -256,43 +296,57 @@ local function UpdateGridVisibility()
 
 			if not RevealedTiles[y .. "_" .. x] then continue end
 
-			local targetTrans = 1
-			if dist <= 1.5 then targetTrans = 0.05
-			elseif dist <= 2.5 then targetTrans = 0.25
-			elseif dist <= 3.5 then targetTrans = 0.55
-			elseif dist <= 4.5 then targetTrans = 0.85
-			else targetTrans = 1.0 end
+			-- The Torchlight "Fog of War"
+			local targetColor = tileColor
+			local targetStrkColor = Color3.fromRGB(20, 20, 25)
+
+			if dist <= 1.5 then 
+				-- Direct light (Adjacent)
+				targetColor = tileColor
+			elseif dist <= 2.5 then 
+				-- Dim light
+				targetColor = Color3.new(tileColor.R * 0.4, tileColor.G * 0.4, tileColor.B * 0.4)
+				targetStrkColor = Color3.fromRGB(10, 10, 12)
+			else 
+				-- Pitch Black (Outside torch radius)
+				targetColor = Color3.new(0, 0, 0)
+				targetStrkColor = Color3.new(0, 0, 0)
+			end
 
 			cellData.Icon.Visible = false
-			cellData.Btn.BackgroundColor3 = tileColor
 
 			if val == 5 then 
-				cellData.Btn.BackgroundColor3 = playerColor
+				-- The tile the player is standing on should just be lit tile color, the Avatar is separate
+				cellData.Btn.BackgroundColor3 = tileColor
 			elseif val == 1 then 
 				cellData.Icon.Visible = true
-				cellData.Stroke.Color = isAdj and Color3.fromRGB(220, 50, 50) or Color3.fromRGB(80, 40, 40)
+				cellData.Stroke.Color = isAdj and Color3.fromRGB(255, 80, 80) or targetStrkColor
 			elseif val == 2 then 
 				cellData.Icon.Visible = true
-				cellData.Stroke.Color = isAdj and Color3.fromRGB(50, 220, 50) or Color3.fromRGB(40, 80, 40)
+				cellData.Stroke.Color = isAdj and Color3.fromRGB(80, 255, 80) or targetStrkColor
 			elseif val == 3 then 
 				cellData.Icon.Visible = true
-				cellData.Stroke.Color = isAdj and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(100, 100, 100)
+				cellData.Stroke.Color = isAdj and Color3.fromRGB(255, 255, 255) or targetStrkColor
 			elseif val == 4 then 
-				cellData.Btn.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
-				cellData.Stroke.Color = Color3.fromRGB(30, 30, 40)
+				-- Solid Walls
+				targetColor = Color3.fromRGB(8, 8, 10)
+				cellData.Stroke.Color = Color3.new(0,0,0)
 			else 
-				cellData.Stroke.Color = isAdj and mapTint or Color3.fromRGB(40, 40, 50)
+				cellData.Stroke.Color = isAdj and Color3.fromRGB(255, 200, 100) or targetStrkColor
 			end
 
 			if isAdj then cellData.Btn.Active = true else cellData.Btn.Active = false end
 
-			TweenService:Create(cellData.Btn, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {BackgroundTransparency = targetTrans}):Play()
-			TweenService:Create(cellData.Stroke, TweenInfo.new(0.4, Enum.EasingStyle.Sine), {Transparency = targetTrans}):Play()
+			-- Tween into the light/darkness smoothly
+			TweenService:Create(cellData.Btn, TweenInfo.new(0.5, Enum.EasingStyle.Sine), {BackgroundColor3 = targetColor}):Play()
 
 			if cellData.Icon.Visible then
-				cellData.Icon.BackgroundTransparency = targetTrans
+				local iconTrans = (dist <= 2.5) and 0 or 1
+				TweenService:Create(cellData.Icon, TweenInfo.new(0.5, Enum.EasingStyle.Sine), {BackgroundTransparency = iconTrans}):Play()
 				for _, descendant in ipairs(cellData.Icon:GetDescendants()) do
-					if descendant:IsA("Frame") then descendant.BackgroundTransparency = targetTrans end
+					if descendant:IsA("Frame") then 
+						TweenService:Create(descendant, TweenInfo.new(0.5, Enum.EasingStyle.Sine), {BackgroundTransparency = iconTrans}):Play()
+					end
 				end
 			end
 		end
@@ -303,8 +357,8 @@ function LabyrinthUI.Initialize(masterScreenGui)
 	GUI = Instance.new("Frame", masterScreenGui)
 	GUI.Name = "LabyrinthUI"
 	GUI.Size = UDim2.new(1, 0, 1, 0)
-	GUI.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
-	GUI.BackgroundTransparency = 0.15
+	GUI.BackgroundColor3 = Color3.fromRGB(2, 2, 3) -- Pitch black overlay
+	GUI.BackgroundTransparency = 0.1
 	GUI.Visible = false
 	GUI.ZIndex = 50 
 
@@ -317,12 +371,17 @@ function LabyrinthUI.Initialize(masterScreenGui)
 
 	local TopBar = Instance.new("Frame", GUI)
 	TopBar.Size = UDim2.new(1, 0, 0, 80)
-	TopBar.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+	TopBar.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
 	TopBar.BorderSizePixel = 0
 	TopBar.ZIndex = 2
-	Instance.new("UIStroke", TopBar).Color = Color3.fromRGB(40, 40, 45)
+	Instance.new("UIStroke", TopBar).Color = Color3.fromRGB(30, 30, 35)
 
-	local TitleLbl = CreateSharpLabel(TopBar, "THE LABYRINTH", UDim2.new(1, 0, 0, 40), Enum.Font.Garamond, Color3.fromRGB(200, 220, 255), 32)
+	-- Dark gradient for the top bar
+	local tbGrad = Instance.new("UIGradient", TopBar)
+	tbGrad.Rotation = 90
+	tbGrad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.new(1,1,1)), ColorSequenceKeypoint.new(1, Color3.new(0.5,0.5,0.5))}
+
+	local TitleLbl = CreateSharpLabel(TopBar, "THE LABYRINTH", UDim2.new(1, 0, 0, 40), Enum.Font.Garamond, Color3.fromRGB(200, 220, 255), 36)
 	TitleLbl.Position = UDim2.new(0, 0, 0, 10)
 	TitleLbl.ZIndex = 3
 
@@ -334,54 +393,43 @@ function LabyrinthUI.Initialize(masterScreenGui)
 	GridContainer.Size = UDim2.new(0, 520, 0, 520)
 	GridContainer.Position = UDim2.new(0.4, 0, 0.5, -20)
 	GridContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-	GridContainer.BackgroundColor3 = Color3.fromRGB(8, 8, 10) 
+	GridContainer.BackgroundColor3 = Color3.fromRGB(5, 5, 6) 
 	GridContainer.BorderSizePixel = 0
 	GridContainer.ZIndex = 2
 	GridContainer.ClipsDescendants = true 
 
 	local mapStroke = Instance.new("UIStroke", GridContainer)
-	mapStroke.Color = Color3.fromRGB(30, 30, 35)
-	mapStroke.Thickness = 4
+	mapStroke.Color = Color3.fromRGB(20, 20, 25)
+	mapStroke.Thickness = 6
 
 	MapContainer = Instance.new("Frame", GridContainer)
 	MapContainer.BackgroundTransparency = 1
 	MapContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
 
 	PlayerAvatar = Instance.new("Frame", GridContainer)
-	PlayerAvatar.Size = UDim2.new(0, 65, 0, 65)
+	PlayerAvatar.Size = UDim2.new(0, 45, 0, 45)
 	PlayerAvatar.AnchorPoint = Vector2.new(0.5, 0.5)
 	PlayerAvatar.Position = UDim2.new(0.5, 0, 0.5, 0)
-	PlayerAvatar.BackgroundColor3 = Color3.fromRGB(30, 45, 65)
+	PlayerAvatar.BackgroundColor3 = Color3.fromRGB(255, 200, 100)
 	PlayerAvatar.ZIndex = 10
 	PlayerAvatar.BorderSizePixel = 0
 
-	local avatarGlow = Instance.new("Frame", PlayerAvatar)
-	avatarGlow.Size = UDim2.new(0.6, 0, 0.6, 0)
-	avatarGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-	avatarGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
-	avatarGlow.BackgroundColor3 = Color3.fromRGB(150, 200, 255)
-	avatarGlow.BorderSizePixel = 0
-
-	task.spawn(function()
-		while GUI do
-			local tIn = TweenService:Create(avatarGlow, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {Size = UDim2.new(0.4, 0, 0.4, 0), BackgroundTransparency = 0.5})
-			tIn:Play(); tIn.Completed:Wait()
-			local tOut = TweenService:Create(avatarGlow, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {Size = UDim2.new(0.6, 0, 0.6, 0), BackgroundTransparency = 0})
-			tOut:Play(); tOut.Completed:Wait()
-		end
-	end)
-
+	-- Leather-themed Labyrinth Pouch (Sharp edges)
 	PouchContainer = Instance.new("Frame", GUI)
 	PouchContainer.Size = UDim2.new(0, 250, 0, 350)
 	PouchContainer.Position = UDim2.new(0.85, 0, 0.5, -20)
 	PouchContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-	PouchContainer.BackgroundColor3 = Color3.fromRGB(20, 15, 12) 
+	PouchContainer.BackgroundColor3 = Color3.fromRGB(35, 25, 20) 
 	PouchContainer.BorderSizePixel = 0
 	PouchContainer.ZIndex = 2
 
+	local pGrad = Instance.new("UIGradient", PouchContainer)
+	pGrad.Rotation = 45
+	pGrad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.new(1,1,1)), ColorSequenceKeypoint.new(1, Color3.new(0.6,0.6,0.6))}
+
 	local pouchStroke = Instance.new("UIStroke", PouchContainer)
-	pouchStroke.Color = Color3.fromRGB(180, 120, 60)
-	pouchStroke.Thickness = 2
+	pouchStroke.Color = Color3.fromRGB(80, 50, 30)
+	pouchStroke.Thickness = 4
 
 	local spLayout = Instance.new("UIListLayout", PouchContainer)
 	spLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -397,7 +445,7 @@ function LabyrinthUI.Initialize(masterScreenGui)
 
 	local Divider = Instance.new("Frame", PouchContainer)
 	Divider.Size = UDim2.new(0.8, 0, 0, 2)
-	Divider.BackgroundColor3 = Color3.fromRGB(180, 120, 60)
+	Divider.BackgroundColor3 = Color3.fromRGB(80, 50, 30)
 	Divider.BorderSizePixel = 0
 	Divider.ZIndex = 3
 
@@ -473,8 +521,6 @@ function LabyrinthUI.Initialize(masterScreenGui)
 			LootDisplay.Text = lootStr
 
 			UpdateGridVisibility()
-
-			-- [[ THE FIX: Extracted so atmosphere is forced to change no matter what ]]
 			ToggleAtmosphere(true, data.Floor)
 
 			if not GUI.Visible then 
