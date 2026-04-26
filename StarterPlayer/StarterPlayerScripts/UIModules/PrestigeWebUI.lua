@@ -209,6 +209,9 @@ function PrestigeWebUI.Build(parentPanel)
 			dragStart = input.Position
 			startPos = Canvas.Position
 
+			-- [[ THE FIX: Immediately cache the input object so mobile drag tracking doesn't fail ]]
+			dragInput = input 
+
 			input.Changed:Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
 					dragging = false
@@ -218,7 +221,7 @@ function PrestigeWebUI.Build(parentPanel)
 	end)
 
 	CanvasContainer.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
 			dragInput = input
 		elseif input.UserInputType == Enum.UserInputType.MouseWheel then
 			local newScale = math.clamp(CanvasScale.Scale + (input.Position.Z * 0.15), 0.3, 2.5)
@@ -227,12 +230,23 @@ function PrestigeWebUI.Build(parentPanel)
 	end)
 
 	UserInputService.InputChanged:Connect(function(input)
+		-- Because dragInput was assigned in InputBegan, mobile Touch tracking will successfully pass this logic lock
 		if input == dragInput and dragging then
 			local delta = input.Position - dragStart
 			Canvas.Position = UDim2.new(
 				startPos.X.Scale, startPos.X.Offset + (delta.X / CanvasScale.Scale),
 				startPos.Y.Scale, startPos.Y.Offset + (delta.Y / CanvasScale.Scale)
 			)
+		end
+	end)
+
+	-- [[ ADDITION: Native Mobile Pinch-To-Zoom support ]]
+	local initialPinchScale = 1
+	UserInputService.TouchPinch:Connect(function(touchPositions, scale, velocity, state, gameProcessed)
+		if state == Enum.UserInputState.Begin then
+			initialPinchScale = CanvasScale.Scale
+		elseif state == Enum.UserInputState.Change then
+			CanvasScale.Scale = math.clamp(initialPinchScale * scale, 0.3, 2.5)
 		end
 	end)
 
