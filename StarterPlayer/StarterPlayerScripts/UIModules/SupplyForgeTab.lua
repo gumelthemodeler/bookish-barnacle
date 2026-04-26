@@ -118,21 +118,22 @@ local function UpdateLayoutForScreen()
 	if vp.X == 0 or vp.Y == 0 then return end
 	local isMobile = (vp.X <= 850) or (vp.Y > vp.X)
 
+	-- [[ FIX: Added strict dynamic size assignments to handle wrapping properly ]]
 	if LayoutRefs.MarketLayout then LayoutRefs.MarketLayout.FillDirection = isMobile and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal end
-	if LayoutRefs.MarketLeft then LayoutRefs.MarketLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 300) or UDim2.new(0.48, 0, 1, 0) end
-	if LayoutRefs.MarketRight then LayoutRefs.MarketRight.Size = isMobile and UDim2.new(0.95, 0, 0, 300) or UDim2.new(0.48, 0, 1, 0) end
+	if LayoutRefs.MarketLeft then LayoutRefs.MarketLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 360) or UDim2.new(0.48, 0, 0, 400) end
+	if LayoutRefs.MarketRight then LayoutRefs.MarketRight.Size = isMobile and UDim2.new(0.95, 0, 0, 320) or UDim2.new(0.48, 0, 0, 400) end
 
 	if LayoutRefs.TradeLayout then LayoutRefs.TradeLayout.FillDirection = isMobile and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal end
-	if LayoutRefs.TradeLeft then LayoutRefs.TradeLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 200) or UDim2.new(0.48, 0, 1, 0) end
-	if LayoutRefs.TradeRight then LayoutRefs.TradeRight.Size = isMobile and UDim2.new(0.95, 0, 0, 200) or UDim2.new(0.48, 0, 1, 0) end
+	if LayoutRefs.TradeLeft then LayoutRefs.TradeLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 260) or UDim2.new(0.48, 0, 0, 280) end
+	if LayoutRefs.TradeRight then LayoutRefs.TradeRight.Size = isMobile and UDim2.new(0.95, 0, 0, 220) or UDim2.new(0.48, 0, 0, 280) end
 
 	if LayoutRefs.ForgeLayout then LayoutRefs.ForgeLayout.FillDirection = isMobile and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal end
-	if LayoutRefs.ForgeLeft then LayoutRefs.ForgeLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 350) or UDim2.new(0.35, 0, 1, 0) end
-	if LayoutRefs.ForgeRight then LayoutRefs.ForgeRight.Size = isMobile and UDim2.new(0.95, 0, 0, 500) or UDim2.new(0.63, 0, 1, 0) end
+	if LayoutRefs.ForgeLeft then LayoutRefs.ForgeLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 350) or UDim2.new(0.35, 0, 0, 500) end
+	if LayoutRefs.ForgeRight then LayoutRefs.ForgeRight.Size = isMobile and UDim2.new(0.95, 0, 0, 400) or UDim2.new(0.63, 0, 0, 500) end
 
 	if LayoutRefs.TitanLayout then LayoutRefs.TitanLayout.FillDirection = isMobile and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal end
-	if LayoutRefs.TitanLeft then LayoutRefs.TitanLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 400) or UDim2.new(0.5, 0, 1, 0) end
-	if LayoutRefs.TitanRight then LayoutRefs.TitanRight.Size = isMobile and UDim2.new(0.95, 0, 0, 400) or UDim2.new(0.48, 0, 1, 0) end
+	if LayoutRefs.TitanLeft then LayoutRefs.TitanLeft.Size = isMobile and UDim2.new(0.95, 0, 0, 420) or UDim2.new(0.5, 0, 0, 450) end
+	if LayoutRefs.TitanRight then LayoutRefs.TitanRight.Size = isMobile and UDim2.new(0.95, 0, 0, 260) or UDim2.new(0.48, 0, 0, 450) end
 end
 
 function SupplyForgeTab.Initialize(parentFrame)
@@ -173,11 +174,9 @@ function SupplyForgeTab.Initialize(parentFrame)
 	ContentArea.Size = UDim2.new(0.95, 0, 0, 0)
 	ContentArea.BackgroundTransparency = 1
 	ContentArea.LayoutOrder = 2
+	ContentArea.AutomaticSize = Enum.AutomaticSize.Y -- [[ FIX: Added AutomaticSize so content stretches vertically ]]
 
 	local contentLayout = Instance.new("UIListLayout", ContentArea)
-	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		ContentArea.Size = UDim2.new(0.95, 0, 0, contentLayout.AbsoluteContentSize.Y)
-	end)
 
 	local subTabs = { "MARKET & TRADE", "THE FORGE", "TITAN LAB" }
 	local activeSubFrames = {}
@@ -190,8 +189,9 @@ function SupplyForgeTab.Initialize(parentFrame)
 
 		local subFrame = Instance.new("Frame", ContentArea)
 		subFrame.Name = tabName
-		subFrame.Size = UDim2.new(1, 0, 0, 800)
+		subFrame.Size = UDim2.new(1, 0, 0, 0) -- [[ FIX: Stripped fixed height ]]
 		subFrame.BackgroundTransparency = 1
+		subFrame.AutomaticSize = Enum.AutomaticSize.Y -- [[ FIX: Lets sub-tab dictate scroll height dynamically ]]
 		subFrame.Visible = (i == 1)
 
 		activeSubFrames[tabName] = subFrame
@@ -218,7 +218,8 @@ function SupplyForgeTab.Initialize(parentFrame)
 	mtLayout.Padding = UDim.new(0, 10)
 
 	local ShopRow = Instance.new("Frame", MTTab)
-	ShopRow.Size = UDim2.new(1, 0, 0, 400)
+	ShopRow.Size = UDim2.new(1, 0, 0, 0)
+	ShopRow.AutomaticSize = Enum.AutomaticSize.Y
 	ShopRow.BackgroundTransparency = 1
 	ShopRow.LayoutOrder = 1
 	local srLayout = Instance.new("UIListLayout", ShopRow)
@@ -226,7 +227,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 	srLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	srLayout.Padding = UDim.new(0, 20)
 
-	local MTLeftPanel = Instance.new("Frame", ShopRow); MTLeftPanel.Size = UDim2.new(0.48, 0, 1, 0); MTLeftPanel.BackgroundTransparency = 1
+	local MTLeftPanel = Instance.new("Frame", ShopRow); MTLeftPanel.Size = UDim2.new(0.48, 0, 0, 400); MTLeftPanel.BackgroundTransparency = 1
 	local shopHeader = UIHelpers.CreateLabel(MTLeftPanel, "MILITARY SUPPLY", UDim2.new(1, 0, 0, 25), Enum.Font.GothamBlack, Color3.fromRGB(85, 255, 85), 16)
 
 	local rrContainer = Instance.new("Frame", MTLeftPanel); rrContainer.Size = UDim2.new(1, 0, 0, 40); rrContainer.Position = UDim2.new(0, 0, 0, 30); rrContainer.BackgroundTransparency = 1
@@ -269,7 +270,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 			rrPremium.Text = "FREE RESTOCK"
 			rrPremium.TextColor3 = Color3.fromRGB(200, 100, 255); rrPremStroke.Color = Color3.fromRGB(200, 100, 255); isFreeRestock = true
 		else
-			rrPremium.Text = "RESTOCK (50 R$)"; rrPremium.TextColor3 = Color3.fromRGB(85, 255, 85); rrPremStroke.Color = Color3.fromRGB(85, 255, 85); isFreeRestock = false
+			rrPremium.Text = "RESTOCK (15 R$)"; rrPremium.TextColor3 = Color3.fromRGB(85, 255, 85); rrPremStroke.Color = Color3.fromRGB(85, 255, 85); isFreeRestock = false
 		end
 	end
 	UpdateRerollButton()
@@ -308,7 +309,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 	RefreshShop()
 
 	-- Premium Store
-	local MTRightPanel = Instance.new("Frame", ShopRow); MTRightPanel.Size = UDim2.new(0.48, 0, 1, 0); MTRightPanel.BackgroundTransparency = 1
+	local MTRightPanel = Instance.new("Frame", ShopRow); MTRightPanel.Size = UDim2.new(0.48, 0, 0, 400); MTRightPanel.BackgroundTransparency = 1
 	local pTitle = UIHelpers.CreateLabel(MTRightPanel, "PREMIUM STORE", UDim2.new(1, 0, 0, 25), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 16)
 	local PremScroll = Instance.new("ScrollingFrame", MTRightPanel); PremScroll.Size = UDim2.new(1, 0, 1, -30); PremScroll.Position = UDim2.new(0, 0, 0, 30); PremScroll.BackgroundTransparency = 1; PremScroll.ScrollBarThickness = 6; PremScroll.BorderSizePixel = 0
 	local pslayout = Instance.new("UIListLayout", PremScroll); pslayout.Padding = UDim.new(0, 8)
@@ -344,7 +345,8 @@ function SupplyForgeTab.Initialize(parentFrame)
 	TweenService:Create(tIndLbl, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {TextTransparency = 0.5}):Play()
 
 	local TradeRow = Instance.new("Frame", MTTab)
-	TradeRow.Size = UDim2.new(1, 0, 0, 250)
+	TradeRow.Size = UDim2.new(1, 0, 0, 0)
+	TradeRow.AutomaticSize = Enum.AutomaticSize.Y
 	TradeRow.BackgroundTransparency = 1
 	TradeRow.LayoutOrder = 3
 	local trLayout = Instance.new("UIListLayout", TradeRow)
@@ -352,28 +354,31 @@ function SupplyForgeTab.Initialize(parentFrame)
 	trLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	trLayout.Padding = UDim.new(0, 20)
 
-	local TradeLeftPanel = Instance.new("Frame", TradeRow); TradeLeftPanel.Size = UDim2.new(0.48, 0, 1, 0); TradeLeftPanel.BackgroundTransparency = 1
-	local SendContainer, _ = CreateGrimPanel(TradeLeftPanel); SendContainer.Size = UDim2.new(1, 0, 1, 0)
-	local scTitle = UIHelpers.CreateLabel(SendContainer, "OUTGOING REQUEST", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 16); scTitle.Position = UDim2.new(0, 0, 0, 10)
-	local pInput = Instance.new("TextBox", SendContainer); pInput.Size = UDim2.new(0.8, 0, 0, 40); pInput.Position = UDim2.new(0.5, 0, 0, 60); pInput.AnchorPoint = Vector2.new(0.5, 0); pInput.BackgroundColor3 = Color3.fromRGB(15, 15, 18); pInput.TextColor3 = UIHelpers.Colors.TextWhite; pInput.Font = Enum.Font.GothamMedium; pInput.TextSize = 16; pInput.PlaceholderText = "Target Username..."; pInput.Text = ""; Instance.new("UIStroke", pInput).Color = UIHelpers.Colors.BorderMuted
-	local SendBtn, sendStroke = CreateSharpButton(SendContainer, "SEND REQUEST", UDim2.new(0.8, 0, 0, 45), Enum.Font.GothamBlack, 16); SendBtn.Position = UDim2.new(0.5, 0, 0, 120); SendBtn.AnchorPoint = Vector2.new(0.5, 0); SendBtn.TextColor3 = Color3.fromRGB(85, 170, 255); sendStroke.Color = Color3.fromRGB(85, 170, 255)
+	local TradeLeftPanel = Instance.new("Frame", TradeRow); TradeLeftPanel.Size = UDim2.new(0.48, 0, 0, 280); TradeLeftPanel.BackgroundTransparency = 1
+	local tlLayout = Instance.new("UIListLayout", TradeLeftPanel); tlLayout.Padding = UDim.new(0, 15); tlLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-	-- [[ RE-ADDED PROMO CODES PANEL HERE ]]
+	-- [[ FIX: Compacted Trade Send UI for Mobile Screen ]]
+	local SendContainer, _ = CreateGrimPanel(TradeLeftPanel); SendContainer.Size = UDim2.new(1, 0, 0, 150); SendContainer.LayoutOrder = 1
+	local scTitle = UIHelpers.CreateLabel(SendContainer, "OUTGOING REQUEST", UDim2.new(1, 0, 0, 20), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 15); scTitle.Position = UDim2.new(0, 0, 0, 10)
+	local pInput = Instance.new("TextBox", SendContainer); pInput.Size = UDim2.new(0.8, 0, 0, 35); pInput.Position = UDim2.new(0.5, 0, 0, 40); pInput.AnchorPoint = Vector2.new(0.5, 0); pInput.BackgroundColor3 = Color3.fromRGB(15, 15, 18); pInput.TextColor3 = UIHelpers.Colors.TextWhite; pInput.Font = Enum.Font.GothamMedium; pInput.TextSize = 14; pInput.PlaceholderText = "Target Username..."; pInput.Text = ""; Instance.new("UIStroke", pInput).Color = UIHelpers.Colors.BorderMuted
+	local SendBtn, sendStroke = CreateSharpButton(SendContainer, "SEND REQUEST", UDim2.new(0.8, 0, 0, 40), Enum.Font.GothamBlack, 15); SendBtn.Position = UDim2.new(0.5, 0, 0, 90); SendBtn.AnchorPoint = Vector2.new(0.5, 0); SendBtn.TextColor3 = Color3.fromRGB(85, 170, 255); sendStroke.Color = Color3.fromRGB(85, 170, 255)
+
+	-- [[ FIX: Compacted Promo Code UI for Mobile Screen ]]
 	local CodeContainer = Instance.new("Frame", TradeLeftPanel)
-	CodeContainer.Size = UDim2.new(1, 0, 0, 100)
-	CodeContainer.Position = UDim2.new(0, 0, 1, 20)
+	CodeContainer.Size = UDim2.new(1, 0, 0, 90)
 	CodeContainer.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 	CodeContainer.BorderSizePixel = 0
+	CodeContainer.LayoutOrder = 2
 	local cStroke = Instance.new("UIStroke", CodeContainer)
 	cStroke.Color = Color3.fromRGB(70, 70, 80)
 	cStroke.Thickness = 2
 
-	local codeTitle = UIHelpers.CreateLabel(CodeContainer, "REDEEM PROMO CODE", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 16)
-	codeTitle.Position = UDim2.new(0, 0, 0, 10)
+	local codeTitle = UIHelpers.CreateLabel(CodeContainer, "REDEEM PROMO CODE", UDim2.new(1, 0, 0, 20), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 15)
+	codeTitle.Position = UDim2.new(0, 0, 0, 5)
 
 	local cInput = Instance.new("TextBox", CodeContainer)
 	cInput.Size = UDim2.new(0.65, 0, 0, 35)
-	cInput.Position = UDim2.new(0.05, 0, 0, 50)
+	cInput.Position = UDim2.new(0.05, 0, 0, 35)
 	cInput.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 	cInput.TextColor3 = UIHelpers.Colors.TextWhite
 	cInput.Font = Enum.Font.GothamMedium
@@ -382,8 +387,8 @@ function SupplyForgeTab.Initialize(parentFrame)
 	cInput.Text = ""
 	Instance.new("UIStroke", cInput).Color = UIHelpers.Colors.BorderMuted
 
-	local RedeemBtn, redeemStroke = CreateSharpButton(CodeContainer, "REDEEM", UDim2.new(0.25, 0, 0, 35), Enum.Font.GothamBlack, 14)
-	RedeemBtn.Position = UDim2.new(0.72, 0, 0, 50)
+	local RedeemBtn, redeemStroke = CreateSharpButton(CodeContainer, "REDEEM", UDim2.new(0.25, 0, 0, 35), Enum.Font.GothamBlack, 13)
+	RedeemBtn.Position = UDim2.new(0.72, 0, 0, 35)
 	RedeemBtn.TextColor3 = Color3.fromRGB(85, 255, 85)
 	redeemStroke.Color = Color3.fromRGB(85, 255, 85)
 
@@ -393,10 +398,8 @@ function SupplyForgeTab.Initialize(parentFrame)
 			cInput.Text = ""
 		end
 	end)
-	-- [[ END OF PROMO CODES PANEL ]]
 
-
-	local TradeRightPanel = Instance.new("Frame", TradeRow); TradeRightPanel.Size = UDim2.new(0.48, 0, 1, 0); TradeRightPanel.BackgroundTransparency = 1
+	local TradeRightPanel = Instance.new("Frame", TradeRow); TradeRightPanel.Size = UDim2.new(0.48, 0, 0, 280); TradeRightPanel.BackgroundTransparency = 1
 	local IncContainer, _ = CreateGrimPanel(TradeRightPanel); IncContainer.Size = UDim2.new(1, 0, 1, 0)
 	local incTitle = UIHelpers.CreateLabel(IncContainer, "INCOMING REQUESTS", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 16); incTitle.Position = UDim2.new(0, 0, 0, 10)
 	local ReqScroll = Instance.new("ScrollingFrame", IncContainer); ReqScroll.Size = UDim2.new(1, -20, 1, -50); ReqScroll.Position = UDim2.new(0, 10, 0, 40); ReqScroll.BackgroundTransparency = 1; ReqScroll.ScrollBarThickness = 6; ReqScroll.BorderSizePixel = 0
@@ -432,12 +435,13 @@ function SupplyForgeTab.Initialize(parentFrame)
 	fgTitle.Position = UDim2.new(0, 0, 0, 0)
 
 	local fgSplitContainer = Instance.new("Frame", ForgeTab)
-	fgSplitContainer.Size = UDim2.new(1, 0, 1, -40)
+	fgSplitContainer.Size = UDim2.new(1, 0, 0, 0)
 	fgSplitContainer.Position = UDim2.new(0, 0, 0, 40)
+	fgSplitContainer.AutomaticSize = Enum.AutomaticSize.Y
 	fgSplitContainer.BackgroundTransparency = 1
 	local fgLayout = Instance.new("UIListLayout", fgSplitContainer); fgLayout.FillDirection = Enum.FillDirection.Horizontal; fgLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center; fgLayout.Padding = UDim.new(0, 15)
 
-	local FLeftPanel = Instance.new("Frame", fgSplitContainer); FLeftPanel.Size = UDim2.new(0.35, 0, 1, 0); FLeftPanel.BackgroundTransparency = 1
+	local FLeftPanel = Instance.new("Frame", fgSplitContainer); FLeftPanel.Size = UDim2.new(0.35, 0, 0, 500); FLeftPanel.BackgroundTransparency = 1
 
 	-- Mode Toggles
 	local fModeNav = Instance.new("Frame", FLeftPanel); fModeNav.Size = UDim2.new(1, 0, 0, 35); fModeNav.BackgroundTransparency = 1
@@ -457,7 +461,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 	local RefineList = Instance.new("ScrollingFrame", FLeftPanel); RefineList.Size = UDim2.new(1, 0, 1, -45); RefineList.Position = UDim2.new(0, 0, 0, 45); RefineList.BackgroundTransparency = 1; RefineList.ScrollBarThickness = 4; RefineList.BorderSizePixel = 0; RefineList.Visible = false
 	local rflLayout = Instance.new("UIListLayout", RefineList); rflLayout.Padding = UDim.new(0, 10); rflLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() RefineList.CanvasSize = UDim2.new(0, 0, 0, rflLayout.AbsoluteContentSize.Y + 10) end)
 
-	local FRightPanel = Instance.new("Frame", fgSplitContainer); FRightPanel.Size = UDim2.new(0.63, 0, 1, 0); FRightPanel.BackgroundTransparency = 1 
+	local FRightPanel = Instance.new("Frame", fgSplitContainer); FRightPanel.Size = UDim2.new(0.63, 0, 0, 500); FRightPanel.BackgroundTransparency = 1 
 
 	-- Blueprint View
 	local BlueprintView = Instance.new("ScrollingFrame", FRightPanel); BlueprintView.Size = UDim2.new(1, 0, 1, 0); BlueprintView.BackgroundTransparency = 1; BlueprintView.ScrollBarThickness = 0; BlueprintView.BorderSizePixel = 0
@@ -765,11 +769,11 @@ function SupplyForgeTab.Initialize(parentFrame)
 	-- 3. TITAN LAB (Fusion & Variant Awakening)
 	-- ==========================================
 	local TitanLabTab = activeSubFrames["TITAN LAB"]
-	local tlSplitContainer = Instance.new("Frame", TitanLabTab); tlSplitContainer.Size = UDim2.new(1, 0, 1, -20); tlSplitContainer.Position = UDim2.new(0, 0, 0, 20); tlSplitContainer.BackgroundTransparency = 1
+	local tlSplitContainer = Instance.new("Frame", TitanLabTab); tlSplitContainer.Size = UDim2.new(1, 0, 0, 0); tlSplitContainer.Position = UDim2.new(0, 0, 0, 20); tlSplitContainer.BackgroundTransparency = 1; tlSplitContainer.AutomaticSize = Enum.AutomaticSize.Y
 	local tlLayout = Instance.new("UIListLayout", tlSplitContainer); tlLayout.FillDirection = Enum.FillDirection.Horizontal; tlLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center; tlLayout.Padding = UDim.new(0, 15)
 
 	-- Left: Titan Hybridization (Fusion)
-	local TLLeftPanel = Instance.new("Frame", tlSplitContainer); TLLeftPanel.Size = UDim2.new(0.48, 0, 1, 0); TLLeftPanel.BackgroundTransparency = 1
+	local TLLeftPanel = Instance.new("Frame", tlSplitContainer); TLLeftPanel.Size = UDim2.new(0.48, 0, 0, 450); TLLeftPanel.BackgroundTransparency = 1
 	local fTitle = UIHelpers.CreateLabel(TLLeftPanel, "TITAN HYBRIDIZATION", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, Color3.fromRGB(170, 85, 255), 20); fTitle.Position = UDim2.new(0, 0, 0, 0); fTitle.TextXAlignment = Enum.TextXAlignment.Left
 	local fDesc = UIHelpers.CreateLabel(TLLeftPanel, "Fuse two Pure Titans with Abyssal Blood to create a horrific Hybrid.", UDim2.new(1, -20, 0, 40), Enum.Font.GothamMedium, UIHelpers.Colors.TextMuted, 13); fDesc.Position = UDim2.new(0, 0, 0, 30); fDesc.TextXAlignment = Enum.TextXAlignment.Left; fDesc.TextWrapped = true
 
@@ -803,28 +807,30 @@ function SupplyForgeTab.Initialize(parentFrame)
 	end
 
 	local Slot1, Slot1Title, Slot1AddBtn, Slot1OverBtn, S1Glow = CreateFusionSlot(UDim2.new(0.2, 0, 0.25, 0), "SUBJECT ALPHA", false)
-	local PlusLbl = UIHelpers.CreateLabel(SlotContainer, "+", UDim2.new(0, 20, 0, 100), Enum.Font.GothamBlack, UIHelpers.Colors.TextMuted, 24)
+	local PlusLbl = UIHelpers.CreateLabel(AltarContainer, "+", UDim2.new(0, 20, 0, 100), Enum.Font.GothamBlack, UIHelpers.Colors.TextMuted, 24)
 	local Slot2, Slot2Title, Slot2AddBtn, Slot2OverBtn, S2Glow = CreateFusionSlot(UDim2.new(0.8, 0, 0.25, 0), "SUBJECT OMEGA", false)
-	local EqLbl = UIHelpers.CreateLabel(SlotContainer, "=", UDim2.new(0, 20, 0, 100), Enum.Font.GothamBlack, UIHelpers.Colors.TextMuted, 24)
+	local EqLbl = UIHelpers.CreateLabel(AltarContainer, "=", UDim2.new(0, 20, 0, 100), Enum.Font.GothamBlack, UIHelpers.Colors.TextMuted, 24)
 	local ResultSlot, ResultTitle, ResultLbl, _, ResGlow = CreateFusionSlot(UDim2.new(0.5, 0, 0.75, 0), "HYBRIDIZATION", true)
 
 	local FuseBtn, FuseStroke = CreateSharpButton(TLLeftPanel, "INITIATE FUSION (15K Dews)", UDim2.new(0.8, 0, 0, 45), Enum.Font.GothamBlack, 14); FuseBtn.Position = UDim2.new(0.5, 0, 0, 320); FuseBtn.AnchorPoint = Vector2.new(0.5, 0); FuseBtn.TextColor3 = Color3.fromRGB(170, 85, 255); FuseStroke.Color = Color3.fromRGB(170, 85, 255)
 
-	-- Sleek Inline Selection Panel
+	-- [[ FIX: Refactored Titan Selection Panel to smoothly overlap instead of breaking scroll height ]]
 	local SelectionPanel = Instance.new("Frame", TLLeftPanel)
-	SelectionPanel.Size = UDim2.new(1, 0, 1, -380)
-	SelectionPanel.Position = UDim2.new(0, 0, 0, 380)
-	SelectionPanel.BackgroundTransparency = 1
+	SelectionPanel.Size = UDim2.new(1, 0, 0, 240)
+	SelectionPanel.Position = UDim2.new(0, 0, 0, 80)
+	SelectionPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+	SelectionPanel.ZIndex = 50
 	SelectionPanel.Visible = false
+	local spStroke = Instance.new("UIStroke", SelectionPanel); spStroke.Color = Color3.fromRGB(70, 70, 80); spStroke.Thickness = 2
 
-	local spTitle = UIHelpers.CreateLabel(SelectionPanel, "SELECT A TITAN", UDim2.new(0.5, 0, 0, 20), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 14); spTitle.Position = UDim2.new(0, 0, 0, 0); spTitle.TextXAlignment = Enum.TextXAlignment.Left
+	local spTitle = UIHelpers.CreateLabel(SelectionPanel, "SELECT A TITAN", UDim2.new(0.5, 0, 0, 20), Enum.Font.GothamBlack, UIHelpers.Colors.Gold, 14); spTitle.Position = UDim2.new(0, 10, 0, 5); spTitle.TextXAlignment = Enum.TextXAlignment.Left; spTitle.ZIndex = 51
 	local spClose = CreateSharpButton(SelectionPanel, "CANCEL", UDim2.new(0, 80, 0, 20), Enum.Font.GothamBlack, 11)
-	spClose.Position = UDim2.new(1, 0, 0, 0); spClose.AnchorPoint = Vector2.new(1,0); spClose.TextColor3 = Color3.fromRGB(255,100,100); spClose:FindFirstChild("UIStroke").Color = Color3.fromRGB(255,100,100)
-	spClose.MouseButton1Click:Connect(function() SelectionPanel.Visible = false end)
+	spClose.Position = UDim2.new(1, -10, 0, 5); spClose.AnchorPoint = Vector2.new(1,0); spClose.TextColor3 = Color3.fromRGB(255,100,100); spClose:FindFirstChild("UIStroke").Color = Color3.fromRGB(255,100,100); spClose.ZIndex = 51
+	spClose.MouseButton1Click:Connect(function() SelectionPanel.Visible = false; AltarContainer.Visible = true; FuseBtn.Visible = true end)
 
-	local TitanScroll = Instance.new("ScrollingFrame", SelectionPanel); TitanScroll.Size = UDim2.new(1, 0, 1, -25); TitanScroll.Position = UDim2.new(0, 0, 0, 25); TitanScroll.BackgroundTransparency = 1; TitanScroll.ScrollBarThickness = 6; TitanScroll.BorderSizePixel = 0
+	local TitanScroll = Instance.new("ScrollingFrame", SelectionPanel); TitanScroll.Size = UDim2.new(1, 0, 1, -25); TitanScroll.Position = UDim2.new(0, 0, 0, 25); TitanScroll.BackgroundTransparency = 1; TitanScroll.ScrollBarThickness = 6; TitanScroll.BorderSizePixel = 0; TitanScroll.ZIndex = 52
 	local tsLayout = Instance.new("UIListLayout", TitanScroll); tsLayout.Padding = UDim.new(0, 8); tsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() TitanScroll.CanvasSize = UDim2.new(0,0,0, tsLayout.AbsoluteContentSize.Y + 10) end)
-	local noTitansLbl = UIHelpers.CreateLabel(TitanScroll, "No valid Titans found in Vault.", UDim2.new(1, 0, 0, 50), Enum.Font.GothamMedium, UIHelpers.Colors.TextMuted, 14); noTitansLbl.Visible = false
+	local noTitansLbl = UIHelpers.CreateLabel(TitanScroll, "No valid Titans found in Vault.", UDim2.new(1, 0, 0, 50), Enum.Font.GothamMedium, UIHelpers.Colors.TextMuted, 14); noTitansLbl.Visible = false; noTitansLbl.ZIndex = 53
 
 	local glowTweenInfo = TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 	local l1Glow = TweenService:Create(l1, glowTweenInfo, {BackgroundColor3 = Color3.fromRGB(200, 100, 255)})
@@ -858,7 +864,10 @@ function SupplyForgeTab.Initialize(parentFrame)
 	end
 
 	local function OpenTitanSelection(slotId)
-		activeSlotIndex = slotId; SelectionPanel.Visible = true
+		activeSlotIndex = slotId
+		AltarContainer.Visible = false
+		FuseBtn.Visible = false
+		SelectionPanel.Visible = true
 		for _, c in ipairs(TitanScroll:GetChildren()) do if c:IsA("Frame") or c:IsA("TextButton") then c:Destroy() end end
 		local foundAny = false; local titanSlots = {"Equipped", "1", "2", "3", "4", "5", "6"}
 		for _, slotKey in ipairs(titanSlots) do
@@ -872,7 +881,10 @@ function SupplyForgeTab.Initialize(parentFrame)
 				local tBtn, tBtnStroke = CreateSharpButton(TitanScroll, labelText, UDim2.new(1, -10, 0, 50), Enum.Font.GothamBlack, 14); tBtn.ZIndex = 53; tBtn.TextColor3 = rarityColor; tBtnStroke.Color = rarityColor
 				tBtn.MouseButton1Click:Connect(function()
 					if activeSlotIndex == 1 then selectedAlpha = {Slot = slotKey, Name = tName} else selectedOmega = {Slot = slotKey, Name = tName} end
-					SelectionPanel.Visible = false; UpdateFusionUI()
+					SelectionPanel.Visible = false
+					AltarContainer.Visible = true
+					FuseBtn.Visible = true
+					UpdateFusionUI()
 				end)
 			end
 		end
@@ -917,7 +929,7 @@ function SupplyForgeTab.Initialize(parentFrame)
 	end)
 
 	-- Right: Variant Awakening
-	local TLRightPanel = Instance.new("Frame", tlSplitContainer); TLRightPanel.Size = UDim2.new(0.48, 0, 1, 0); TLRightPanel.BackgroundTransparency = 1
+	local TLRightPanel = Instance.new("Frame", tlSplitContainer); TLRightPanel.Size = UDim2.new(0.48, 0, 0, 450); TLRightPanel.BackgroundTransparency = 1
 	local mTitle = UIHelpers.CreateLabel(TLRightPanel, "VARIANT AWAKENING", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, Color3.fromRGB(255, 85, 85), 20); mTitle.Position = UDim2.new(0, 0, 0, 0); mTitle.TextXAlignment = Enum.TextXAlignment.Left
 	local mDesc = UIHelpers.CreateLabel(TLRightPanel, "Expose your equipped Titan to anomalous compounds to mutate its biology, granting permanent cosmetic variants and trait buffs.", UDim2.new(1, -20, 0, 40), Enum.Font.GothamMedium, UIHelpers.Colors.TextMuted, 13); mDesc.Position = UDim2.new(0, 0, 0, 30); mDesc.TextXAlignment = Enum.TextXAlignment.Left; mDesc.TextWrapped = true
 
@@ -927,7 +939,6 @@ function SupplyForgeTab.Initialize(parentFrame)
 	local cvBuff = UIHelpers.CreateLabel(currentVariantCard, "Standard shifting properties.", UDim2.new(1, -20, 0, 20), Enum.Font.GothamMedium, Color3.fromRGB(200, 255, 200), 12); cvBuff.Position = UDim2.new(0, 10, 0, 60); cvBuff.TextXAlignment = Enum.TextXAlignment.Left
 
 	local MutateBtn, MutateStroke = CreateSharpButton(TLRightPanel, "AWAKEN VARIANT (25K Dews + 1 Abyssal Blood)", UDim2.new(0.9, 0, 0, 45), Enum.Font.GothamBlack, 12)
-	-- Pinned directly under the variant display instead of the bottom of the screen
 	MutateBtn.Position = UDim2.new(0.5, 0, 0, 195); MutateBtn.AnchorPoint = Vector2.new(0.5, 0); MutateBtn.TextColor3 = Color3.fromRGB(255, 85, 85); MutateStroke.Color = Color3.fromRGB(255, 85, 85)
 
 	local function UpdateVariantUI()
