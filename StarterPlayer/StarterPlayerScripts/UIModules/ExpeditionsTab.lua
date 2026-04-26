@@ -43,6 +43,7 @@ local IsInParty = false
 local IsPartyLeader = false
 local PendingInvites = {}
 local isListening = false
+local rumblingLoopActive = false
 
 local LayoutRefs = {}
 
@@ -95,6 +96,47 @@ local function UpdateLayoutForScreen()
 		end
 		LayoutRefs.PartyPanel.Position = UDim2.new(0, 0, 0, 10)
 	end
+end
+
+local function StartRumblingTracker(grid)
+	if rumblingLoopActive then return end
+	rumblingLoopActive = true
+
+	task.spawn(function()
+		while ReplicatedStorage:GetAttribute("RumblingActive") do
+			local data = Network:WaitForChild("GetRumblingData"):InvokeServer()
+			if data and data.IsActive then
+				local tracker = grid:FindFirstChild("RumblingTracker")
+				if tracker then
+					local prog = tracker:FindFirstChild("ProgLbl")
+					local timeL = tracker:FindFirstChild("TimeLbl")
+					local lbCont = tracker:FindFirstChild("LbContainer")
+
+					if prog then prog.Text = "KILLS: " .. data.Kills .. " / " .. data.Target end
+					if timeL then 
+						local m = math.floor(data.TimeLeft / 60)
+						local s = data.TimeLeft % 60
+						timeL.Text = string.format("TIME LEFT: %02d:%02d", m, s)
+					end
+
+					if lbCont then
+						for _, c in ipairs(lbCont:GetChildren()) do if c:IsA("TextLabel") then c:Destroy() end end
+						for i = 1, math.min(3, #data.Leaderboard) do
+							local pData = data.Leaderboard[i]
+							local row = UIHelpers.CreateLabel(lbCont, "#" .. i .. " " .. pData.Name .. " - " .. pData.Damage .. " Kills", UDim2.new(1, 0, 0, 20), Enum.Font.GothamBold, Color3.fromRGB(200, 200, 200), 12)
+							row.TextXAlignment = Enum.TextXAlignment.Left
+						end
+					end
+				end
+			else
+				break
+			end
+			task.wait(1.5)
+		end
+		rumblingLoopActive = false
+		local t = grid:FindFirstChild("RumblingTracker")
+		if t then t:Destroy() end
+	end)
 end
 
 function ExpeditionsTab.Initialize(parentFrame)
@@ -244,6 +286,10 @@ function ExpeditionsTab.Initialize(parentFrame)
 		lblDesc.TextTransparency = 0.2; lblDesc.Position = UDim2.new(0, 20, 0, 38); lblDesc.TextXAlignment = Enum.TextXAlignment.Left; lblDesc.TextWrapped = true; lblDesc.TextYAlignment = Enum.TextYAlignment.Top; lblDesc.ZIndex = 4
 
 		local actionBtn, actStroke = CreateSharpButton(cardBtn, "DEPLOY", UDim2.new(0, 110, 0, 45), Enum.Font.GothamBlack, 14)
+
+		-- Custom text for the Rumbling Initate card
+		if title == "INITIATE RUMBLING" then actionBtn.Text = "INITIATE" end
+
 		actionBtn.Position = UDim2.new(1, -15, 0.5, 0); actionBtn.AnchorPoint = Vector2.new(1, 0.5); actionBtn.ZIndex = 5
 
 		cardBtn.MouseEnter:Connect(function() 
@@ -272,13 +318,42 @@ function ExpeditionsTab.Initialize(parentFrame)
 
 	local function RefreshMainGrid()
 		for _, c in ipairs(GridContainer:GetChildren()) do
-			if c.Name == "RumblingCard_Active" or c.Name == "RumblingCard_Trigger" then c:Destroy() end
+			if c.Name == "RumblingCard_Active" or c.Name == "RumblingCard_Trigger" or c.Name == "RumblingTracker" then c:Destroy() end
 		end
 
 		local isRumblingActive = ReplicatedStorage:GetAttribute("RumblingActive")
 		local bones = tonumber(player:GetAttribute("FoundersBoneCount")) or 0
 
 		if isRumblingActive then
+			local tCard = Instance.new("Frame", GridContainer)
+			tCard.Name = "RumblingTracker"
+			tCard.Size = UDim2.new(1, -10, 0, 110)
+			tCard.BackgroundColor3 = Color3.fromRGB(25, 15, 15)
+			tCard.LayoutOrder = -2
+			Instance.new("UIStroke", tCard).Color = Color3.fromRGB(255, 50, 50)
+
+			local tTitle = UIHelpers.CreateLabel(tCard, "RUMBLING STATUS", UDim2.new(1, 0, 0, 25), Enum.Font.GothamBlack, Color3.fromRGB(255, 100, 100), 16)
+			tTitle.Position = UDim2.new(0, 0, 0, 5)
+
+			local progLbl = UIHelpers.CreateLabel(tCard, "KILLS: 0 / 1000", UDim2.new(0.5, -15, 0, 20), Enum.Font.GothamBold, Color3.fromRGB(255, 255, 255), 14)
+			progLbl.Name = "ProgLbl"
+			progLbl.Position = UDim2.new(0, 15, 0, 30)
+			progLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+			local timeLbl = UIHelpers.CreateLabel(tCard, "TIME LEFT: 10:00", UDim2.new(0.5, -15, 0, 20), Enum.Font.GothamBold, Color3.fromRGB(255, 200, 100), 14)
+			timeLbl.Name = "TimeLbl"
+			timeLbl.Position = UDim2.new(0.5, 0, 0, 30)
+			timeLbl.TextXAlignment = Enum.TextXAlignment.Right
+
+			local lbContainer = Instance.new("Frame", tCard)
+			lbContainer.Name = "LbContainer"
+			lbContainer.Size = UDim2.new(1, -30, 0, 50)
+			lbContainer.Position = UDim2.new(0, 15, 0, 55)
+			lbContainer.BackgroundTransparency = 1
+			local lbLayout = Instance.new("UIListLayout", lbContainer); lbLayout.Padding = UDim.new(0, 2)
+
+			StartRumblingTracker(GridContainer)
+
 			local rumblingCard = CreateModeCard(GridContainer, "THE RUMBLING (ACTIVE)", "The world is being trampled. Deploy to the frontline to stop the Wall Titans!", CONFIG.Decals.WorldBoss, -1, function() 
 				InitiateDeployment("CombatAction", "EngageWorldBoss", {BossId = "Rumbling Horde"})
 			end, Color3.fromRGB(255, 0, 0))
