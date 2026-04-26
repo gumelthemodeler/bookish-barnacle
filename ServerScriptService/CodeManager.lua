@@ -11,33 +11,21 @@ local BackupDataStore = DataStoreService:GetDataStore("AoT_Backups_V1")
 local RemotesFolder = ReplicatedStorage:WaitForChild("Network")
 
 local ActiveCodes = { 
-	["LUCKY"] = {
+	["RUMBLING"] = {
 		Items = { 
 			["Legendary Clan Blood Vial"] = 3,
 			["Spinal Fluid Syringe"] = 3
 		}
 	},
-	["LABYRINTH2"] = {
+	["GUMELCODE"] = {
+		Dews = 1500
+	},
+	["LABYRINTH"] = {
 		Items = { 
 			["Legendary Clan Vial"] = 3,
 		}
 	},
-	["BUGS"] = {
-		Items = { 
-			["Clan Blood Vial"] = 5,
-		}
-	},
-	["FATPATCH"] = {
-		Items = { 
-			["Legendary Clan Vial"] = 5,
-		}
-	},
-	["PATCH2"] = {
-		Items = { 
-			["Clan Blood Vial"] = 15,
-		}
-	},
-	["MINI"] = {
+	["LUCKY"] = {
 		Dews = 1500,
 		Items = { 
 			["Legendary Clan Vial"] = 5,
