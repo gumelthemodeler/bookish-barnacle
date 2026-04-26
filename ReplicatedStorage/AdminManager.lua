@@ -1,8 +1,7 @@
 -- @ScriptType: ModuleScript
-
--- @ScriptType: ModuleScript
 -- @ScriptType: ModuleScript
 local AdminManager = {}
+local RunService = game:GetService("RunService")
 
 -- Store all Admin UserIDs here for easy management
 AdminManager.AdminList = {
@@ -15,8 +14,12 @@ AdminManager.AdminList = {
 function AdminManager.IsAdmin(player)
 	if not player then return false end
 
-	-- Highly recommended to check purely by UserId as Usernames can change,
-	-- but we've included a fallback for "girthbender1209" just in case.
+	-- Automatically grant Admin access to all test clients while in Roblox Studio
+	if RunService:IsStudio() then
+		return true
+	end
+
+	-- Live Game Checks
 	if AdminManager.AdminList[player.UserId] then 
 		return true 
 	end
