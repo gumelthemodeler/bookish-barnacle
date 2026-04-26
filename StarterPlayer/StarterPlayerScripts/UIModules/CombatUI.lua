@@ -261,6 +261,12 @@ local GlobalLogCounter = 0
 local function AppendLog(message, colorHex)
 	if not GUI or not GUI.LogScroll or not message or message == "" then return end
 	GlobalLogCounter = GlobalLogCounter + 1
+
+	-- [[ THE FIX: SELF-HEALING REGEX ]]
+	-- Automatically repairs single-quotes and missing quotes inside <font> tags!
+	message = string.gsub(message, "color='(#[%w]+)'", "color=\"%1\"")
+	message = string.gsub(message, "color=(#[%w]+)>", "color=\"%1\">")
+
 	local logColor = colorHex and Color3.fromHex(colorHex:gsub("#", "")) or UIHelpers.Colors.TextWhite
 
 	local panel = Instance.new("Frame", GUI.LogScroll)
@@ -408,226 +414,6 @@ local function IsSkillValid(player, skillName, isTransformedCheck)
 	end
 
 	return false
-end
-
-local function UpdatePvPSkills()
-	inputLocked = false
-	SnapTargetMenuClosed()
-	DestroyWaitContainer()
-
-	if GUI.ActionGrid then 
-		GUI.ActionGrid.Visible = true
-		for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end 
-	end
-
-	if isSpectating then
-		UIHelpers.CreateLabel(GUI.ActionGrid, "SPECTATING MATCH...", UDim2.new(1, 0, 1, 0), Enum.Font.GothamBold, UIHelpers.Colors.TextMuted, 20)
-		return
-	end
-
-	local createdSkills = {}
-	local function CreateSkillButton(skillName, customLabel, baseColor)
-		if skillName == "None" or not GUI.ActionGrid then return end
-		if createdSkills[skillName] then return end
-		createdSkills[skillName] = true
-
-		local btnText = customLabel or string.upper(skillName)
-		local btn = CreateMinimalButton(GUI.ActionGrid, btnText, UDim2.new(0, 0, 0, 0), baseColor or "#DDDDDD")
-
-		btn.MouseButton1Click:Connect(function()
-			if inputLocked then return end
-
-			if InstantSkills[skillName] or skillName == "Surrender" or skillName == "Recover" then
-				inputLocked = true
-				if skillName == "Surrender" then 
-					Network:WaitForChild("PvPAction"):FireServer("Surrender", currentPvPMatch)
-				else
-					ShowWaitingForOpponent()
-					Network:WaitForChild("PvPAction"):FireServer("SubmitMoveSequence", currentPvPMatch, {{Move = skillName, Limb = "Body"}})
-				end
-			else
-				pendingSkillName = skillName
-				OpenTargetMenu()
-			end
-		end)
-	end
-
-	local isTransformed = myPvPState and myPvPState.Statuses and myPvPState.Statuses["Transformed"]
-
-	if isTransformed then
-		CreateSkillButton("Titan Punch", "TITAN PUNCH", "#FF5555")
-		CreateSkillButton("Titan Kick", "TITAN KICK", "#FF5555")
-	end
-
-	for i = 1, 4 do
-		local skillName = player:GetAttribute("EquippedSkill_" .. i)
-		if not skillName or skillName == "" or skillName == "None" or not IsSkillValid(player, skillName, isTransformed) then 
-			skillName = isTransformed and "None" or "Basic Slash" 
-		end
-		if isTransformed and (skillName == "Titan Punch" or skillName == "Titan Kick") then continue end
-		CreateSkillButton(skillName)
-	end
-
-	if isTransformed then
-		local myTitan = player:GetAttribute("Titan")
-		if myTitan and myTitan ~= "None" then
-			local titanSkills = GetTitanSkills(myTitan)
-			for _, tSkill in ipairs(titanSkills) do
-				CreateSkillButton(tSkill, "[" .. string.upper(myTitan) .. "] " .. string.upper(tSkill), "#FFD700")
-			end
-		end
-	else
-		local myClan = player:GetAttribute("Clan") or "None"
-		if myClan ~= "None" then
-			local clanSkills = {}
-			for sName, sData in pairs(SkillData.Skills) do
-				if sData.Type == "Style" and sData.Requirement and not string.find(sData.Requirement, "ODM") then
-					local req = tostring(sData.Requirement)
-					if string.find(myClan, req, 1, true) then 
-						table.insert(clanSkills, {Name = sName, Data = sData}) 
-					elseif string.find(req, "Awakened", 1, true) then
-						local baseReq = string.gsub(req, "Awakened ", "")
-						if string.find(myClan, "Abyssal " .. baseReq, 1, true) then
-							table.insert(clanSkills, {Name = sName, Data = sData}) 
-						end
-					end
-				end
-			end
-			table.sort(clanSkills, function(a, b) return (a.Data.Order or 99) < (b.Data.Order or 99) end)
-			for _, cSkill in ipairs(clanSkills) do CreateSkillButton(cSkill.Name, "[" .. string.upper(myClan) .. "] " .. string.upper(cSkill.Name), "#CC44FF") end
-		end
-	end
-
-	CreateSkillButton("Maneuver", "MANEUVER", "#55AAFF")
-
-	if isTransformed then
-		CreateSkillButton("Titan Recover", "TITAN RECOVER", "#55FF55")
-		CreateSkillButton("Cannibalize", "CANNIBALIZE", "#FF5555")
-		CreateSkillButton("Eject", "EJECT", "#FFD700")
-	else
-		CreateSkillButton("Recover", "RECOVER", "#55FF55")
-		local myCurrentClan = player:GetAttribute("Clan") or "None"
-		local isAckerman = string.find(myCurrentClan, "Ackerman", 1, true) ~= nil
-		local hasTitan = player:GetAttribute("Titan") and player:GetAttribute("Titan") ~= "None"
-		if hasTitan and not isAckerman then 
-			CreateSkillButton("Transform", "TRANSFORM", "#FFD700")
-		end
-	end
-
-	CreateSkillButton("Surrender", "SURRENDER", "#FF5555")
-end
-
-local function ShowPvPUI(p1Name, p2Name, p1Id, p2Id, turnEndTime, is3v3)
-	pendingSkillName = nil; inputLocked = false; HideAlly()
-	if doomsdayBoard then doomsdayBoard.Visible = false end
-	inDoomsdayLoop = false
-	is3v3Match = is3v3
-	myPvPState = nil 
-
-	SnapTargetMenuClosed()
-	DestroyWaitContainer()
-
-	if GUI.ExecuteOverlay then GUI.ExecuteOverlay.Visible = false end
-	if GUI.CombatBackdrop then GUI.CombatBackdrop.BackgroundColor3 = Color3.new(0, 0, 0); GUI.CombatBackdrop.Visible = true; TweenService:Create(GUI.CombatBackdrop, TweenInfo.new(0.4), {BackgroundTransparency = 0.4}):Play() end
-	if GUI.CombatWindow then GUI.CombatWindow.Visible = true; if GUI.WindowScale then TweenService:Create(GUI.WindowScale, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end end
-	if GUI.PlayerPanel then GUI.PlayerPanel.Position = UDim2.new(0, 0, 0, 0) end
-	if GUI.AllyPanel then GUI.AllyPanel.Position = UDim2.new(-0.5, 0, 0, 0) end
-
-	if GUI.CombatantsFrame then GUI.CombatantsFrame.Visible = true end
-	if GUI.LogContainer then GUI.LogContainer.Visible = true end
-	if GUI.ActionContainer then GUI.ActionContainer.Visible = true end
-	if GUI.DialogueBox then GUI.DialogueBox.Visible = false end
-	if GUI.ClickOverlay then GUI.ClickOverlay.Visible = false end
-
-	if GUI.LogScroll then for _, c in ipairs(GUI.LogScroll:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end end
-
-	local matchTypeStr = is3v3 and "3v3 SQUAD BATTLE" or "RANKED PVP MATCH"
-	AppendLog("<b>[SYSTEM] " .. matchTypeStr .. " COMMENCED!</b>", "#FFD700")
-	if GUI.MissionInfoLbl then GUI.MissionInfoLbl.Text = matchTypeStr end
-
-	if amIPlayer1 then
-		if GUI.pNameLbl then GUI.pNameLbl.Text = p1Name end
-		if GUI.pAvatar then GUI.pAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. p1Id .. "&w=150&h=150" end
-		if GUI.eNameLbl then GUI.eNameLbl.Text = p2Name end
-		if GUI.eAvatar then GUI.eAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. p2Id .. "&w=150&h=150" end
-	else
-		if GUI.pNameLbl then GUI.pNameLbl.Text = p2Name end
-		if GUI.pAvatar then GUI.pAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. p2Id .. "&w=150&h=150" end
-		if GUI.eNameLbl then GUI.eNameLbl.Text = p1Name end
-		if GUI.eAvatar then GUI.eAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. p1Id .. "&w=150&h=150" end
-	end
-
-	if GUI.eGateContainer then GUI.eGateContainer.Visible = false end
-
-	UpdatePvPSkills()
-end
-
-local function UpdatePvPState(data)
-	if not data then return end
-	local tInfo = TweenInfo.new(0.4, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)
-
-	local myTeamStates = (amIPlayer1 and data.T1_States or data.T2_States) or {}
-	local enTeamStates = (amIPlayer1 and data.T2_States or data.T1_States) or {}
-
-	local me = myTeamStates[1]
-	local en = enTeamStates[1]
-
-	myPvPState = me 
-
-	if me then
-		local myHp = math.max(0, me.HP)
-		if GUI.pHPText then GUI.pHPText.Text = "HP " .. math.floor(myHp) .. "/" .. math.floor(me.MaxHP) end
-		if GUI.pHPBar then TweenService:Create(GUI.pHPBar, tInfo, {Size = UDim2.new(me.MaxHP > 0 and math.clamp(myHp / me.MaxHP, 0, 1) or 0, 0, 1, 0)}):Play() end
-		if me.Gas and GUI.pGasText then
-			GUI.pGasText.Text = "GAS " .. math.floor(me.Gas) .. "/" .. math.floor(me.MaxGas)
-			if GUI.pGasBar then TweenService:Create(GUI.pGasBar, tInfo, {Size = UDim2.new(me.MaxGas > 0 and math.clamp(me.Gas / me.MaxGas, 0, 1) or 0, 0, 1, 0)}):Play() end
-		end
-		RenderStatuses(GUI.PlayerStatusBox, {Statuses = me.Statuses})
-	end
-
-	if en then
-		local enHp = math.max(0, en.HP)
-		if GUI.eHPText then GUI.eHPText.Text = "HP " .. math.floor(enHp) .. "/" .. math.floor(en.MaxHP) end
-		if GUI.eHPBar then TweenService:Create(GUI.eHPBar, tInfo, {Size = UDim2.new(en.MaxHP > 0 and math.clamp(enHp / en.MaxHP, 0, 1) or 0, 0, 1, 0)}):Play() end
-		RenderStatuses(GUI.EnemyStatusBox, {Statuses = en.Statuses})
-	end
-
-	if data.ShakeType and data.ShakeType ~= "None" then
-		if VFXManager and type(VFXManager.ScreenShake) == "function" then
-			if data.ShakeType == "Heavy" then 
-				VFXManager.ScreenShake(1.5, 0.4) 
-
-				local flash = Instance.new("Frame", MasterGuiRef)
-				flash.Size = UDim2.new(1, 0, 1, 0)
-				flash.BackgroundColor3 = Color3.fromRGB(200, 20, 20)
-				flash.BackgroundTransparency = 0.5
-				flash.ZIndex = 1000
-				flash.BorderSizePixel = 0
-				game.Debris:AddItem(flash, 0.15)
-				TweenService:Create(flash, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
-			else 
-				VFXManager.ScreenShake(0.5, 0.2) 
-			end
-		end
-	end
-
-	if data.DidHit and data.Attacker then
-		local isMeAttacking = false
-		if isSpectating then
-			if GUI.pNameLbl then isMeAttacking = (data.Attacker == GUI.pNameLbl.Text) end
-		else
-			isMeAttacking = (data.Attacker == player.Name)
-		end
-
-		if VFXManager and type(VFXManager.PlayVFX) == "function" then
-			local targetIcon = isMeAttacking and GUI.eAvatar or GUI.pAvatar
-			VFXManager.PlayVFX("Blood", targetIcon, Color3.fromRGB(180, 10, 10), true)
-		end
-
-		if VFXManager and type(VFXManager.PlayCombatEffect) == "function" and data.SkillUsed then 
-			VFXManager.PlayCombatEffect(data.SkillUsed, isMeAttacking, GUI.pAvatar, GUI.eAvatar, true) 
-		end
-	end
 end
 
 local function UpdatePvESkills()
@@ -1401,17 +1187,23 @@ function CombatUI.Initialize(masterScreenGui)
 
 				if #animRewards > 0 then PlayLootAnimation(animRewards) end
 
-				inputLocked = true
-				SnapTargetMenuClosed()
-				DestroyWaitContainer()
+				if data and data.Battle and data.Battle.Enemy and data.Battle.Enemy.IsRumblingBoss then
+					inputLocked = false
+					DestroyWaitContainer()
+					UpdatePvESkills()
+				else
+					inputLocked = true
+					SnapTargetMenuClosed()
+					DestroyWaitContainer()
 
-				if GUI.ActionGrid then
-					for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
-					local continueBtn = CreateMinimalButton(GUI.ActionGrid, "CONTINUE EXPEDITION", UDim2.new(0, 0, 0, 0), "#55FF55")
-					continueBtn.MouseButton1Click:Connect(function() UpdatePvESkills() end)
+					if GUI.ActionGrid then
+						for _, c in ipairs(GUI.ActionGrid:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
+						local continueBtn = CreateMinimalButton(GUI.ActionGrid, "CONTINUE EXPEDITION", UDim2.new(0, 0, 0, 0), "#55FF55")
+						continueBtn.MouseButton1Click:Connect(function() UpdatePvESkills() end)
 
-					local retreatBtn = CreateMinimalButton(GUI.ActionGrid, "RETREAT TO COMMAND", UDim2.new(0, 0, 0, 0), "#FF5555")
-					retreatBtn.MouseButton1Click:Connect(function() Network:WaitForChild("CombatAction"):FireServer("Attack", {SkillName = "Retreat"}) end)
+						local retreatBtn = CreateMinimalButton(GUI.ActionGrid, "RETREAT TO COMMAND", UDim2.new(0, 0, 0, 0), "#FF5555")
+						retreatBtn.MouseButton1Click:Connect(function() Network:WaitForChild("CombatAction"):FireServer("Attack", {SkillName = "Retreat"}) end)
+					end
 				end
 
 			elseif action == "Victory" then
