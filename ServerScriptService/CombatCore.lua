@@ -125,10 +125,19 @@ function CombatCore.CalculateDamage(attacker, defender, skillMult, targetLimb, b
 	if attacker.IsPlayer and isAttackerTransformed and attacker.PlayerObj then
 		atkStrength = math.max(1, tonumber(attacker.PlayerObj:GetAttribute("Titan_Power_Val")) or 10)
 		atkBuff = atkBuff * 4.0 
+
+		-- [[ THE FIX: Applied Variant Offensive Buffs ]]
+		local aVariant = attacker.PlayerObj:GetAttribute("TitanVariant")
+		if aVariant == "Crimson Steam" then atkBuff = atkBuff * 1.10 end
 	end
+
 	if defender.IsPlayer and isDefenderTransformed and defender.PlayerObj then
 		defArmor = math.max(1, tonumber(defender.PlayerObj:GetAttribute("Titan_Hardening_Val")) or 10)
 		defBuff = defBuff * 4.0 
+
+		-- [[ THE FIX: Applied Variant Defensive Buffs ]]
+		local dVariant = defender.PlayerObj:GetAttribute("TitanVariant")
+		if dVariant == "Titan Hardening" or dVariant == "Beast Fur" then defBuff = defBuff * 1.10 end
 	end
 
 	if terrain == "Caverns" then
@@ -192,6 +201,12 @@ function CombatCore.CalculateDamage(attacker, defender, skillMult, targetLimb, b
 			local isAwakened = string.find(tostring(attacker.Clan or ""), "Awakened") ~= nil or string.find(tostring(attacker.Clan or ""), "Abyssal") ~= nil
 			local aStats = ClanData.GetClanStats(attacker.Clan, isAwakened, attacker.Titan, isAttackerTransformed)
 			napeMult = aStats.NapeCritMultiplier or 1.5
+		end
+
+		-- [[ THE FIX: Crystalline Nape variant buff ]]
+		if defender.IsPlayer and isDefenderTransformed and defender.PlayerObj then
+			local dVariant = defender.PlayerObj:GetAttribute("TitanVariant")
+			if dVariant == "Crystalline Nape" then defBuff = defBuff * 1.15 end
 		end
 
 		if defender.Statuses and (tonumber(defender.Statuses.NapeGuard) or 0) > 0 then return 1 else baseDmg = baseDmg * napeMult end
@@ -310,12 +325,34 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 			attacker.HP = attacker.MaxHP
 			attacker.TitanEnergy = tonumber(attacker.MaxTitanEnergy) or 100
 
+			-- [[ THE FIX: Applied Titan Variant Gates directly to players in PvP ]]
+			local variant = attacker.PlayerObj:GetAttribute("TitanVariant") or "Standard"
+			if variant == "Crimson Steam" then
+				attacker.GateType = "Steam"
+				attacker.GateHP = 3
+				attacker.MaxGateHP = 3
+			elseif variant == "Titan Hardening" or variant == "Crystalline Nape" then
+				attacker.GateType = "Reinforced Skin"
+				attacker.GateHP = math.floor(attacker.MaxHP * 0.15)
+				attacker.MaxGateHP = attacker.GateHP
+			else
+				attacker.GateType = nil
+				attacker.GateHP = 0
+				attacker.MaxGateHP = 0
+			end
+
 			return fLogName .. " used <b>" .. skillName .. "</b>!\nLightning strikes as " .. aName .. " shifts into a Titan! <font color=\"#55FF55\">[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy", 0
 		elseif skill.Effect == "Eject" then
 			if attacker.Statuses then attacker.Statuses["Transformed"] = nil end
 			attacker.LastSkill = skillName
 			attacker.MaxHP = attacker.BaseMaxHP
 			attacker.HP = math.min(attacker.HP, attacker.MaxHP)
+
+			-- [[ THE FIX: Eject clears gates ]]
+			attacker.GateType = nil
+			attacker.GateHP = 0
+			attacker.MaxGateHP = 0
+
 			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. aName .. " cuts themselves out of the nape, returning to human form.", false, "None", 0
 		elseif skill.Effect == "TitanRest" or skillName == "Titan Recover" then
 			local healAmount = (tonumber(attacker.MaxHP) or 100) * 0.60
@@ -386,6 +423,11 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 		local tPotential = defender.IsPlayer and isDefenderTransformed and (tonumber(defender.PlayerObj:GetAttribute("Titan_Potential_Val")) or 10) or 0
 		dodgeChance = dodgeChance + (tPotential * 0.25)
 
+		if defender.IsPlayer and isDefenderTransformed and defender.PlayerObj then
+			local dVariant = defender.PlayerObj:GetAttribute("TitanVariant")
+			if dVariant == "Beast Fur" then dodgeChance = dodgeChance + 10 end
+		end
+
 		dodgeChance = math.clamp(dodgeChance, 0, 75)
 		if targetLimb == "Nape" or targetLimb == "Head" then dodgeChance += 15 end
 
@@ -402,6 +444,11 @@ function CombatCore.ExecutePvPStrike(attacker, defender, skillName, targetLimb, 
 
 		local tPrecision = attacker.IsPlayer and isAttackerTransformed and (tonumber(attacker.PlayerObj:GetAttribute("Titan_Precision_Val")) or 10) or 0
 		critChance = critChance + (tPrecision * 0.25)
+
+		if attacker.IsPlayer and isAttackerTransformed and attacker.PlayerObj then
+			local aVariant = attacker.PlayerObj:GetAttribute("TitanVariant")
+			if aVariant == "Abyssal Eyes" then critChance = critChance + 10 end
+		end
 
 		if targetLimb == "Nape" or targetLimb == "Head" then critChance += 25 end
 		critChance = math.clamp(critChance, 5, 75)
@@ -592,6 +639,22 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 			attacker.HP = attacker.MaxHP
 			attacker.TitanEnergy = tonumber(attacker.MaxTitanEnergy) or 100
 
+			-- [[ THE FIX: Applied Titan Variant Gates directly to players in PvE ]]
+			local variant = attacker.PlayerObj:GetAttribute("TitanVariant") or "Standard"
+			if variant == "Crimson Steam" then
+				attacker.GateType = "Steam"
+				attacker.GateHP = 3
+				attacker.MaxGateHP = 3
+			elseif variant == "Titan Hardening" or variant == "Crystalline Nape" then
+				attacker.GateType = "Reinforced Skin"
+				attacker.GateHP = math.floor(attacker.MaxHP * 0.15)
+				attacker.MaxGateHP = attacker.GateHP
+			else
+				attacker.GateType = nil
+				attacker.GateHP = 0
+				attacker.MaxGateHP = 0
+			end
+
 			return fLogName .. " used <b>" .. skillName .. "</b>!\nLightning strikes as " .. aName .. " shifts into a Titan! <font color=\"#55FF55\">[MAX HP BOOSTED & HEAT Restored]</font>", false, "Heavy"
 
 		elseif skill.Effect == "Eject" then
@@ -599,6 +662,12 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 			attacker.LastSkill = skillName
 			attacker.MaxHP = attacker.BaseMaxHP
 			attacker.HP = math.min(attacker.HP, attacker.MaxHP)
+
+			-- [[ THE FIX: Eject clears gates ]]
+			attacker.GateType = nil
+			attacker.GateHP = 0
+			attacker.MaxGateHP = 0
+
 			return fLogName .. " used <b>" .. skillName .. "</b>!\n" .. aName .. " cuts themselves out of the nape, returning to human form.", false, "None"
 
 		elseif skill.Effect == "TitanRest" or skillName == "Titan Recover" then
@@ -698,6 +767,11 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 			if isDefenderTransformed then
 				local tPotential = tonumber(defender.PlayerObj:GetAttribute("Titan_Potential_Val")) or 10
 				dodgeChance = dodgeChance + (tPotential * 0.25)
+
+				if defender.IsPlayer and isDefenderTransformed and defender.PlayerObj then
+					local dVariant = defender.PlayerObj:GetAttribute("TitanVariant")
+					if dVariant == "Beast Fur" then dodgeChance = dodgeChance + 10 end
+				end
 			else
 				dodgeChance = dodgeChance + (tonumber(defender.PlayerObj:GetAttribute("Prestige_DodgeBonus")) or 0)
 				local accName = defender.PlayerObj:GetAttribute("EquippedAccessory")
@@ -765,6 +839,11 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 			if isAttackerTransformed then
 				local tPrecision = tonumber(attacker.PlayerObj:GetAttribute("Titan_Precision_Val")) or 10
 				critChance = critChance + (tPrecision * 0.25)
+
+				if attacker.IsPlayer and isAttackerTransformed and attacker.PlayerObj then
+					local aVariant = attacker.PlayerObj:GetAttribute("TitanVariant")
+					if aVariant == "Abyssal Eyes" then critChance = critChance + 10 end
+				end
 			else
 				critChance += aStats.CritBonus
 				critChance = critChance + (tonumber(attacker.PlayerObj:GetAttribute("Prestige_CritBonus")) or 0)
@@ -945,7 +1024,6 @@ function CombatCore.ExecuteStrike(attacker, defender, skillName, targetLimb, log
 						appliedThisStrike["TrueBlind"] = true
 					elseif blStatus == 0 then 
 						if not appliedThisStrike["Blinded"] then
-							defender.Globals = nil
 							defender.Statuses["Blinded"] = defender.IsBoss and 1 or 2
 							effectLog = effectLog .. " <font color=\"#DDDDDD\">[BLINDED]</font>" 
 							appliedThisStrike["Blinded"] = true
