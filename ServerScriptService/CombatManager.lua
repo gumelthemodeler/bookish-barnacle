@@ -64,8 +64,13 @@ local function GetValidEndlessMob(partData)
 			table.insert(valid, mob)
 		end
 	end
-	if #valid > 0 then return valid[math.random(1, #valid)] end
-	return partData.Mobs[1]
+
+	if #valid > 0 then 
+		return valid[math.random(1, #valid)] 
+	end
+
+	-- [[ THE FIX: If the Part has no valid enemies (like Part 2), default to a Part 1 Titan instead of the Dummy ]]
+	return EnemyData.Parts[1].Mobs[1] 
 end
 
 local function GetHPScale(targetPart, isEndless, wave)
