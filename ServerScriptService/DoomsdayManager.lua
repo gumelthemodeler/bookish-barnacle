@@ -23,7 +23,7 @@ local SyncRumbling = Network:WaitForChild("SyncRumbling")
 local EVENT_EXPIRATION_DATE = os.time({year = 2026, month = 5, day = 5, hour = 3, min = 20, sec = 0})
 local EVENT_ACTIVE = (os.time() < EVENT_EXPIRATION_DATE) 
 
-local EVENT_BADGE_ID = 1234567890 -- REPLACE THIS WITH YOUR ROBLOX BADGE ID
+local EVENT_BADGE_ID = 4194606710515423 -- REPLACE THIS WITH YOUR ROBLOX BADGE ID
 local EVENT_STAT_REQUIREMENT = 250 -- (Strength + Defense + Speed + Resolve) required to fight
 local EVENT_BOSS_DATA = {
 	Name = "The World Titan",
@@ -38,8 +38,6 @@ local EVENT_BOSS_DATA = {
 	Resolve = 800,
 	TitanStats = {Power="S", Speed="S", Hardening="C", Endurance="B", Precision="S", Potential="S"},
 	Skills = {"Muda Barrage", "Time Stop", "Road Roller Crush", "Vampiric Strike"},
-
-	-- FIXED DROPS: You now earn guaranteed items to show up directly in the Victory UI
 	Drops = { XP = 15000, Dews = 3500, ItemChance = { ["Vampire Titan Blood"] = 100, ["Stone Mask Fragment"] = 5 } },
 	DropItem = "The World's Stopwatch"
 }
