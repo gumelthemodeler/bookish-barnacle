@@ -1,10 +1,12 @@
 -- @ScriptType: ModuleScript
+-- @ScriptType: ModuleScript
 -- @ScriptType: Script
 -- Name: DoomsdayManager
 local DoomsdayManager = {}
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BadgeService = game:GetService("BadgeService")
 local Network = ReplicatedStorage:WaitForChild("Network")
 local EnemyData = require(ReplicatedStorage:WaitForChild("EnemyData"))
 local NotificationEvent = Network:WaitForChild("NotificationEvent")
@@ -15,13 +17,39 @@ local GetDoomsdayData = Network:WaitForChild("GetDoomsdayData")
 local GetRumblingData = Network:WaitForChild("GetRumblingData")
 local SyncRumbling = Network:WaitForChild("SyncRumbling")
 
+-- ==========================================
+-- [[ LIMITED TIME EVENT CONFIGURATION ]]
+-- ==========================================
+local EVENT_EXPIRATION_DATE = os.time({year = 2026, month = 5, day = 5, hour = 3, min = 20, sec = 0})
+local EVENT_ACTIVE = (os.time() < EVENT_EXPIRATION_DATE) 
+
+local EVENT_BADGE_ID = 1234567890 -- REPLACE THIS WITH YOUR ROBLOX BADGE ID
+local EVENT_STAT_REQUIREMENT = 250 -- (Strength + Defense + Speed + Resolve) required to fight
+local EVENT_BOSS_DATA = {
+	Name = "The World Titan",
+	IsBoss = true,
+	IsDoomsdayBoss = true,
+	Health = 15000, 
+	GateType = "Stand Aura",
+	GateHP = 3000,
+	Strength = 1800,
+	Defense = 800,
+	Speed = 800,
+	Resolve = 2000,
+	TitanStats = {Power="S", Speed="S", Hardening="C", Endurance="B", Precision="S", Potential="S"},
+	Skills = {"Muda Barrage", "Time Stop", "Road Roller Crush", "Vampiric Strike"},
+	Drops = { XP = 1500000, Dews = 200000, ItemChance = {} },
+	DropItem = "The World's Stopwatch"
+}
+-- ==========================================
+
 -- [[ DOOMSDAY STATE ]]
 local ddActive = false
 local ddBoss = nil
 local ddMaxHP = 0
 local ddCurrentHP = 0
 local ddLeaderboard = {}
-local ddTimeUntilNext = 3600 
+local ddTimeUntilNext = 10 
 
 -- [[ RUMBLING STATE ]]
 local rumblingActive = false
@@ -83,16 +111,51 @@ local function PayoutDoomsday()
 	if #ddLeaderboard == 0 then return end
 	SortLeaderboard(ddLeaderboard)
 
+	local isEventBoss = ddBoss and ddBoss.Name == EVENT_BOSS_DATA.Name
+
 	for i, data in ipairs(ddLeaderboard) do
 		local plr = Players:GetPlayerByUserId(data.UserId)
 		if plr then
 			local rewardDews = math.floor(data.Damage * 0.5) 
 			plr.leaderstats.Dews.Value += rewardDews
 
-			if i == 1 and ddBoss and ddBoss.DropItem then
+			if not isEventBoss and i == 1 and ddBoss and ddBoss.DropItem then
 				local attr = ddBoss.DropItem:gsub("[^%w]", "") .. "Count"
 				plr:SetAttribute(attr, (plr:GetAttribute(attr) or 0) + 1)
 				NotificationEvent:FireClient(plr, "You dealt the most damage and received the " .. ddBoss.DropItem .. "!", "Loot")
+			end
+
+			if isEventBoss then
+				if not plr:GetAttribute("Ach_Defeat_WorldTitan") then
+					task.spawn(function()
+						pcall(function()
+							if not BadgeService:UserHasBadgeAsync(plr.UserId, EVENT_BADGE_ID) then
+								BadgeService:AwardBadge(plr.UserId, EVENT_BADGE_ID)
+							end
+						end)
+					end)
+					plr:SetAttribute("Ach_Defeat_WorldTitan", true)
+					NotificationEvent:FireClient(plr, "Event Reward: 'Stardust Crusader' Title Unlocked!", "Success")
+				end
+
+				plr:SetAttribute("VampireTitanBloodCount", (plr:GetAttribute("VampireTitanBloodCount") or 0) + 3)
+				NotificationEvent:FireClient(plr, "Event Reward: 3x Vampire Titan Blood!", "Success")
+
+				if i <= 3 then
+					plr:SetAttribute("StoneMaskFragmentCount", (plr:GetAttribute("StoneMaskFragmentCount") or 0) + 1)
+					NotificationEvent:FireClient(plr, "Top 3 Event Reward: 1x Stone Mask Fragment!", "Loot")
+				end
+
+				if i == 1 then
+					local hasStopwatch = (plr:GetAttribute("TheWorldsStopwatchCount") or 0) > 0
+					if not hasStopwatch then
+						plr:SetAttribute("TheWorldsStopwatchCount", 1)
+						NotificationEvent:FireClient(plr, "Rank 1 Event Reward: The World's Stopwatch obtained!", "Loot")
+					end
+
+					plr:SetAttribute("StandArrowHeadCount", (plr:GetAttribute("StandArrowHeadCount") or 0) + 1)
+					NotificationEvent:FireClient(plr, "Rank 1 Event Reward: 1x Stand Arrow Head!", "Loot")
+				end
 			end
 		end
 	end
@@ -100,6 +163,19 @@ end
 
 function DoomsdayManager.RegisterDamage(player, amount)
 	if not ddActive then return end
+
+	if ddBoss and ddBoss.Name == EVENT_BOSS_DATA.Name then
+		local pStr = tonumber(player:GetAttribute("Strength")) or 10
+		local pDef = tonumber(player:GetAttribute("Defense")) or 10
+		local pSpd = tonumber(player:GetAttribute("Speed")) or 10
+		local pRes = tonumber(player:GetAttribute("Resolve")) or 10
+		local totalStats = pStr + pDef + pSpd + pRes
+
+		if totalStats < EVENT_STAT_REQUIREMENT then
+			NotificationEvent:FireClient(player, "You lack the strength to pierce The World Titan's armor! (Total Stats required: " .. EVENT_STAT_REQUIREMENT .. ")", "Error")
+			return
+		end
+	end
 
 	ddCurrentHP = math.max(0, ddCurrentHP - amount)
 
@@ -116,8 +192,15 @@ function DoomsdayManager.RegisterDamage(player, amount)
 
 	if ddCurrentHP <= 0 then
 		PayoutDoomsday()
-		ddActive = false
-		ddTimeUntilNext = 3600
+
+		if EVENT_ACTIVE then
+			ddCurrentHP = ddMaxHP
+			ddLeaderboard = {}
+			NotificationEvent:FireAllClients("THE WORLD TITAN HAS REGENERATED! THE TIME STOP CONTINUES!", "Error")
+		else
+			ddActive = false
+			ddTimeUntilNext = 3600
+		end
 	end
 end
 
@@ -144,13 +227,17 @@ end
 
 GetDoomsdayData.OnServerInvoke = function()
 	SortLeaderboard(ddLeaderboard)
+	EVENT_ACTIVE = (os.time() < EVENT_EXPIRATION_DATE) 
+
 	return {
 		IsActive = ddActive,
 		BossName = ddBoss and ddBoss.Name or "None",
 		BossHP = ddCurrentHP,
 		MaxHP = ddMaxHP,
 		Leaderboard = ddLeaderboard,
-		TimeUntilNext = ddTimeUntilNext
+		TimeUntilNext = ddTimeUntilNext,
+		EventActive = EVENT_ACTIVE,
+		EventEndTime = EVENT_EXPIRATION_DATE
 	}
 end
 
@@ -183,7 +270,6 @@ TriggerRumbling.OnServerEvent:Connect(function(player)
 		rumblingLeaderboard = {}
 		ReplicatedStorage:SetAttribute("RumblingActive", true)
 
-		-- BROADCAST TO ALL CLIENTS
 		SyncRumbling:FireAllClients(true)
 
 		NotificationEvent:FireAllClients(string.upper(player.Name) .. " HAS TRIGGERED THE RUMBLING! RACE TO STOP THE WALL TITANS!", "Error")
@@ -192,9 +278,16 @@ TriggerRumbling.OnServerEvent:Connect(function(player)
 	end
 end)
 
+function DoomsdayManager.GetActiveBoss()
+	if not ddActive then return nil end
+	return ddBoss
+end
+
 task.spawn(function()
 	while true do
 		task.wait(1)
+
+		EVENT_ACTIVE = (os.time() < EVENT_EXPIRATION_DATE)
 
 		if rumblingActive then
 			rumblingTimeLeft -= 1
@@ -203,20 +296,38 @@ task.spawn(function()
 			end
 		end
 
-		if not ddActive then
-			ddTimeUntilNext -= 1
-			if ddTimeUntilNext <= 0 then
-				local bList = {}
-				for _, b in pairs(EnemyData.WorldBosses or {}) do 
-					if not b.IsRumblingBoss then table.insert(bList, b) end
-				end
-				if #bList > 0 then
-					ddBoss = bList[math.random(1, #bList)]
-					ddMaxHP = ddBoss.Health * 50
-					ddCurrentHP = ddMaxHP
-					ddLeaderboard = {}
-					ddActive = true
-					NotificationEvent:FireAllClients("DOOMSDAY THREAT DETECTED: " .. string.upper(ddBoss.Name) .. " HAS APPEARED!", "Error")
+		if EVENT_ACTIVE then
+			if not ddActive or (ddBoss and ddBoss.Name ~= EVENT_BOSS_DATA.Name) then
+				ddBoss = EVENT_BOSS_DATA
+				ddMaxHP = ddBoss.Health * 50
+				ddCurrentHP = ddMaxHP
+				ddLeaderboard = {}
+				ddActive = true
+				NotificationEvent:FireAllClients("ZA WARUDO! THE WORLD TITAN HAS STOPPED TIME! (Lv. Requirement: " .. EVENT_STAT_REQUIREMENT .. " Stats)", "Error")
+			end
+		else
+			if ddBoss and ddBoss.Name == EVENT_BOSS_DATA.Name then
+				ddActive = false
+				ddBoss = nil
+				ddTimeUntilNext = 3600
+				NotificationEvent:FireAllClients("Time has resumed... The World Titan vanished.", "Success")
+			end
+
+			if not ddActive then
+				ddTimeUntilNext -= 1
+				if ddTimeUntilNext <= 0 then
+					local bList = {}
+					for _, b in pairs(EnemyData.WorldBosses or {}) do 
+						if not b.IsRumblingBoss then table.insert(bList, b) end
+					end
+					if #bList > 0 then
+						ddBoss = bList[math.random(1, #bList)]
+						ddMaxHP = ddBoss.Health * 50
+						ddCurrentHP = ddMaxHP
+						ddLeaderboard = {}
+						ddActive = true
+						NotificationEvent:FireAllClients("DOOMSDAY THREAT DETECTED: " .. string.upper(ddBoss.Name) .. " HAS APPEARED!", "Error")
+					end
 				end
 			end
 		end
