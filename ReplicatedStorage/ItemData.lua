@@ -36,7 +36,10 @@ ItemData.Equipment = {
 	["Shroud of the Doomed"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 50000, Bonus = { Resolve = 500, Health = 500, Defense = 200 }, Cursed = true, NoDodge = true, Desc = "<font color=\"#FF3333\">[CURSED]</font> Makes you incredibly tanky and immune to stun, but permanently drops your Dodge chance to 0%." },
 
 	["Eldian Crown"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Strength = 300, Defense = 300, Resolve = 1000 }, Desc = "<font color=\"#FFD700\">[EXCLUSIVE PATHS RELIC]</font> The crown of the ancient Eldian Empire. Grants massive vitality and damage scaling." },
-	["Founder's Parasite"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Health = 2000, Speed = 150, Gas = 150 }, Desc = "<font color=\"#55FF55\">[MYTHIC PATHS RELIC]</font> The origin of all organic matter. Grants godlike health, extreme agility, and boundless stamina." }
+	["Founder's Parasite"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Health = 2000, Speed = 150, Gas = 150 }, Desc = "<font color=\"#55FF55\">[MYTHIC PATHS RELIC]</font> The origin of all organic matter. Grants godlike health, extreme agility, and boundless stamina." },
+
+	-- EVENT EXCLUSIVE EQUIPMENT
+	["The World's Stopwatch"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Speed = 100, DodgeBonus = 20, Strength = 50 }, Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> A pocket watch that seems to freeze time for a second. Grants godlike evasion and speed." }
 }
 
 ItemData.Consumables = {
@@ -53,6 +56,10 @@ ItemData.Consumables = {
 	["Glowing Titan Crystal"] = { Rarity = "Legendary", Cost = 3000, IsMaterial = true, Desc = "A dense energy crystal. Highly sought after by Hange." },
 	["Abyssal Blood"] = { Rarity = "Mythical", Cost = 10000, IsMaterial = true, Desc = "A terrifying black liquid dropped only by Nightmare Bosses." },
 	["Coordinate Shard"] = { Rarity = "Mythical", Cost = 25000, IsMaterial = true, Desc = "A literal fragment of the Paths. One of the rarest materials in existence." },
+
+	-- EVENT EXCLUSIVE MATERIALS
+	["Stone Mask Fragment"] = { Rarity = "Mythical", Cost = 0, IsMaterial = true, Desc = "<font color=\"#FF0000\">[EVENT EXCLUSIVE]</font> A piece of an ancient mask that reacts to blood." },
+	["Vampire Titan Blood"] = { Rarity = "Legendary", Cost = 0, IsMaterial = true, Desc = "<font color=\"#FF0000\">[EVENT EXCLUSIVE]</font> Boiling blood from an anomaly titan. Highly valuable." },
 
 	["Iron Bamboo Extract"] = { Rarity = "Epic", Cost = 2000, Action = "Consume", Buff = "Damage", Duration = 900, Desc = "Increases all damage dealt by 50% for 15 minutes." },
 	["Titan Research Notes"] = { Rarity = "Rare", Cost = 1500, Action = "Consume", Buff = "XP", Duration = 900, Desc = "Doubles all XP gained from combat and training for 15 minutes." },
