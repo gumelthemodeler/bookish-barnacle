@@ -15,8 +15,7 @@ local LootManager = require(script.Parent:WaitForChild("LootManager"))
 local LabyrinthManager = require(script.Parent:WaitForChild("LabyrinthManager"))
 local DoomsdayManager = require(script.Parent:WaitForChild("DoomsdayManager"))
 
--- [[ ⚠️ PASTE YOUR ROBLOX BADGE ID HERE! ⚠️ ]]
-local EVENT_BADGE_ID = 4194606710515423 
+local EVENT_BADGE_ID = 1866183828416372 
 
 local Network = ReplicatedStorage:FindFirstChild("Network") or Instance.new("Folder", ReplicatedStorage)
 Network.Name = "Network"
@@ -521,10 +520,6 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		end
 	end
 
-	if battle.Context.IsWorldBoss and not battle.Enemy.IsRumblingBoss then
-		pcall(function() DoomsdayManager.RegisterDamage(player, battle.Enemy.MaxHP) end)
-	end
-
 	local sqName = player:GetAttribute("SquadName")
 	if sqName and sqName ~= "None" then
 		local squadEvent = Network:FindFirstChild("AddSquadSP")
@@ -619,18 +614,23 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 	end
 
 	if battle.Context.IsWorldBoss and not battle.Enemy.IsRumblingBoss then
+		pcall(function() DoomsdayManager.RegisterDamage(player, battle.Enemy.MaxHP) end)
+
 		if string.find(battle.Enemy.Name, "The World Titan") then
+
+			-- [[ FORCE AWARDS BADGE INDEPENDENT OF COSMETIC ATTRIBUTE ]]
+			task.spawn(function()
+				local success, err = pcall(function() 
+					if not BadgeService:UserHasBadgeAsync(player.UserId, EVENT_BADGE_ID) then
+						BadgeService:AwardBadgeAsync(player.UserId, EVENT_BADGE_ID) 
+					end
+				end)
+				if not success then warn("[CombatManager] Failed to award Boss Badge: " .. tostring(err)) end
+			end)
+
 			if not player:GetAttribute("Ach_Defeat_WorldTitan") then
 				player:SetAttribute("Ach_Defeat_WorldTitan", true)
 				killMsg = killMsg .. "\n<font color=\"#EEDD00\"><b>[UNLOCKED: 'Stardust Crusader' Title & 'ZA WARUDO' Aura!]</b></font>"
-				task.spawn(function()
-					local success, err = pcall(function() 
-						if not BadgeService:UserHasBadgeAsync(player.UserId, EVENT_BADGE_ID) then
-							BadgeService:AwardBadge(player.UserId, EVENT_BADGE_ID) 
-						end
-					end)
-					if not success then warn("[CombatManager] Failed to award Boss Badge: " .. tostring(err)) end
-				end)
 			end
 
 			player:SetAttribute("VampireTitanBloodCount", (player:GetAttribute("VampireTitanBloodCount") or 0) + 1)
