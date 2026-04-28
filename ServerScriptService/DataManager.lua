@@ -1,5 +1,6 @@
 -- @ScriptType: Script
 -- @ScriptType: Script
+-- @ScriptType: Script
 -- Name: DataManager
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -458,6 +459,13 @@ local function LoadPlayer(player)
 
 	for k, v in pairs(DefaultData) do if k ~= "Prestige" and k ~= "Dews" and k ~= "Elo" then player:SetAttribute(k, data[k] or v) end end
 	for k, v in pairs(data) do if DefaultData[k] == nil and k ~= "Prestige" and k ~= "Dews" and k ~= "Elo" then player:SetAttribute(k, v) end end
+
+	-- [[ THE FIX: explicitly load all Achievement tracking keys from savedData! ]]
+	for k, v in pairs(data) do
+		if string.match(k, "^Ach_") then
+			player:SetAttribute(k, v)
+		end
+	end
 
 	player:SetAttribute("DewsReset_V1", true)
 
