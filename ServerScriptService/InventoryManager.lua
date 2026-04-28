@@ -71,32 +71,35 @@ for _, gType in ipairs({"Titan", "Clan"}) do
 	local remote = Network:FindFirstChild("Itemize" .. gType) or Instance.new("RemoteEvent", Network)
 	remote.Name = "Itemize" .. gType
 	remote.OnServerEvent:Connect(function(player, action)
-		if action == "Equipped" then
-			local current = player:GetAttribute(gType)
-			if not current or current == "None" then return end
-			if player.leaderstats.Dews.Value < 100000 then
-				NotificationEvent:FireClient(player, "Requires 100,000 Dews to Itemize!", "Error")
-				return
-			end
+		if not action then return end
 
-			local itemizedName = "Itemized " .. current
+		-- Allows itemizing from Equips or direct Inventory Slots (1, 2, 3...)
+		local attrName = (action == "Equipped") and gType or (gType .. "_Slot" .. tostring(action))
+		local current = player:GetAttribute(attrName)
 
-			-- [[ MAP FRITZ EXCEPTION SO IT DOESN'T ERASE/FAIL ]]
-			if current == "Fritz" then
-				itemizedName = "Fritz Clan Serum"
-			end
-
-			if not ItemData.Consumables[itemizedName] then
-				NotificationEvent:FireClient(player, "This cannot be itemized.", "Error")
-				return
-			end
-
-			player.leaderstats.Dews.Value -= 100000
-			local safeName = itemizedName:gsub("[^%w]", "") .. "Count"
-			player:SetAttribute(safeName, (player:GetAttribute(safeName) or 0) + 1)
-			player:SetAttribute(gType, "None")
-			NotificationEvent:FireClient(player, "Successfully itemized " .. current .. " into your Pouch!", "Success")
+		if not current or current == "None" then return end
+		if player.leaderstats.Dews.Value < 100000 then
+			NotificationEvent:FireClient(player, "Requires 100,000 Dews to Itemize!", "Error")
+			return
 		end
+
+		local itemizedName = "Itemized " .. current
+
+		-- [[ MAP FRITZ EXCEPTION SO IT DOESN'T ERASE/FAIL ]]
+		if current == "Fritz" then
+			itemizedName = "Fritz Clan Serum"
+		end
+
+		if not ItemData.Consumables[itemizedName] then
+			NotificationEvent:FireClient(player, "This cannot be itemized.", "Error")
+			return
+		end
+
+		player.leaderstats.Dews.Value -= 100000
+		local safeName = itemizedName:gsub("[^%w]", "") .. "Count"
+		player:SetAttribute(safeName, (player:GetAttribute(safeName) or 0) + 1)
+		player:SetAttribute(attrName, "None")
+		NotificationEvent:FireClient(player, "Successfully itemized " .. current .. " into your Pouch!", "Success")
 	end)
 end
 
