@@ -107,7 +107,13 @@ SkillData.Skills = {
 	["Evasive Maneuver"] = { Requirement = "Enemy", Range = "Any", Type = "Basic", Mult = 0, Effect = "Dodge", Cooldown = 5, SFX = "Dash", VFX = "BlockMark", Description = "Dodges incoming attacks." },
 	["Smoke Screen"] = { Requirement = "Enemy", Range = "Any", Type = "Basic", Mult = 0, Effect = "Dodge", Cooldown = 5, SFX = "Steam", VFX = "BlockMark", Description = "Creates a smoke screen to evade attacks." },
 	["Regroup"] = { Requirement = "Enemy", Range = "Any", Type = "Basic", Mult = 0, Effect = "Rest", Cooldown = 4, SFX = "Heal", VFX = "HealMark", Description = "Steps back to heal." },
-	["Idle"] = { Requirement = "Enemy", Range = "Any", Type = "Basic", Mult = 0, Effect = "None", Cooldown = 0, SFX = "None", VFX = "None", Description = "Stands perfectly still." }
+	["Idle"] = { Requirement = "Enemy", Range = "Any", Type = "Basic", Mult = 0, Effect = "None", Cooldown = 0, SFX = "None", VFX = "None", Description = "Stands perfectly still." },
+
+	-- [[ EVENT EXCLUSIVE MOVES: THE WORLD TITAN ]]
+	["Muda Barrage"] = { Requirement = "Enemy", Range = "Close", Type = "Titan", Mult = 0.4, Hits = 8, Cooldown = 3, SFX = "HeavyPunch", VFX = "ExplosionMark", Description = "A blindingly fast flurry of massive punches." },
+	["Time Stop"] = { Requirement = "Enemy", Range = "Any", Type = "Titan", Mult = 0, Effect = "Stun", Duration = 2, Cooldown = 8, Unavoidable = true, Telegraphed = true, SFX = "Roar", VFX = "BlockMark", Description = "ZA WARUDO! Freezes time, incapacitating you for 2 turns. Cannot be dodged." },
+	["Road Roller Crush"] = { Requirement = "Enemy", Range = "Any", Type = "Titan", Mult = 6.0, Effect = "Stun", Duration = 1, Cooldown = 10, Telegraphed = true, Unavoidable = true, SFX = "Explosion", VFX = "ExplosionMark", Description = "Drops a massive object from the sky. Must be Clashed or Blocked!" },
+	["Vampiric Strike"] = { Requirement = "Enemy", Range = "Close", Type = "Titan", Mult = 2.5, Effect = "Bleed", Duration = 3, Cooldown = 4, SFX = "Bite", VFX = "ClawMark", Description = "A piercing strike that causes severe bleeding." }
 }
 
 -- [[ PRESTIGE SKILL WEB NODES ]]
