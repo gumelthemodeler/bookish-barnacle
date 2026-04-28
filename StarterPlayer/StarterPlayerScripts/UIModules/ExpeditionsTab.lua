@@ -204,7 +204,6 @@ function ExpeditionsTab.Initialize(parentFrame)
 							local ddHpLbl = Pages["Doomsday"]:FindFirstChild("DDContainer") and Pages["Doomsday"].DDContainer:FindFirstChild("GlobalHpLbl")
 							local EngageBtn = Pages["Doomsday"]:FindFirstChild("DDContainer") and Pages["Doomsday"].DDContainer:FindFirstChild("EngageBtn")
 
-							-- Thematic JoJo Override based on Event Active state
 							if currentDoomsdayData.EventActive then
 								if ddTitle then
 									ddTitle.Text = "ZA WARUDO! THE WORLD TITAN"
@@ -544,15 +543,22 @@ function ExpeditionsTab.Initialize(parentFrame)
 					local leftAccent = DoomsdayCard:FindFirstChild("LeftAccent")
 					local bgImage = DoomsdayCard:FindFirstChildOfClass("ImageLabel")
 
+					-- [[ THE WORLD TITAN CUSTOM EXPEDITION BANNER OVERRIDE ]]
 					if data.EventActive then
 						if tLbl then tLbl.Text = "EVENT: THE WORLD TITAN" tLbl.TextColor3 = Color3.fromRGB(255, 215, 0) end
 						if leftAccent then leftAccent.BackgroundColor3 = Color3.fromRGB(255, 215, 0) end
-						if bgImage then bgImage.ImageColor3 = Color3.fromRGB(255, 215, 0) end
+						if bgImage then 
+							bgImage.ImageColor3 = Color3.fromRGB(255, 255, 255)
+							bgImage.Image = "rbxassetid://96321039272184" -- Custom Banner
+						end
 					else
 						if tLbl then tLbl.Text = "DOOMSDAY BOUNTIES" tLbl.TextColor3 = UIHelpers.Colors.TextWhite end
 						if dLbl then dLbl.Text = "Server-wide raid bosses. Fight for the top of the global leaderboard." dLbl.TextColor3 = UIHelpers.Colors.TextMuted end
 						if leftAccent then leftAccent.BackgroundColor3 = CONFIG.Colors.Event end
-						if bgImage then bgImage.ImageColor3 = CONFIG.Colors.Event end
+						if bgImage then 
+							bgImage.ImageColor3 = CONFIG.Colors.Event
+							bgImage.Image = CONFIG.Decals.WorldBoss 
+						end
 					end
 				end
 
