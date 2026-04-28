@@ -111,7 +111,7 @@ SkillData.Skills = {
 
 	-- [[ EVENT EXCLUSIVE MOVES: THE WORLD TITAN ]]
 	["Muda Barrage"] = { Requirement = "Enemy", Range = "Close", Type = "Titan", Mult = 0.4, Hits = 8, Cooldown = 3, SFX = "HeavyPunch", VFX = "ExplosionMark", Description = "A blindingly fast flurry of massive punches." },
-	["Time Stop"] = { Requirement = "Enemy", Range = "Any", Type = "Titan", Mult = 0, Effect = "Stun", Duration = 2, Cooldown = 8, Unavoidable = true, Telegraphed = true, SFX = "Roar", VFX = "BlockMark", Description = "ZA WARUDO! Freezes time, incapacitating you for 2 turns. Cannot be dodged." },
+	["Time Stop"] = { Requirement = "Enemy", Range = "Any", Type = "Titan", Mult = 0, Effect = "Stun", Duration = 1, Cooldown = 8, Unavoidable = true, Telegraphed = true, SFX = "Roar", VFX = "BlockMark", Description = "ZA WARUDO! Freezes time, incapacitating you for 1 turn. Cannot be dodged." },
 	["Road Roller Crush"] = { Requirement = "Enemy", Range = "Any", Type = "Titan", Mult = 6.0, Effect = "Stun", Duration = 1, Cooldown = 10, Telegraphed = true, Unavoidable = true, SFX = "Explosion", VFX = "ExplosionMark", Description = "Drops a massive object from the sky. Must be Clashed or Blocked!" },
 	["Vampiric Strike"] = { Requirement = "Enemy", Range = "Close", Type = "Titan", Mult = 2.5, Effect = "Bleed", Duration = 3, Cooldown = 4, SFX = "Bite", VFX = "ClawMark", Description = "A piercing strike that causes severe bleeding." }
 }
