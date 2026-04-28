@@ -1,5 +1,6 @@
 -- @ScriptType: Script
 -- @ScriptType: Script
+-- @ScriptType: Script
 -- Name: CombatManager
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -64,12 +65,7 @@ local function GetValidEndlessMob(partData)
 			table.insert(valid, mob)
 		end
 	end
-
-	if #valid > 0 then 
-		return valid[math.random(1, #valid)] 
-	end
-
-	-- [[ THE FIX: If the Part has no valid enemies (like Part 2), default to a Part 1 Titan instead of the Dummy ]]
+	if #valid > 0 then return valid[math.random(1, #valid)] end
 	return EnemyData.Parts[1].Mobs[1] 
 end
 
@@ -143,9 +139,7 @@ end
 
 local function StartBattle(player, encounterType, requestedPartId)
 	if ActiveBattles[player.UserId] then return end 
-
 	if player:GetAttribute("InMenu") == true or player:GetAttribute("AFK") == true then return end
-
 	player:SetAttribute("InCombat", true)
 
 	local currentPart = player:GetAttribute("CurrentPart") or 1
@@ -186,9 +180,15 @@ local function StartBattle(player, encounterType, requestedPartId)
 
 	elseif encounterType == "EngageDoomsday" then
 		isWorldBoss = true
-		eTemplate = EnemyData.WorldBosses["Doomsday Titan"]
-		if not eTemplate then return end
-		logFlavor = "<font color=\"#FF3333\">[GLOBAL BOUNTY: THE PRIMORDIAL THREAT]</font>\nYou drop directly into the Doomsday instance!"
+		local activeBoss = DoomsdayManager.GetActiveBoss()
+		if not activeBoss then return end
+		eTemplate = activeBoss
+
+		if eTemplate.Name == "The World Titan" then
+			logFlavor = "<font color=\"#EEDD00\">[EVENT BOUNTY: ZA WARUDO!]</font>\nYou drop directly into frozen time to face The World Titan!"
+		else
+			logFlavor = "<font color=\"#FF3333\">[GLOBAL BOUNTY: " .. string.upper(eTemplate.Name) .. "]</font>\nYou drop directly into the Doomsday instance!"
+		end
 		targetPart = 1 
 
 	elseif encounterType == "EngageWorldBoss" then
@@ -395,7 +395,11 @@ local function StartBattle(player, encounterType, requestedPartId)
 		elseif encounterType == "EngageRaid" then 
 			baseDifficulty = 2.0; expectedTurnsToKill = 25; expectedHitsToDie = 5 
 		elseif encounterType == "EngageDoomsday" then
-			baseDifficulty = 15.0; expectedTurnsToKill = 9999; expectedHitsToDie = 3
+			if eTemplate.Name == "The World Titan" then
+				baseDifficulty = 4.0; expectedTurnsToKill = 15; expectedHitsToDie = 2
+			else
+				baseDifficulty = 15.0; expectedTurnsToKill = 9999; expectedHitsToDie = 3
+			end
 		end
 
 		local statCap = 100 + (prestige * 10)
@@ -407,9 +411,15 @@ local function StartBattle(player, encounterType, requestedPartId)
 		eHP = math.floor(totalPartyDps * expectedTurnsToKill * baseDifficulty)
 		eStr = math.floor((expectedBaseHP / expectedHitsToDie) / 2 * baseDifficulty) 
 		eDef = math.floor(expectedBaseStr * 0.8 * math.pow(baseDifficulty, 0.5)) 
-		eSpd = math.floor(pTotalSpd * 1.1) 
 
-		if eGateType == "Steam" then eGateHP = eTemplate.GateHP 
+		if eTemplate.Name == "The World Titan" then
+			eSpd = math.floor(pTotalSpd * 1.5) 
+		else
+			eSpd = math.floor(pTotalSpd * 1.1) 
+		end
+
+		if eGateType == "Steam" or eGateType == "Stand Aura" then 
+			eGateHP = eTemplate.GateHP 
 		elseif eGateType then
 			local gateRatio = (eTemplate.GateHP or 0) / (eTemplate.Health or 100)
 			if gateRatio == 0 then gateRatio = 0.2 end
@@ -1138,6 +1148,26 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 	local function DispatchStrike(attacker, defender, strikeSkill, aimLimb)
 		if attacker.HP <= 0 or defender.HP <= 0 then return end
 
+		-- [[ NEW EVENT MECHANIC: The World's Stand Aura Deflection ]]
+		if defender.IsBoss and defender.Name == "The World Titan" and defender.GateType == "Stand Aura" and (defender.GateHP or 0) > 0 and attacker.IsPlayer then
+			local skData = SkillData.Skills[strikeSkill]
+			if skData and (skData.Mult or 0) > 0 then 
+				local isRanged = (skData.Range == "Long" or skData.Range == "Any")
+				local isHeavy = (skData.Mult or 0) >= 2.5
+
+				if not isRanged and not isHeavy then
+					local recoil = math.floor(attacker.MaxHP * 0.1)
+					attacker.HP = math.max(1, attacker.HP - recoil)
+					local deflectMsg = "<font color=\"#EEDD00\"><b>[MUDA MUDA MUDA!]</b></font>\n<font color=\"#FF3333\">The World manifested and furiously deflected your weak attack! You took " .. recoil .. " recoil damage! (Hint: Use Heavy Melee or Ranged attacks to pierce his Stand!)</font>"
+
+					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = deflectMsg, DidHit = false, ShakeType = "Heavy", SkillUsed = strikeSkill, IsPlayerAttacking = true})
+					PlayVFX:FireClient(player, "Block", "Enemy")
+					task.wait(turnDelay)
+					return
+				end
+			end
+		end
+
 		local skillObj = SkillData.Skills[strikeSkill]
 		if skillObj then
 			if skillObj.Effect == "CloseGap" or strikeSkill == "Close In" or strikeSkill == "Advance" or strikeSkill == "Charge" then
@@ -1209,7 +1239,32 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 
 			if battle.Enemy.IsBoss and not battle.Enemy.EnragedOnce then
 				local hpRatio = battle.Enemy.HP / battle.Enemy.MaxHP
-				if hpRatio <= 0.30 and battle.Enemy.HP > 0 then
+
+				-- [[ UNIQUE MECHANIC 1: THE GREATEST HIGH ]]
+				if battle.Enemy.Name == "The World Titan" and hpRatio <= 0.50 and battle.Enemy.HP > 0 then
+					battle.Enemy.EnragedOnce = true
+					if not battle.Enemy.Statuses then battle.Enemy.Statuses = {} end
+					battle.Enemy.Statuses["Enraged"] = 999
+					battle.Enemy.Statuses["Stun"] = nil
+					battle.Enemy.Statuses["Bleed"] = nil; battle.Enemy.Statuses["Burn"] = nil; battle.Enemy.Statuses["Blinded"] = nil; battle.Enemy.Statuses["TrueBlind"] = nil; battle.Enemy.Statuses["Crippled"] = nil; battle.Enemy.Statuses["Weakened"] = nil; battle.Enemy.Statuses["Debuff_Defense"] = nil; battle.Enemy.Statuses["Telegraphing"] = nil
+
+					local drainAmt = math.floor(battle.Player.MaxHP * 0.3) 
+					battle.Player.HP = math.max(1, battle.Player.HP - drainAmt)
+					battle.Enemy.HP = math.min(battle.Enemy.MaxHP, battle.Enemy.HP + drainAmt)
+
+					battle.Enemy.GateType = "Stand Aura"
+					battle.Enemy.MaxGateHP = 3000
+					battle.Enemy.GateHP = 3000
+
+					battle.Enemy.TotalStrength = math.floor(battle.Enemy.TotalStrength * 1.5)
+					battle.Enemy.TotalSpeed = math.floor(battle.Enemy.TotalSpeed * 1.5)
+
+					local enrageMsg = "<font color=\"#EEDD00\"><b>[THE GREATEST HIGH!]</b></font>\n<font color=\"#FF0000\">The World Titan drained " .. drainAmt .. " of your HP to heal himself! His Stand Aura is fully restored, and his power surges!</font>"
+
+					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = enrageMsg, DidHit = false, ShakeType = "Heavy", EnrageTrigger = true})
+					task.wait(turnDelay)
+
+				elseif battle.Enemy.Name ~= "The World Titan" and hpRatio <= 0.30 and battle.Enemy.HP > 0 then
 					battle.Enemy.EnragedOnce = true
 					if not battle.Enemy.Statuses then battle.Enemy.Statuses = {} end
 					battle.Enemy.Statuses["Enraged"] = 999
@@ -1241,6 +1296,17 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 			local wasIncapacitated = false
 			if combatant.Statuses and (combatant.Statuses["Blinded"] or combatant.Statuses["TrueBlind"] or combatant.Statuses["Stun"]) then
 				wasIncapacitated = true
+			end
+
+			-- [[ UNIQUE MECHANIC 2: JOESTAR IMMUNITY TO TIME STOP ]]
+			if combatant.IsPlayer and wasIncapacitated and combatant.Statuses["Stun"] and battle.Enemy.Name == "The World Titan" then
+				local clan = combatant.Clan or "None"
+				if string.find(clan, "Joestar") then
+					wasIncapacitated = false
+					combatant.Statuses["Stun"] = nil
+					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#EEDD00\"><b>[SAME TYPE OF STAND!]</b></font>\n<font color=\"#FFFFFF\">Your Joestar bloodline allows you to move within stopped time! The stun is completely negated!</font>", DidHit = false, ShakeType = "None"})
+					task.wait(turnDelay)
+				end
 			end
 
 			local dotDamage, dotLog = CombatCore.TickStatuses(combatant)
@@ -1306,7 +1372,6 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 			end
 
 			if combatant.IsPlayer then
-				-- [[ THE FIX: Added math to deduct Heat and Gas before executing a normal attack ]]
 				local skillObj = SkillData.Skills[skillName]
 				if skillObj then
 					local isTransformed = battle.Player.Statuses and battle.Player.Statuses["Transformed"]
