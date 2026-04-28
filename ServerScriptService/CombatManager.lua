@@ -4,6 +4,7 @@
 -- Name: CombatManager
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BadgeService = game:GetService("BadgeService")
 local EnemyData = require(ReplicatedStorage:WaitForChild("EnemyData"))
 local ItemData = require(ReplicatedStorage:WaitForChild("ItemData"))
 local SkillData = require(ReplicatedStorage:WaitForChild("SkillData"))
@@ -12,8 +13,10 @@ local GameData = require(ReplicatedStorage:WaitForChild("GameData"))
 local CombatCore = require(script.Parent:WaitForChild("CombatCore"))
 local LootManager = require(script.Parent:WaitForChild("LootManager")) 
 local LabyrinthManager = require(script.Parent:WaitForChild("LabyrinthManager"))
-
 local DoomsdayManager = require(script.Parent:WaitForChild("DoomsdayManager"))
+
+-- [[ ⚠️ PASTE YOUR ROBLOX BADGE ID HERE! ⚠️ ]]
+local EVENT_BADGE_ID = 4194606710515423 
 
 local Network = ReplicatedStorage:FindFirstChild("Network") or Instance.new("Folder", ReplicatedStorage)
 Network.Name = "Network"
@@ -418,7 +421,6 @@ local function StartBattle(player, encounterType, requestedPartId)
 
 		if eTemplate.Name == "The World Titan" then
 			eSpd = math.floor(pTotalSpd * 1.15) 
-			-- [[ FIXED 1 DAMAGE BUG: Explicit override to guarantee he pierces your armor ]]
 			eStr = math.floor(pTotalDef * 1.5) + 300 
 		else
 			eSpd = math.floor(pTotalSpd * 1.1) 
@@ -519,6 +521,10 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		end
 	end
 
+	if battle.Context.IsWorldBoss and not battle.Enemy.IsRumblingBoss then
+		pcall(function() DoomsdayManager.RegisterDamage(player, battle.Enemy.MaxHP) end)
+	end
+
 	local sqName = player:GetAttribute("SquadName")
 	if sqName and sqName ~= "None" then
 		local squadEvent = Network:FindFirstChild("AddSquadSP")
@@ -610,6 +616,31 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		battle.Player.HP = math.min(pMax, pCur + healAmt)
 		killMsg = killMsg .. "\n<font color=\"#55FF55\">[Awakened: Healed " .. healAmt .. " HP!]</font>"
 		PlayVFX:FireClient(player, "Heal", "Self")
+	end
+
+	if battle.Context.IsWorldBoss and not battle.Enemy.IsRumblingBoss then
+		if string.find(battle.Enemy.Name, "The World Titan") then
+			if not player:GetAttribute("Ach_Defeat_WorldTitan") then
+				player:SetAttribute("Ach_Defeat_WorldTitan", true)
+				killMsg = killMsg .. "\n<font color=\"#EEDD00\"><b>[UNLOCKED: 'Stardust Crusader' Title & 'ZA WARUDO' Aura!]</b></font>"
+				task.spawn(function()
+					local success, err = pcall(function() 
+						if not BadgeService:UserHasBadgeAsync(player.UserId, EVENT_BADGE_ID) then
+							BadgeService:AwardBadge(player.UserId, EVENT_BADGE_ID) 
+						end
+					end)
+					if not success then warn("[CombatManager] Failed to award Boss Badge: " .. tostring(err)) end
+				end)
+			end
+
+			player:SetAttribute("VampireTitanBloodCount", (player:GetAttribute("VampireTitanBloodCount") or 0) + 1)
+			table.insert(droppedItems, {Name = "Vampire Titan Blood", Amount = 1})
+
+			if math.random(1, 100) <= 25 then
+				player:SetAttribute("StandArrowHeadCount", (player:GetAttribute("StandArrowHeadCount") or 0) + 1)
+				table.insert(droppedItems, {Name = "Stand Arrow Head", Amount = 1})
+			end
+		end
 	end
 
 	if battle.Enemy.IsRumblingBoss then
@@ -1567,8 +1598,6 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 								hintStr = "\n<font color=\"#FF3333\"><b>⚠️ UNAVOIDABLE ATTACK! CLASH OR BLOCK! ⚠️</b></font>"
 							end
 
-							-- Explicit check to ensure his Strength beats your defense
-							-- so his telegraphed moves are genuinely terrifying
 							battle.Enemy.TotalStrength = math.floor(battle.Player.TotalDefense * 1.5) + 300
 
 							CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#EEDD00\"><b>["..q.."]</b></font>\n<b><font color=\"#FFAA00\">WARNING: The World Titan is charging up " .. aiSkill:upper() .. "!</font></b>" .. hintStr, DidHit = false, ShakeType = "Heavy"})
@@ -1606,7 +1635,6 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 
 				elseif string.find(combatant.Name, "The World Titan") and (aiSkill == "Muda Barrage" or aiSkill == "Road Roller Crush") then
 					local doQTE = true
-					-- 30% chance to trigger the QTE
 					if aiSkill == "Muda Barrage" and math.random(1, 100) > 30 then
 						doQTE = false
 					end
