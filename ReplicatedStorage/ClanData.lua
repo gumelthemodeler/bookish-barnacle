@@ -1,5 +1,6 @@
 -- @ScriptType: ModuleScript
 -- @ScriptType: ModuleScript
+-- @ScriptType: ModuleScript
 local ClanData = {
 	Clans = {
 		["Yeager"] = {
@@ -47,8 +48,6 @@ local ClanData = {
 			SurvivalChance = 75,
 			TitanSynergies = { ["Founding"] = { HpMult = 0.50, DmgMult = 0.25, ArmorMult = 0.25 } }
 		},
-
-		-- [[ THE FIX: Fritz is now an unstoppable force of nature, especially in Titan form ]]
 		["Fritz"] = {
 			BaseHpMult = 2.50, AwakenedHpMult = 5.00, AbyssalHpMult = 10.00,
 			BaseDmgMult = 2.00, AwakenedDmgMult = 3.50, AbyssalDmgMult = 6.00,
@@ -59,6 +58,14 @@ local ClanData = {
 			SurvivalChance = 100,
 			CritBonus = 15, AbyssalCritBonus = 35,
 			TitanSynergies = { ["Founding"] = { DmgMult = 2.00, HpMult = 2.00, ArmorMult = 2.00, CritBonus = 25 } }
+		},
+
+		-- [[ EVENT EXCLUSIVE CLAN: JOESTAR ]]
+		["Joestar"] = {
+			BaseSpdMult = 1.40, AwakenedSpdMult = 2.50, AbyssalSpdMult = 5.00,
+			BaseResolveMult = 1.50, AwakenedResolveMult = 2.50, AbyssalResolveMult = 4.00,
+			CritBonus = 10, AwakenedCritBonus = 20, AbyssalCritBonus = 40,
+			DodgeBonus = 10, AbyssalDodgeBonus = 25
 		}
 	}
 }
@@ -87,8 +94,7 @@ function ClanData.GetClanStats(clanNameStr, isAwakened, titanNameStr, isTransfor
 		stats.SurvivalChance = data.SurvivalChance or 0
 		stats.DodgeBonus = isAbyssal and (data.AbyssalDodgeBonus or data.DodgeBonus or 0) or (data.DodgeBonus or 0)
 
-		-- [[ THE FIX: Properly extract base Clan Crit Bonuses to combat core ]]
-		stats.CritBonus = isAbyssal and (data.AbyssalCritBonus or data.CritBonus or 0) or (data.CritBonus or 0)
+		stats.CritBonus = isAbyssal and (data.AbyssalCritBonus or data.CritBonus or 0) or (isAwakened and (data.AwakenedCritBonus or data.CritBonus or 0) or (data.CritBonus or 0))
 
 		stats.NapeCritMultiplier = isAbyssal and (data.AbyssalNapeCritMultiplier or data.NapeCritMultiplier or 1.5) or (data.NapeCritMultiplier or 1.5)
 		stats.MomentumDamagePerHit = isAbyssal and (data.AbyssalMomentumDamagePerHit or data.MomentumDamagePerHit or 0) or (data.MomentumDamagePerHit or 0)
