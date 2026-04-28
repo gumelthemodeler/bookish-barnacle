@@ -28,17 +28,19 @@ local EVENT_STAT_REQUIREMENT = 250 -- (Strength + Defense + Speed + Resolve) req
 local EVENT_BOSS_DATA = {
 	Name = "The World Titan",
 	IsBoss = true,
-	IsDoomsdayBoss = true,
-	Health = 15000, 
+	IsDoomsdayBoss = false,
+	Health = 4500, 
 	GateType = "Stand Aura",
-	GateHP = 3000,
-	Strength = 1800,
-	Defense = 800,
-	Speed = 800,
-	Resolve = 2000,
+	GateHP = 1000,
+	Strength = 400,
+	Defense = 300,
+	Speed = 250,
+	Resolve = 800,
 	TitanStats = {Power="S", Speed="S", Hardening="C", Endurance="B", Precision="S", Potential="S"},
 	Skills = {"Muda Barrage", "Time Stop", "Road Roller Crush", "Vampiric Strike"},
-	Drops = { XP = 1500000, Dews = 200000, ItemChance = {} },
+
+	-- FIXED DROPS: You now earn guaranteed items to show up directly in the Victory UI
+	Drops = { XP = 15000, Dews = 3500, ItemChance = { ["Vampire Titan Blood"] = 100, ["Stone Mask Fragment"] = 5 } },
 	DropItem = "The World's Stopwatch"
 }
 -- ==========================================
@@ -139,22 +141,22 @@ local function PayoutDoomsday()
 				end
 
 				plr:SetAttribute("VampireTitanBloodCount", (plr:GetAttribute("VampireTitanBloodCount") or 0) + 3)
-				NotificationEvent:FireClient(plr, "Event Reward: 3x Vampire Titan Blood!", "Success")
+				NotificationEvent:FireClient(plr, "Global Event Reward: 3x Vampire Titan Blood!", "Success")
 
 				if i <= 3 then
 					plr:SetAttribute("StoneMaskFragmentCount", (plr:GetAttribute("StoneMaskFragmentCount") or 0) + 1)
-					NotificationEvent:FireClient(plr, "Top 3 Event Reward: 1x Stone Mask Fragment!", "Loot")
+					NotificationEvent:FireClient(plr, "Global Top 3 Event Reward: 1x Stone Mask Fragment!", "Loot")
 				end
 
 				if i == 1 then
 					local hasStopwatch = (plr:GetAttribute("TheWorldsStopwatchCount") or 0) > 0
 					if not hasStopwatch then
 						plr:SetAttribute("TheWorldsStopwatchCount", 1)
-						NotificationEvent:FireClient(plr, "Rank 1 Event Reward: The World's Stopwatch obtained!", "Loot")
+						NotificationEvent:FireClient(plr, "Global Rank 1 Reward: The World's Stopwatch obtained!", "Loot")
 					end
 
 					plr:SetAttribute("StandArrowHeadCount", (plr:GetAttribute("StandArrowHeadCount") or 0) + 1)
-					NotificationEvent:FireClient(plr, "Rank 1 Event Reward: 1x Stand Arrow Head!", "Loot")
+					NotificationEvent:FireClient(plr, "Global Rank 1 Reward: 1x Stand Arrow Head!", "Loot")
 				end
 			end
 		end
