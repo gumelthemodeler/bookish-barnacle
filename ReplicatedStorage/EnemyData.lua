@@ -28,7 +28,9 @@ EnemyData.BossIcons = {
 	["System"] = "rbxassetid://125800917140688",
 
 	["Mikasa Ackerman"] = "rbxassetid://113777388050871",
-	["Hange Zoe"] = "rbxassetid://71066662959593"
+	["Hange Zoe"] = "rbxassetid://71066662959593",
+	
+	["The World Titan"] = "rbxassetid://130616205247078"
 }
 
 EnemyData.Allies = {
