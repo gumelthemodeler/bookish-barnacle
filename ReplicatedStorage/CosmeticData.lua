@@ -1,5 +1,6 @@
 -- @ScriptType: ModuleScript
 -- @ScriptType: ModuleScript
+-- @ScriptType: ModuleScript
 -- Name: CosmeticData
 local CosmeticData = {}
 
@@ -13,10 +14,12 @@ CosmeticData.Titles = {
 	["Champion"] = { Name = "Arena Champion", Desc = "Reach 2000 Elo in PVP.", Color = "#55AAFF", ReqType = "Elo", ReqValue = 2000, Order = 7 },
 	["Warlord"] = { Name = "Warlord", Desc = "Reach 4000 Elo in PVP.", Color = "#FF55FF", ReqType = "Elo", ReqValue = 4000, Order = 8 },
 
-	-- [[ THE FIX: Added exclusive Top 5 Leaderboard Titles ]]
 	["Prestige Apex"] = { Name = "Prestige Apex", Desc = "Hold a Top 5 spot on the Global Prestige Leaderboard.", Color = "#FFD700", ReqType = "Leaderboard", ReqValue = "Top5_Prestige", Order = 9 },
 	["Arena Apex"] = { Name = "Arena Apex", Desc = "Hold a Top 5 spot on the Global Elo Leaderboard.", Color = "#55AAFF", ReqType = "Leaderboard", ReqValue = "Top5_Elo", Order = 10 },
-	["Squad Apex"] = { Name = "Squad Apex", Desc = "Be in a Top 5 Strike Squad.", Color = "#FF5555", ReqType = "Leaderboard", ReqValue = "Top5_Squad", Order = 11 }
+	["Squad Apex"] = { Name = "Squad Apex", Desc = "Be in a Top 5 Strike Squad.", Color = "#FF5555", ReqType = "Leaderboard", ReqValue = "Top5_Squad", Order = 11 },
+
+	-- [[ JOJO EVENT TITLE ]]
+	["Stardust Crusader"] = { Name = "Stardust Crusader", Desc = "Defeat The World Titan during the limited-time crossover event.", Color = "#FFD700", ReqType = "Achievement", ReqValue = "Defeat_WorldTitan", Order = 12 }
 }
 
 CosmeticData.Auras = {
@@ -24,7 +27,10 @@ CosmeticData.Auras = {
 	["Blood Mist"] = { Name = "Blood Mist", Desc = "A terrifying crimson UI glow. (Defeat Frenzied Beast)", ReqType = "Achievement", ReqValue = "Defeat_Frenzied", Color1 = "#FF0000", Color2 = "#440000", Order = 2 },
 	["Shadow Step"] = { Name = "Shadow Step", Desc = "A dark, trailing UI aura. (Reach 2000 Elo)", ReqType = "Elo", ReqValue = 2000, Color1 = "#333333", Color2 = "#000000", Order = 3 },
 	["Golden Sparks"] = { Name = "Golden Sparks", Desc = "Crackling golden UI energy. (Prestige 5)", ReqType = "Prestige", ReqValue = 5, Color1 = "#FFFF66", Color2 = "#FFCC00", Order = 4 },
-	["Paths Aura"] = { Name = "Paths Resonance", Desc = "Glowing cyan UI border. (Prestige 10)", ReqType = "Prestige", ReqValue = 10, Color1 = "#66FFFF", Color2 = "#0099FF", Order = 5 }
+	["Paths Aura"] = { Name = "Paths Resonance", Desc = "Glowing cyan UI border. (Prestige 10)", ReqType = "Prestige", ReqValue = 10, Color1 = "#66FFFF", Color2 = "#0099FF", Order = 5 },
+
+	-- [[ JOJO EVENT AURA ]]
+	["ZA WARUDO"] = { Name = "ZA WARUDO", Desc = "A frozen, golden time-stopping glow. (Defeat The World Titan)", ReqType = "Achievement", ReqValue = "Defeat_WorldTitan", Color1 = "#FFD700", Color2 = "#FFFFFF", Order = 6 }
 }
 
 function CosmeticData.CheckUnlock(player, reqType, reqValue)
@@ -44,7 +50,6 @@ function CosmeticData.CheckUnlock(player, reqType, reqValue)
 		for i=1, 6 do if player:GetAttribute("Titan_Slot"..i) == reqValue then return true end end
 		return false
 	elseif reqType == "Leaderboard" then
-		-- [[ THE FIX: Read the globally synced player attributes ]]
 		return player:GetAttribute(reqValue) == true
 	end
 	return false
