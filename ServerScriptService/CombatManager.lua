@@ -65,7 +65,11 @@ local function GetValidEndlessMob(partData)
 			table.insert(valid, mob)
 		end
 	end
-	if #valid > 0 then return valid[math.random(1, #valid)] end
+
+	if #valid > 0 then 
+		return valid[math.random(1, #valid)] 
+	end
+
 	return EnemyData.Parts[1].Mobs[1] 
 end
 
@@ -396,7 +400,7 @@ local function StartBattle(player, encounterType, requestedPartId)
 			baseDifficulty = 2.0; expectedTurnsToKill = 25; expectedHitsToDie = 5 
 		elseif encounterType == "EngageDoomsday" then
 			if eTemplate.Name == "The World Titan" then
-				baseDifficulty = 4.0; expectedTurnsToKill = 15; expectedHitsToDie = 2
+				baseDifficulty = 1.5; expectedTurnsToKill = 12; expectedHitsToDie = 4
 			else
 				baseDifficulty = 15.0; expectedTurnsToKill = 9999; expectedHitsToDie = 3
 			end
@@ -413,7 +417,9 @@ local function StartBattle(player, encounterType, requestedPartId)
 		eDef = math.floor(expectedBaseStr * 0.8 * math.pow(baseDifficulty, 0.5)) 
 
 		if eTemplate.Name == "The World Titan" then
-			eSpd = math.floor(pTotalSpd * 1.5) 
+			eSpd = math.floor(pTotalSpd * 1.15) 
+			-- [[ FIXED 1 DAMAGE BUG: Explicit override to guarantee he pierces your armor ]]
+			eStr = math.floor(pTotalDef * 1.5) + 300 
 		else
 			eSpd = math.floor(pTotalSpd * 1.1) 
 		end
@@ -468,7 +474,7 @@ local function StartBattle(player, encounterType, requestedPartId)
 			MomentumStacks = 0,
 			Statuses = {}, Cooldowns = {}, LastSkill = "None", AwakenedStats = awakenedStats 
 		},
-		Enemy = { IsMinigame = eTemplate.IsMinigame, IsPlayer = false, Name = eTemplate.Name, IsHuman = isPaths and false or (eTemplate.IsHuman or false), IsNightmare = isNightmare, IsBoss = eTemplate.IsBoss or false, IsDoomsdayBoss = (encounterType == "EngageDoomsday"), IsRumblingBoss = eTemplate.IsRumblingBoss, HP = eHP, MaxHP = eHP, GateType = eGateType, GateHP = eGateHP, MaxGateHP = eGateHP, TotalStrength = eStr, TotalDefense = eDef, TotalSpeed = eSpd, Statuses = {}, Cooldowns = initCooldowns, Skills = eSkills, Drops = { XP = math.floor((eTemplate.Drops and eTemplate.Drops.XP or 15) * dropMult), Dews = math.floor((eTemplate.Drops and eTemplate.Drops.Dews or 10) * dropMult), ItemChance = eTemplate.Drops and eTemplate.Drops.ItemChance or {} }, AwakenedStats = enemyAwakenedStats, LastSkill = "None", AIPoints = 0 }
+		Enemy = { IsMinigame = eTemplate.IsMinigame, IsPlayer = false, Name = eTemplate.Name, IsHuman = isPaths and false or (eTemplate.IsHuman or false), IsNightmare = isNightmare, IsBoss = eTemplate.IsBoss or false, IsDoomsdayBoss = eTemplate.IsDoomsdayBoss, IsRumblingBoss = eTemplate.IsRumblingBoss, HP = eHP, MaxHP = eHP, GateType = eGateType, GateHP = eGateHP, MaxGateHP = eGateHP, TotalStrength = eStr, TotalDefense = eDef, TotalSpeed = eSpd, Statuses = {}, Cooldowns = initCooldowns, Skills = eSkills, Drops = { XP = math.floor((eTemplate.Drops and eTemplate.Drops.XP or 15) * dropMult), Dews = math.floor((eTemplate.Drops and eTemplate.Drops.Dews or 10) * dropMult), ItemChance = eTemplate.Drops and eTemplate.Drops.ItemChance or {} }, AwakenedStats = enemyAwakenedStats, LastSkill = "None", AIPoints = 0 }
 	}
 
 	if eTemplate.IsMinigame then CombatUpdate:FireClient(player, "StartMinigame", { Battle = ActiveBattles[player.UserId], LogMsg = logFlavor, MinigameType = eTemplate.IsMinigame })
@@ -548,11 +554,6 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 	local xpGain = (battle.Enemy.Drops and battle.Enemy.Drops.XP or 0) + (dialogueRewards and dialogueRewards.XP or 0)
 	local dewsGain = (battle.Enemy.Drops and battle.Enemy.Drops.Dews or 0) + (dialogueRewards and dialogueRewards.Dews or 0)
 
-	if battle.Enemy.IsRumblingBoss then
-		xpGain = 0
-		dewsGain = 0
-	end
-
 	dewsGain = math.floor(dewsGain * 0.1)
 
 	if player:GetAttribute("HasDoubleXP") then xpGain *= 2; dewsGain *= 2 end
@@ -582,16 +583,14 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 	local droppedItems = {}
 	local autoSoldDews = 0
 
-	if not battle.Enemy.IsRumblingBoss then
-		local success, retItems, retDews = pcall(function()
-			return LootManager.ProcessDrops(player, battle.Enemy.Drops or {}, battle.Context.IsEndless, battle.Context.CurrentWave)
-		end)
-		if success then
-			droppedItems = retItems or {}
-			autoSoldDews = retDews or 0
-		else
-			warn("[CombatManager] LootManager Error: " .. tostring(retItems))
-		end
+	local success, retItems, retDews = pcall(function()
+		return LootManager.ProcessDrops(player, battle.Enemy.Drops or {}, battle.Context.IsEndless, battle.Context.CurrentWave)
+	end)
+	if success then
+		droppedItems = retItems or {}
+		autoSoldDews = retDews or 0
+	else
+		warn("[CombatManager] LootManager Error: " .. tostring(retItems))
 	end
 
 	if dialogueRewards and dialogueRewards.ItemName then
@@ -619,7 +618,7 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 
 		if not ReplicatedStorage:GetAttribute("RumblingActive") then
 			killMsg = killMsg .. "\n<font color=\"#FFD700\"><b>[EVENT ENDED] The Rumbling has halted.</b></font>"
-			CombatUpdate:FireClient(player, "Victory", {Battle = battle, XP = 0, Dews = 0, Items = {}, ExtraLog = killMsg})
+			CombatUpdate:FireClient(player, "Victory", {Battle = battle, XP = xpGain, Dews = dewsGain, Items = droppedItems, ExtraLog = killMsg})
 			ActiveBattles[player.UserId] = nil
 			player:SetAttribute("InCombat", false)
 			return
@@ -669,7 +668,7 @@ local function ProcessEnemyDeath(player, battle, dialogueRewards)
 		battle.Player.Cooldowns = {}; battle.Player.Statuses = {} 
 		battle.Player.HP = battle.Player.MaxHP; battle.Player.Gas = battle.Player.MaxGas; battle.Player.TitanEnergy = math.min(battle.Player.MaxTitanEnergy or 100, (battle.Player.TitanEnergy or 0) + 30); battle.Player.LastSkill = "None"
 
-		CombatUpdate:FireClient(player, "WaveComplete", {Battle = battle, LogMsg = flavorText .. "\n" .. killMsg, XP = 0, Dews = 0, Items = {}})
+		CombatUpdate:FireClient(player, "WaveComplete", {Battle = battle, LogMsg = flavorText .. "\n" .. killMsg, XP = xpGain, Dews = dewsGain, Items = droppedItems})
 		battle.IsProcessing = false
 		return
 	end
@@ -1001,6 +1000,61 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 			return
 		end
 
+		if actionData.MinigameType == "JoJoQTE" then
+			local enemySkill = actionData.EnemySkill or "Attack"
+			local turnDelay = player:GetAttribute("HasDoubleSpeed") and 0.4 or 0.8
+
+			if enemySkill == "Muda Barrage" then
+				local hits = tonumber(actionData.Hits) or 0
+				local misses = tonumber(actionData.Misses) or 7
+
+				if misses == 0 then
+					local winMsg = "<font color=\"#55FF55\"><b>[PERFECT EVASION!]</b></font>\nYou reacted flawlessly and deflected every strike of the Muda Barrage!"
+					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = winMsg, DidHit = false, ShakeType = "None"})
+				else
+					local eSkillMult = (SkillData.Skills[enemySkill] and SkillData.Skills[enemySkill].Mult or 0.4)
+					local actualMult = eSkillMult * misses
+					local baseDmg = CombatCore.CalculateDamage(battle.Enemy, battle.Player, actualMult, "Body", battle.Context)
+					CombatCore.TakeDamage(battle.Player, baseDmg, "Enemy")
+
+					local loseMsg = ""
+					if hits == 0 then
+						loseMsg = "<font color=\"#FF0000\"><b>[PUMMELED!]</b></font>\nYou were completely crushed by the Muda Barrage!\nTook " .. baseDmg .. " massive damage!"
+					else
+						loseMsg = "<font color=\"#FFAA00\"><b>[PARTIAL DEFLECTION]</b></font>\nYou blocked " .. hits .. " hits, but " .. misses .. " strikes broke through!\nTook " .. baseDmg .. " damage!"
+					end
+					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = loseMsg, DidHit = true, ShakeType = "Heavy"})
+				end
+			elseif enemySkill == "Road Roller Crush" then
+				if actionData.Success then
+					local winMsg = "<font color=\"#55FF55\"><b>[PERFECT EVASION!]</b></font>\nYou reacted in time and flawlessly repelled The World Titan's " .. enemySkill .. "!"
+					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = winMsg, DidHit = false, ShakeType = "None"})
+				else
+					local eSkillMult = (SkillData.Skills[enemySkill] and SkillData.Skills[enemySkill].Mult or 6.0)
+					local baseDmg = CombatCore.CalculateDamage(battle.Enemy, battle.Player, eSkillMult, "Body", battle.Context)
+					CombatCore.TakeDamage(battle.Player, baseDmg, "Enemy")
+
+					local loseMsg = "<font color=\"#FF0000\"><b>[DEVASTATING BLOW!]</b></font>\nYou failed to react in time and were crushed by " .. enemySkill .. "!\nTook " .. baseDmg .. " massive damage!"
+					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = loseMsg, DidHit = true, ShakeType = "Heavy"})
+				end
+			end
+
+			task.wait(turnDelay)
+			if battle.Player.HP < 1 then
+				CombatUpdate:FireClient(player, "Defeat", {Battle = battle})
+				SafeTriggerPathsShop(player, battle.Context)
+				if battle.Context.IsLabyrinth then LabyrinthManager.OnCombatLoss(player) end
+				ActiveBattles[player.UserId] = nil
+				player:SetAttribute("InCombat", false)
+			elseif battle.Enemy.HP < 1 then
+				ProcessEnemyDeath(player, battle)
+			else
+				battle.IsProcessing = false
+				CombatUpdate:FireClient(player, "Update", {Battle = battle})
+			end
+			return
+		end
+
 		if actionData.MinigameType == "Clash" then
 			local clashSkill = actionData.ClashSkill or "Attack"
 			local enemySkill = actionData.EnemySkill or "Ultimate"
@@ -1148,26 +1202,6 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 	local function DispatchStrike(attacker, defender, strikeSkill, aimLimb)
 		if attacker.HP <= 0 or defender.HP <= 0 then return end
 
-		-- [[ NEW EVENT MECHANIC: The World's Stand Aura Deflection ]]
-		if defender.IsBoss and defender.Name == "The World Titan" and defender.GateType == "Stand Aura" and (defender.GateHP or 0) > 0 and attacker.IsPlayer then
-			local skData = SkillData.Skills[strikeSkill]
-			if skData and (skData.Mult or 0) > 0 then 
-				local isRanged = (skData.Range == "Long" or skData.Range == "Any")
-				local isHeavy = (skData.Mult or 0) >= 2.5
-
-				if not isRanged and not isHeavy then
-					local recoil = math.floor(attacker.MaxHP * 0.1)
-					attacker.HP = math.max(1, attacker.HP - recoil)
-					local deflectMsg = "<font color=\"#EEDD00\"><b>[MUDA MUDA MUDA!]</b></font>\n<font color=\"#FF3333\">The World manifested and furiously deflected your weak attack! You took " .. recoil .. " recoil damage! (Hint: Use Heavy Melee or Ranged attacks to pierce his Stand!)</font>"
-
-					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = deflectMsg, DidHit = false, ShakeType = "Heavy", SkillUsed = strikeSkill, IsPlayerAttacking = true})
-					PlayVFX:FireClient(player, "Block", "Enemy")
-					task.wait(turnDelay)
-					return
-				end
-			end
-		end
-
 		local skillObj = SkillData.Skills[strikeSkill]
 		if skillObj then
 			if skillObj.Effect == "CloseGap" or strikeSkill == "Close In" or strikeSkill == "Advance" or strikeSkill == "Charge" then
@@ -1240,31 +1274,30 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 			if battle.Enemy.IsBoss and not battle.Enemy.EnragedOnce then
 				local hpRatio = battle.Enemy.HP / battle.Enemy.MaxHP
 
-				-- [[ UNIQUE MECHANIC 1: THE GREATEST HIGH ]]
-				if battle.Enemy.Name == "The World Titan" and hpRatio <= 0.50 and battle.Enemy.HP > 0 then
+				if string.find(battle.Enemy.Name, "The World Titan") and hpRatio <= 0.50 and battle.Enemy.HP > 0 then
 					battle.Enemy.EnragedOnce = true
 					if not battle.Enemy.Statuses then battle.Enemy.Statuses = {} end
 					battle.Enemy.Statuses["Enraged"] = 999
 					battle.Enemy.Statuses["Stun"] = nil
 					battle.Enemy.Statuses["Bleed"] = nil; battle.Enemy.Statuses["Burn"] = nil; battle.Enemy.Statuses["Blinded"] = nil; battle.Enemy.Statuses["TrueBlind"] = nil; battle.Enemy.Statuses["Crippled"] = nil; battle.Enemy.Statuses["Weakened"] = nil; battle.Enemy.Statuses["Debuff_Defense"] = nil; battle.Enemy.Statuses["Telegraphing"] = nil
 
-					local drainAmt = math.floor(battle.Player.MaxHP * 0.3) 
+					local drainAmt = math.floor(battle.Player.MaxHP * 0.15) 
 					battle.Player.HP = math.max(1, battle.Player.HP - drainAmt)
 					battle.Enemy.HP = math.min(battle.Enemy.MaxHP, battle.Enemy.HP + drainAmt)
 
 					battle.Enemy.GateType = "Stand Aura"
-					battle.Enemy.MaxGateHP = 3000
-					battle.Enemy.GateHP = 3000
+					battle.Enemy.MaxGateHP = 400
+					battle.Enemy.GateHP = 400
 
-					battle.Enemy.TotalStrength = math.floor(battle.Enemy.TotalStrength * 1.5)
-					battle.Enemy.TotalSpeed = math.floor(battle.Enemy.TotalSpeed * 1.5)
+					battle.Enemy.TotalStrength = math.floor(battle.Enemy.TotalStrength * 1.25)
+					battle.Enemy.TotalSpeed = math.floor(battle.Enemy.TotalSpeed * 1.25)
 
-					local enrageMsg = "<font color=\"#EEDD00\"><b>[THE GREATEST HIGH!]</b></font>\n<font color=\"#FF0000\">The World Titan drained " .. drainAmt .. " of your HP to heal himself! His Stand Aura is fully restored, and his power surges!</font>"
+					local enrageMsg = "<font color=\"#EEDD00\"><b>[THE GREATEST HIGH!]</b></font>\n<font color=\"#FF0000\">The World Titan drained " .. drainAmt .. " of your HP to heal himself! His Stand Aura is restored, and his power surges!</font>"
 
 					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = enrageMsg, DidHit = false, ShakeType = "Heavy", EnrageTrigger = true})
 					task.wait(turnDelay)
 
-				elseif battle.Enemy.Name ~= "The World Titan" and hpRatio <= 0.30 and battle.Enemy.HP > 0 then
+				elseif not string.find(battle.Enemy.Name, "The World Titan") and hpRatio <= 0.30 and battle.Enemy.HP > 0 then
 					battle.Enemy.EnragedOnce = true
 					if not battle.Enemy.Statuses then battle.Enemy.Statuses = {} end
 					battle.Enemy.Statuses["Enraged"] = 999
@@ -1298,8 +1331,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 				wasIncapacitated = true
 			end
 
-			-- [[ UNIQUE MECHANIC 2: JOESTAR IMMUNITY TO TIME STOP ]]
-			if combatant.IsPlayer and wasIncapacitated and combatant.Statuses["Stun"] and battle.Enemy.Name == "The World Titan" then
+			if combatant.IsPlayer and wasIncapacitated and combatant.Statuses["Stun"] and string.find(battle.Enemy.Name, "The World Titan") then
 				local clan = combatant.Clan or "None"
 				if string.find(clan, "Joestar") then
 					wasIncapacitated = false
@@ -1318,7 +1350,7 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 				if combatant.HP < 1 then continue end 
 			end
 
-			if combatant.IsDoomsdayBoss then
+			if combatant.IsDoomsdayBoss and string.find(combatant.Name, "The Doomsday Titan") then
 				battle.Context.DoomsdayTurn = (battle.Context.DoomsdayTurn or 0) + 1
 				local turn = battle.Context.DoomsdayTurn
 				local msg = "<font color=\"#FF5555\">The Doomsday Titan continues its apocalyptic march... DEAL AS MUCH DAMAGE AS POSSIBLE!</font>"
@@ -1528,26 +1560,74 @@ CombatAction.OnServerEvent:Connect(function(player, actionType, actionData)
 						combatant.Statuses["Telegraphing"] = aiSkill
 
 						local hintStr = ""
-						if SkillData.Skills[aiSkill].Unavoidable then
-							if SkillData.Skills[aiSkill].Range == "Any" then
-								hintStr = "\n<font color=\"#FF3333\"><b>⚠️ MASSIVE AREA ATTACK! USE A HEAVY SKILL TO CLASH OR 'BLOCK'! ⚠️</b></font>"
-							else
-								hintStr = "\n<font color=\"#FF3333\"><b>⚠️ UNAVOIDABLE CLOSE ATTACK! CLASH, 'FALL BACK', OR 'BLOCK'! ⚠️</b></font>"
+						if string.find(combatant.Name, "The World Titan") then
+							local dioQuotes = {"WRYYYYYYYY!", "You're approaching me?", "Bow before DIO!", "This is The World's true power!"}
+							local q = dioQuotes[math.random(1, #dioQuotes)]
+							if SkillData.Skills[aiSkill].Unavoidable then
+								hintStr = "\n<font color=\"#FF3333\"><b>⚠️ UNAVOIDABLE ATTACK! CLASH OR BLOCK! ⚠️</b></font>"
 							end
-						else
-							hintStr = "\n<font color=\"#55FF55\">[HINT: USE EVASIVE MANEUVER OR BLOCK!]</font>"
-						end
 
-						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<b><font color=\"#FFAA00\">WARNING: " .. combatant.Name .. " is charging up " .. aiSkill:upper() .. "!</font></b>" .. hintStr, DidHit = false, ShakeType = "Heavy"})
-						PlayVFX:FireClient(player, "TitanRoar", "Enemy")
-						task.wait(0.6)
-						continue
+							-- Explicit check to ensure his Strength beats your defense
+							-- so his telegraphed moves are genuinely terrifying
+							battle.Enemy.TotalStrength = math.floor(battle.Player.TotalDefense * 1.5) + 300
+
+							CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#EEDD00\"><b>["..q.."]</b></font>\n<b><font color=\"#FFAA00\">WARNING: The World Titan is charging up " .. aiSkill:upper() .. "!</font></b>" .. hintStr, DidHit = false, ShakeType = "Heavy"})
+							PlayVFX:FireClient(player, "TitanRoar", "Enemy")
+							task.wait(0.6)
+							continue
+						else
+							if SkillData.Skills[aiSkill].Unavoidable then
+								if SkillData.Skills[aiSkill].Range == "Any" then
+									hintStr = "\n<font color=\"#FF3333\"><b>⚠️ MASSIVE AREA ATTACK! USE A HEAVY SKILL TO CLASH OR 'BLOCK'! ⚠️</b></font>"
+								else
+									hintStr = "\n<font color=\"#FF3333\"><b>⚠️ UNAVOIDABLE CLOSE ATTACK! CLASH, 'FALL BACK', OR 'BLOCK'! ⚠️</b></font>"
+								end
+							else
+								hintStr = "\n<font color=\"#55FF55\">[HINT: USE EVASIVE MANEUVER OR BLOCK!]</font>"
+							end
+							CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<b><font color=\"#FFAA00\">WARNING: " .. combatant.Name .. " is charging up " .. aiSkill:upper() .. "!</font></b>" .. hintStr, DidHit = false, ShakeType = "Heavy"})
+							PlayVFX:FireClient(player, "TitanRoar", "Enemy")
+							task.wait(0.6)
+							continue
+						end
 					end
 				end
 
 				if aiSkill == "Idle" then
 					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#AAAAAA\">" .. combatant.Name .. " stands completely still.</font>", DidHit = false, ShakeType = "None"})
 					task.wait(0.4)
+
+				elseif aiSkill == "Time Stop" and string.find(combatant.Name, "The World Titan") then
+					PlayVFX:FireClient(player, "TimeStop", "Enemy")
+					CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#EEDD00\"><b>[TOKI YO TOMARE!]</b></font>\n<font color=\"#AAAAAA\">Time has completely frozen...</font>", DidHit = false, ShakeType = "None"})
+					task.wait(3.0) 
+					local aiTargets = {"Body", "Body", "Arms", "Legs", "Nape"}
+					DispatchStrike(battle.Enemy, battle.Player, aiSkill, aiTargets[math.random(1, #aiTargets)])
+
+				elseif string.find(combatant.Name, "The World Titan") and (aiSkill == "Muda Barrage" or aiSkill == "Road Roller Crush") then
+					local doQTE = true
+					-- 30% chance to trigger the QTE
+					if aiSkill == "Muda Barrage" and math.random(1, 100) > 30 then
+						doQTE = false
+					end
+
+					if doQTE then
+						local qMsg = (aiSkill == "Muda Barrage") and "<font color=\"#EEDD00\"><b>[Useless, useless, useless!]</b></font>" or "<font color=\"#EEDD00\"><b>[I'll smash you flat!]</b></font>"
+						CombatUpdate:FireClient(player, "StartMinigame", {
+							Battle = battle,
+							MinigameType = "JoJoQTE",
+							EnemySkill = aiSkill,
+							LogMsg = qMsg .. "\n<font color=\"#FF5555\">The World Titan is using " .. aiSkill:upper() .. "!</font>"
+						})
+						battle.IsProcessing = true
+						continue
+					else
+						CombatUpdate:FireClient(player, "TurnStrike", {Battle = battle, LogMsg = "<font color=\"#EEDD00\"><b>[MUDA MUDA MUDA!]</b></font>", DidHit = false, ShakeType = "None"})
+						task.wait(0.2)
+						local aiTargets = {"Body", "Body", "Arms", "Legs", "Nape"}
+						DispatchStrike(battle.Enemy, battle.Player, aiSkill, aiTargets[math.random(1, #aiTargets)])
+					end
+
 				else
 					local aiTargets = {"Body", "Body", "Arms", "Legs", "Nape"}
 					DispatchStrike(battle.Enemy, battle.Player, aiSkill, aiTargets[math.random(1, #aiTargets)])
