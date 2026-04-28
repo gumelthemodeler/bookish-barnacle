@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local MessagingService = game:GetService("MessagingService") 
+local BadgeService = game:GetService("BadgeService")
 
 local BountyData = require(ReplicatedStorage:WaitForChild("BountyData"))
 local ItemData = require(ReplicatedStorage:WaitForChild("ItemData"))
@@ -460,12 +461,38 @@ local function LoadPlayer(player)
 	for k, v in pairs(DefaultData) do if k ~= "Prestige" and k ~= "Dews" and k ~= "Elo" then player:SetAttribute(k, data[k] or v) end end
 	for k, v in pairs(data) do if DefaultData[k] == nil and k ~= "Prestige" and k ~= "Dews" and k ~= "Elo" then player:SetAttribute(k, v) end end
 
-	-- [[ THE FIX: explicitly load all Achievement tracking keys from savedData! ]]
 	for k, v in pairs(data) do
 		if string.match(k, "^Ach_") then
 			player:SetAttribute(k, v)
 		end
 	end
+
+	-- [[ CROSS-GAME COLLAB CHECK ]]
+	task.spawn(function()
+		local COLLAB_BADGE_ID = 4194606710515423
+		if not player:GetAttribute("CollabReward_JoJo_Claimed") then
+			local bSuccess, hasBadge = pcall(function()
+				return BadgeService:UserHasBadgeAsync(player.UserId, COLLAB_BADGE_ID)
+			end)
+
+			if bSuccess and hasBadge then
+				player:SetAttribute("CollabReward_JoJo_Claimed", true)
+
+				if not player:GetAttribute("Ach_Collab_JoJo") then
+					player:SetAttribute("Ach_Collab_JoJo", true)
+				end
+
+				player:SetAttribute("CollabStandArrowCount", (player:GetAttribute("CollabStandArrowCount") or 0) + 1)
+				player:SetAttribute("StandArrowHeadCount", (player:GetAttribute("StandArrowHeadCount") or 0) + 5)
+
+				if dVal then dVal.Value += 25000 end
+
+				task.delay(4.0, function()
+					RemotesFolder.NotificationEvent:FireClient(player, "Cross-Game Collab: 'Bizarre Visitor' Title & Rewards Claimed!", "Success")
+				end)
+			end
+		end
+	end)
 
 	player:SetAttribute("DewsReset_V1", true)
 
