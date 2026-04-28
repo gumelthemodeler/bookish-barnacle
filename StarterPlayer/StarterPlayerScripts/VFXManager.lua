@@ -1,9 +1,11 @@
 -- @ScriptType: ModuleScript
+-- @ScriptType: ModuleScript
 -- Name: VFXManager
 -- @ScriptType: ModuleScript
 local VFXManager = {}
 local TweenService = game:GetService("TweenService")
 local SoundService = game:GetService("SoundService")
+local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -49,7 +51,12 @@ local Sounds = {
 
 	["Block"] = "rbxassetid://136811265205147",
 	["Heal"] = "rbxassetid://140272163846580",
-	["Flee"] = "rbxassetid://140650484582271"
+	["Flee"] = "rbxassetid://140650484582271",
+
+	-- [[ JOJO EVENT SOUNDS ]]
+	["TimeStop"] = "rbxassetid://5532585293",
+	["RoadRoller"] = "rbxassetid://459065739",
+	["MudaBarrage"] = "rbxassetid://100605576958565" -- UPDATED ID TO BYPASS PRIVACY BLOCK
 }
 
 local Images = {
@@ -58,7 +65,8 @@ local Images = {
 	["ExplosionMark"] = "rbxassetid://11271602299",
 	["HealMark"] = "rbxassetid://95346239470518",
 	["BlockMark"] = "rbxassetid://71309430456016",
-	["Blood"] = "rbxassetid://16910627138"
+	["Blood"] = "rbxassetid://16910627138",
+	["AuraRing"] = "rbxassetid://71309430456016" 
 }
 
 function VFXManager.Initialize()
@@ -92,6 +100,61 @@ function VFXManager.Initialize()
 			VFXManager.ScreenShake(0.8, 1.0)
 		elseif vfxType == "Heal" then
 			VFXManager.PlaySFX("Heal", 1.0)
+
+		elseif vfxType == "TimeStop" then
+			VFXManager.PlaySFX("TimeStop", 1.0)
+
+			local cc = Instance.new("ColorCorrectionEffect")
+			cc.Name = "TimeStopCC"
+			cc.Parent = Lighting
+			cc.Brightness = 0
+			cc.Contrast = -2 
+			cc.Saturation = 0
+
+			local pausedTracks = {}
+			for _, audio in ipairs(SoundService:GetDescendants()) do
+				if audio:IsA("Sound") and audio.IsPlaying and audio.Parent ~= SFX_Folder then
+					table.insert(pausedTracks, audio)
+					audio:Pause()
+				end
+			end
+			for _, audio in ipairs(workspace:GetDescendants()) do
+				if audio:IsA("Sound") and audio.IsPlaying then
+					table.insert(pausedTracks, audio)
+					audio:Pause()
+				end
+			end
+
+			task.delay(0.15, function()
+				local t1 = TweenService:Create(cc, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+					Brightness = -0.1,
+					Contrast = 0.5,
+					Saturation = -1,
+					TintColor = Color3.fromRGB(110, 110, 160)
+				})
+				t1:Play()
+			end)
+
+			task.delay(3.0, function()
+				cc.Contrast = -2
+				cc.Saturation = 0
+				cc.TintColor = Color3.fromRGB(255, 255, 255)
+
+				task.wait(0.1)
+
+				local t2 = TweenService:Create(cc, TweenInfo.new(0.2), {
+					Brightness = 0, Contrast = 0, Saturation = 0, TintColor = Color3.fromRGB(255, 255, 255)
+				})
+				t2:Play()
+
+				t2.Completed:Connect(function() 
+					cc:Destroy() 
+				end)
+
+				for _, audio in ipairs(pausedTracks) do
+					if audio and audio.Parent then audio:Resume() end
+				end
+			end)
 		end
 	end)
 end
@@ -129,7 +192,6 @@ function VFXManager.PlaySFX(sfxName, pitchMod)
 							audio.Volume = 0
 							audio:Resume()
 
-							-- Respect the settings volume when resuming tracks
 							local restoreVol = data.OrigVol
 							if player:GetAttribute("Setting_Music") == false then restoreVol = 0 end
 
@@ -141,7 +203,7 @@ function VFXManager.PlaySFX(sfxName, pitchMod)
 
 			game.Debris:AddItem(clone, 10)
 		else
-			game.Debris:AddItem(clone, 3)
+			game.Debris:AddItem(clone, 5)
 		end
 
 		clone:Play()
@@ -189,7 +251,6 @@ function VFXManager.PlayVFX(vfxName, targetFrame, customColor, isBlood)
 end
 
 function VFXManager.ScreenShake(intensity, duration)
-	-- Disable shake entirely if player has screen flashes turned off
 	if player:GetAttribute("Setting_ScreenFlash") == false then return end
 
 	local Camera = workspace.CurrentCamera
