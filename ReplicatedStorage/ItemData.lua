@@ -41,7 +41,10 @@ ItemData.Equipment = {
 
 	-- EVENT EXCLUSIVE EQUIPMENT
 	["The World's Stopwatch"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Speed = 100, DodgeBonus = 20, Strength = 50 }, Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> A pocket watch that seems to freeze time for a second. Grants godlike evasion and speed." },
-	["Jotaro's Coat"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Strength = 250, Speed = 200, Resolve = 500 }, Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> Yare yare daze. Grants immense strength and speed." }
+	["Jotaro's Coat"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Strength = 250, Speed = 200, Resolve = 500 }, Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> Yare yare daze. Grants immense strength and speed." },
+
+	-- CROSS-GAME COLLAB EXCLUSIVE EQUIPMENT
+	["Collab Stand Arrow"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Strength = 50, Speed = 50, Resolve = 50 }, Desc = "<font color=\"#FF55FF\">[COLLAB REWARD]</font> An arrow from another universe. Radiates a strange energy." }
 }
 
 ItemData.Consumables = {
@@ -170,11 +173,11 @@ ItemData.ForgeRecipes = {
 
 	["Fritz Clan Serum"] = { Result = "Fritz Clan Serum", ReqItems = {["Ymir's Clay Fragment"] = 2, ["Coordinate Shard"] = 5}, SpecialType = "AbyssalClanRequirement", AbyssalClanCount = 3, DewCost = 50000 },
 
-	-- EVENT EXCLUSIVE RECIPES
-	["Itemized Joestar"] = { Result = "Itemized Joestar", ReqItems = {["Vampire Titan Blood"] = 15, ["Stone Mask Fragment"] = 3}, DewCost = 25000 },
-	["Itemized Awakened Joestar"] = { Result = "Itemized Awakened Joestar", ReqItems = {["Itemized Joestar"] = 1, ["Stone Mask Fragment"] = 5, ["Stand Arrow Head"] = 1}, DewCost = 50000 },
-	["Itemized Abyssal Joestar"] = { Result = "Itemized Abyssal Joestar", ReqItems = {["Itemized Awakened Joestar"] = 1, ["Stand Arrow Head"] = 3, ["Abyssal Blood"] = 5}, DewCost = 100000 },
-	["Jotaro's Coat"] = { Result = "Jotaro's Coat", ReqItems = {["Scout Regiment Cloak"] = 1, ["Vampire Titan Blood"] = 20, ["Stand Arrow Head"] = 2}, DewCost = 75000 }
+	-- EVENT EXCLUSIVE RECIPES (BALANCED)
+	["Itemized Joestar"] = { Result = "Itemized Joestar", ReqItems = {["Vampire Titan Blood"] = 12, ["Stone Mask Fragment"] = 2}, DewCost = 10000 },
+	["Itemized Awakened Joestar"] = { Result = "Itemized Awakened Joestar", ReqItems = {["Itemized Joestar"] = 1, ["Stone Mask Fragment"] = 4, ["Stand Arrow Head"] = 1}, DewCost = 25000 },
+	["Itemized Abyssal Joestar"] = { Result = "Itemized Abyssal Joestar", ReqItems = {["Itemized Awakened Joestar"] = 1, ["Stand Arrow Head"] = 2, ["Abyssal Blood"] = 3}, DewCost = 75000 },
+	["Jotaro's Coat"] = { Result = "Jotaro's Coat", ReqItems = {["Scout Regiment Cloak"] = 1, ["Vampire Titan Blood"] = 15, ["Stand Arrow Head"] = 1}, DewCost = 50000 }
 }
 
 ItemData.Sets = {
