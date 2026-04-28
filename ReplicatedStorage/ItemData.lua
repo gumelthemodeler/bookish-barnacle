@@ -1,5 +1,6 @@
 -- @ScriptType: ModuleScript
 -- @ScriptType: ModuleScript
+-- @ScriptType: ModuleScript
 local ItemData = {}
 
 ItemData.Equipment = {
@@ -39,7 +40,8 @@ ItemData.Equipment = {
 	["Founder's Parasite"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Health = 2000, Speed = 150, Gas = 150 }, Desc = "<font color=\"#55FF55\">[MYTHIC PATHS RELIC]</font> The origin of all organic matter. Grants godlike health, extreme agility, and boundless stamina." },
 
 	-- EVENT EXCLUSIVE EQUIPMENT
-	["The World's Stopwatch"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Speed = 100, DodgeBonus = 20, Strength = 50 }, Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> A pocket watch that seems to freeze time for a second. Grants godlike evasion and speed." }
+	["The World's Stopwatch"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Speed = 100, DodgeBonus = 20, Strength = 50 }, Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> A pocket watch that seems to freeze time for a second. Grants godlike evasion and speed." },
+	["Jotaro's Coat"] = { Type = "Accessory", Rarity = "Transcendent", Cost = 0, Bonus = { Strength = 250, Speed = 200, Resolve = 500 }, Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> Yare yare daze. Grants immense strength and speed." }
 }
 
 ItemData.Consumables = {
@@ -60,6 +62,7 @@ ItemData.Consumables = {
 	-- EVENT EXCLUSIVE MATERIALS
 	["Stone Mask Fragment"] = { Rarity = "Mythical", Cost = 0, IsMaterial = true, Desc = "<font color=\"#FF0000\">[EVENT EXCLUSIVE]</font> A piece of an ancient mask that reacts to blood." },
 	["Vampire Titan Blood"] = { Rarity = "Legendary", Cost = 0, IsMaterial = true, Desc = "<font color=\"#FF0000\">[EVENT EXCLUSIVE]</font> Boiling blood from an anomaly titan. Highly valuable." },
+	["Stand Arrow Head"] = { Rarity = "Transcendent", Cost = 0, IsMaterial = true, Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> A strange arrowhead that awakens latent spiritual power." },
 
 	["Iron Bamboo Extract"] = { Rarity = "Epic", Cost = 2000, Action = "Consume", Buff = "Damage", Duration = 900, Desc = "Increases all damage dealt by 50% for 15 minutes." },
 	["Titan Research Notes"] = { Rarity = "Rare", Cost = 1500, Action = "Consume", Buff = "XP", Duration = 900, Desc = "Doubles all XP gained from combat and training for 15 minutes." },
@@ -111,6 +114,11 @@ ItemData.Consumables = {
 
 	["Fritz Clan Serum"] = { Rarity = "Transcendent", Cost = 0, Action = "EquipClan", ClanName = "Fritz", Desc = "<font color=\"#FFD700\">[EXCLUSIVE]</font> The absolute royal bloodline." },
 
+	-- EVENT EXCLUSIVE CLAN LINEAGES
+	["Itemized Joestar"] = { Rarity = "Legendary", Cost = 0, Action = "EquipClan", ClanName = "Joestar", Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> Consume to inherit the Joestar bloodline." },
+	["Itemized Awakened Joestar"] = { Rarity = "Mythical", Cost = 0, Action = "EquipClan", ClanName = "Awakened Joestar", Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> Consume to inherit the Awakened Joestar bloodline." },
+	["Itemized Abyssal Joestar"] = { Rarity = "Transcendent", Cost = 0, Action = "EquipClan", ClanName = "Abyssal Joestar", Desc = "<font color=\"#EEDD00\">[EVENT EXCLUSIVE]</font> Consume to inherit the Abyssal Joestar bloodline." },
+
 	["Founder's Bone"] = { 
 		Rarity = "Transcendent", 
 		Cost = 500000, 
@@ -160,7 +168,13 @@ ItemData.ForgeRecipes = {
 	["Itemized Abyssal Braun"] = { Result = "Itemized Abyssal Braun", ReqItems = {["Itemized Awakened Braun"] = 1, ["Abyssal Blood"] = 8, ["Coordinate Shard"] = 3}, DewCost = 25000 },
 	["Itemized Abyssal Reiss"] = { Result = "Itemized Abyssal Reiss", ReqItems = {["Itemized Awakened Reiss"] = 1, ["Abyssal Blood"] = 8, ["Coordinate Shard"] = 3}, DewCost = 25000 },
 
-	["Fritz Clan Serum"] = { Result = "Fritz Clan Serum", ReqItems = {["Ymir's Clay Fragment"] = 2, ["Coordinate Shard"] = 5}, SpecialType = "AbyssalClanRequirement", AbyssalClanCount = 3, DewCost = 50000 }
+	["Fritz Clan Serum"] = { Result = "Fritz Clan Serum", ReqItems = {["Ymir's Clay Fragment"] = 2, ["Coordinate Shard"] = 5}, SpecialType = "AbyssalClanRequirement", AbyssalClanCount = 3, DewCost = 50000 },
+
+	-- EVENT EXCLUSIVE RECIPES
+	["Itemized Joestar"] = { Result = "Itemized Joestar", ReqItems = {["Vampire Titan Blood"] = 15, ["Stone Mask Fragment"] = 3}, DewCost = 25000 },
+	["Itemized Awakened Joestar"] = { Result = "Itemized Awakened Joestar", ReqItems = {["Itemized Joestar"] = 1, ["Stone Mask Fragment"] = 5, ["Stand Arrow Head"] = 1}, DewCost = 50000 },
+	["Itemized Abyssal Joestar"] = { Result = "Itemized Abyssal Joestar", ReqItems = {["Itemized Awakened Joestar"] = 1, ["Stand Arrow Head"] = 3, ["Abyssal Blood"] = 5}, DewCost = 100000 },
+	["Jotaro's Coat"] = { Result = "Jotaro's Coat", ReqItems = {["Scout Regiment Cloak"] = 1, ["Vampire Titan Blood"] = 20, ["Stand Arrow Head"] = 2}, DewCost = 75000 }
 }
 
 ItemData.Sets = {
