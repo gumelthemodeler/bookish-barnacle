@@ -18,8 +18,9 @@ CosmeticData.Titles = {
 	["Arena Apex"] = { Name = "Arena Apex", Desc = "Hold a Top 5 spot on the Global Elo Leaderboard.", Color = "#55AAFF", ReqType = "Leaderboard", ReqValue = "Top5_Elo", Order = 10 },
 	["Squad Apex"] = { Name = "Squad Apex", Desc = "Be in a Top 5 Strike Squad.", Color = "#FF5555", ReqType = "Leaderboard", ReqValue = "Top5_Squad", Order = 11 },
 
-	-- [[ JOJO EVENT TITLE ]]
-	["Stardust Crusader"] = { Name = "Stardust Crusader", Desc = "Defeat The World Titan during the limited-time crossover event.", Color = "#FFD700", ReqType = "Achievement", ReqValue = "Defeat_WorldTitan", Order = 12 }
+	-- [[ JOJO EVENT & COLLAB TITLES ]]
+	["Stardust Crusader"] = { Name = "Stardust Crusader", Desc = "Defeat The World Titan during the limited-time crossover event.", Color = "#FFD700", ReqType = "Achievement", ReqValue = "Defeat_WorldTitan", Order = 12 },
+	["Bizarre Visitor"] = { Name = "Bizarre Visitor", Desc = "Unlocked by completing the cross-game collaboration.", Color = "#FF55FF", ReqType = "Achievement", ReqValue = "Collab_JoJo", Order = 13 }
 }
 
 CosmeticData.Auras = {
