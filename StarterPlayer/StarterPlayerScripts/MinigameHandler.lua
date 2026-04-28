@@ -23,7 +23,7 @@ ScreenGui.Enabled = false
 local Overlay = Instance.new("Frame", ScreenGui)
 Overlay.Size = UDim2.new(1, 0, 1, 0)
 Overlay.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-Overlay.BackgroundTransparency = 0.05
+Overlay.BackgroundTransparency = 0.2
 Overlay.ZIndex = 100 
 Overlay.Active = true 
 
@@ -56,7 +56,6 @@ local isActive = false
 local loopConnection = nil
 local isPressing = false
 
--- Used specifically for mashing minigames
 local clickCount = 0
 local function RegisterMash()
 	if isActive then clickCount += 1 end
@@ -69,7 +68,6 @@ ClickCatcher.MouseButton1Up:Connect(function()
 	if isActive then isPressing = false end
 end)
 
--- Mobile Touch Support
 ClickCatcher.InputBegan:Connect(function(input)
 	if isActive and input.UserInputType == Enum.UserInputType.Touch then
 		isPressing = true; RegisterMash()
@@ -104,7 +102,6 @@ end
 CombatUpdate.OnClientEvent:Connect(function(action, data)
 	if action == "StartMinigame" then
 
-		-- [[ THE FIX: FLAWLESS PERFECT CLASH MINIGAME ]]
 		if data.MinigameType == "Clash" then
 			ScreenGui.Enabled = true
 			isActive = true
@@ -123,7 +120,6 @@ CombatUpdate.OnClientEvent:Connect(function(action, data)
 			Title.TextColor3 = Color3.fromRGB(255, 100, 100)
 			Subtitle.Text = "Overpower the enemy! Rapidly tap or mash [SPACE]!"
 
-			-- Tug of War Bar
 			local BarBG = Instance.new("Frame", clashContainer)
 			BarBG.Size = UDim2.new(0.6, 0, 0, 40)
 			BarBG.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -148,19 +144,17 @@ CombatUpdate.OnClientEvent:Connect(function(action, data)
 			local VFXManager = require(script.Parent:WaitForChild("VFXManager"))
 			if VFXManager then VFXManager.PlaySFX("Hover", 1.0) end
 
-			local powerLevel = 0.4 -- Start slightly at a disadvantage
+			local powerLevel = 0.4
 			local timeElapsed = 0
-			local TIME_LIMIT = 5.0 -- Increased to 5 seconds
-			local clickPower = 0.12 -- Tripled tap strength (12% per tap!)
+			local TIME_LIMIT = 5.0
+			local clickPower = 0.12
 
 			loopConnection = RunService.RenderStepped:Connect(function(dt)
 				if not isActive then return end
 				timeElapsed += dt
 
-				-- Boss constantly pushes back
 				powerLevel -= (0.15 * dt)
 
-				-- Player pushes forward with mashing
 				if clickCount > 0 then
 					powerLevel += (clickCount * clickPower)
 					clickCount = 0
@@ -170,12 +164,10 @@ CombatUpdate.OnClientEvent:Connect(function(action, data)
 				powerLevel = math.clamp(powerLevel, 0, 1)
 				PlayerPower.Size = UDim2.new(powerLevel, 0, 1, 0)
 
-				-- Aggressive Screen Shake effect on the UI bar
 				local shakeX = math.random(-4, 4)
 				local shakeY = math.random(-4, 4)
 				BarBG.Position = UDim2.new(0.5, shakeX/800, 0.5, shakeY/600)
 
-				-- [[ THE FIX: Check Victory FIRST to prevent timer tie bugs ]]
 				if powerLevel >= 1 then
 					isActive = false
 					Title.Text = "ATTACK SHATTERED!"
@@ -190,7 +182,6 @@ CombatUpdate.OnClientEvent:Connect(function(action, data)
 					return
 				end
 
-				-- Defeat (Pushed to 0 or Time Ran Out)
 				if powerLevel <= 0 or timeElapsed >= TIME_LIMIT then
 					isActive = false
 					Title.Text = "OVERPOWERED!"
@@ -202,6 +193,236 @@ CombatUpdate.OnClientEvent:Connect(function(action, data)
 					return
 				end
 			end)
+
+		elseif data.MinigameType == "JoJoQTE" then
+			ScreenGui.Enabled = true
+			isActive = true
+
+			if Overlay:FindFirstChild("JoJoContainer") then Overlay.JoJoContainer:Destroy() end
+
+			local jcContainer = Instance.new("Frame", Overlay)
+			jcContainer.Name = "JoJoContainer"
+			jcContainer.Size = UDim2.new(1,0,1,0)
+			jcContainer.BackgroundTransparency = 1
+			jcContainer.ZIndex = 500
+
+			local VFXManager = require(script.Parent:WaitForChild("VFXManager"))
+
+			if data.EnemySkill == "Road Roller Crush" then
+				Title.Text = "ROAD ROLLER DA!"
+				Title.TextColor3 = Color3.fromRGB(255, 215, 0)
+				Subtitle.Text = "MASH [SPACE] OR CLICK RAPIDLY TO REPEL IT!"
+				ClickCatcher.Visible = true
+				clickCount = 0
+
+				if VFXManager then VFXManager.PlaySFX("RoadRoller", 1.0) end
+
+				local BarBG = Instance.new("Frame", jcContainer)
+				BarBG.Size = UDim2.new(0.6, 0, 0, 40)
+				BarBG.Position = UDim2.new(0.5, 0, 0.5, 0)
+				BarBG.AnchorPoint = Vector2.new(0.5, 0.5)
+				BarBG.BackgroundColor3 = Color3.fromRGB(40, 40, 10)
+				Instance.new("UICorner", BarBG).CornerRadius = UDim.new(0, 8)
+				local bStroke = Instance.new("UIStroke", BarBG)
+				bStroke.Color = Color3.fromRGB(255, 215, 0)
+				bStroke.Thickness = 2
+
+				local PlayerPower = Instance.new("Frame", BarBG)
+				PlayerPower.Size = UDim2.new(0.1, 0, 1, 0)
+				PlayerPower.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+				Instance.new("UICorner", PlayerPower).CornerRadius = UDim.new(0, 8)
+
+				local powerLevel = 0.1
+				local timeElapsed = 0
+				local TIME_LIMIT = 3.5 
+				local clickPower = 0.08 
+
+				loopConnection = RunService.RenderStepped:Connect(function(dt)
+					if not isActive then return end
+					timeElapsed += dt
+
+					powerLevel -= (0.10 * dt) 
+
+					if clickCount > 0 then
+						powerLevel += (clickCount * clickPower)
+						clickCount = 0
+						if VFXManager then VFXManager.PlaySFX("Click", 1.5) end
+					end
+
+					powerLevel = math.clamp(powerLevel, 0, 1)
+					PlayerPower.Size = UDim2.new(powerLevel, 0, 1, 0)
+
+					local shakeX = math.random(-6, 6)
+					local shakeY = math.random(-6, 6)
+					BarBG.Position = UDim2.new(0.5, shakeX/800, 0.5, shakeY/600)
+
+					if powerLevel >= 1 then
+						isActive = false
+						Title.Text = "REPELLED!"
+						Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+						task.wait(1)
+						jcContainer:Destroy()
+						StopMinigame(true, "JoJoQTE", { EnemySkill = data.EnemySkill })
+						return
+					end
+
+					if timeElapsed >= TIME_LIMIT then
+						isActive = false
+						Title.Text = "CRUSHED!"
+						Title.TextColor3 = Color3.fromRGB(255, 50, 50)
+						task.wait(1)
+						jcContainer:Destroy()
+						StopMinigame(false, "JoJoQTE", { EnemySkill = data.EnemySkill })
+						return
+					end
+				end)
+
+			elseif data.EnemySkill == "Muda Barrage" then
+				Title.Text = "MUDA MUDA MUDA!"
+				Title.TextColor3 = Color3.fromRGB(255, 215, 0)
+				Subtitle.Text = "Click the strikes to block them before they collapse!"
+				ClickCatcher.Visible = false
+
+				if VFXManager then VFXManager.PlaySFX("MudaBarrage", 1.0) end
+
+				local targetsToSpawn = 7
+				local hits = 0
+				local misses = 0
+				local sequenceActive = true
+				local activeTargets = 0
+
+				local function SpawnQTE()
+					if not isActive or not sequenceActive then return end
+					activeTargets += 1
+
+					local target = Instance.new("TextButton", jcContainer)
+					target.Size = UDim2.new(0, 65, 0, 65)
+					target.Position = UDim2.new(math.random(25, 75)/100, 0, math.random(25, 75)/100, 0)
+					target.AnchorPoint = Vector2.new(0.5, 0.5)
+					target.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+					target.Rotation = 45
+					target.Text = ""
+					target.ZIndex = 505
+					target.AutoButtonColor = false
+
+					local targetStroke = Instance.new("UIStroke", target)
+					targetStroke.Color = Color3.fromRGB(255, 215, 0)
+					targetStroke.Thickness = 2
+
+					local icon = Instance.new("TextLabel", target)
+					icon.Size = UDim2.new(1, 0, 1, 0)
+					icon.BackgroundTransparency = 1
+					icon.Rotation = -45 
+					icon.Text = "!"
+					icon.Font = Enum.Font.GothamBlack
+					icon.TextColor3 = Color3.fromRGB(255, 215, 0)
+					icon.TextSize = 28
+					icon.ZIndex = 506
+
+					local shrinker = Instance.new("Frame", target)
+					shrinker.AnchorPoint = Vector2.new(0.5, 0.5)
+					shrinker.Position = UDim2.new(0.5, 0, 0.5, 0)
+					shrinker.Size = UDim2.new(2.5, 0, 2.5, 0)
+					shrinker.BackgroundTransparency = 1
+					shrinker.ZIndex = 506
+					local shStroke = Instance.new("UIStroke", shrinker)
+					shStroke.Color = Color3.fromRGB(255, 215, 0)
+					shStroke.Thickness = 2
+
+					local duration = 1.0 
+					local tInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+					local t = TweenService:Create(shrinker, tInfo, {Size = UDim2.new(1, 0, 1, 0)})
+					t:Play()
+
+					local clicked = false
+
+					local function ProcessHit()
+						if clicked or not isActive or not sequenceActive then return end
+						clicked = true
+						hits += 1
+
+						-- FIXED: Now plays a high-pitched heavy punch so it sounds like a barrage clash!
+						if VFXManager then VFXManager.PlaySFX("HeavyPunch", math.random(130, 160)/100) end
+
+						targetStroke.Color = Color3.fromRGB(50, 255, 50)
+						icon.TextColor3 = Color3.fromRGB(50, 255, 50)
+						icon.Text = "✓"
+						shStroke.Transparency = 1
+
+						local shatter = TweenService:Create(target, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 95, 0, 95), BackgroundTransparency = 1})
+						local iconFade = TweenService:Create(icon, TweenInfo.new(0.2), {TextTransparency = 1})
+						local strokeFade = TweenService:Create(targetStroke, TweenInfo.new(0.2), {Transparency = 1})
+
+						shatter:Play(); iconFade:Play(); strokeFade:Play()
+
+						t:Cancel()
+						task.wait(0.2)
+						target:Destroy()
+						activeTargets -= 1
+					end
+
+					target.MouseButton1Down:Connect(ProcessHit)
+					target.TouchTap:Connect(ProcessHit)
+
+					t.Completed:Connect(function()
+						if not clicked and isActive and sequenceActive then
+							clicked = true
+							misses += 1
+
+							-- FIXED: Missing now plays a stomp/heavy impact with screenshake
+							if VFXManager then 
+								VFXManager.PlaySFX("Stomp", 1.2) 
+								VFXManager.ScreenShake(0.6, 0.2)
+							end
+
+							targetStroke.Color = Color3.fromRGB(255, 50, 50)
+							icon.TextColor3 = Color3.fromRGB(255, 50, 50)
+							icon.Text = "X"
+							shStroke.Transparency = 1
+
+							local fade = TweenService:Create(target, TweenInfo.new(0.2), {BackgroundTransparency = 1})
+							local iconFade = TweenService:Create(icon, TweenInfo.new(0.2), {TextTransparency = 1})
+							local strokeFade = TweenService:Create(targetStroke, TweenInfo.new(0.2), {Transparency = 1})
+
+							fade:Play(); iconFade:Play(); strokeFade:Play()
+
+							task.wait(0.2)
+							target:Destroy()
+							activeTargets -= 1
+						end
+					end)
+				end
+
+				task.spawn(function()
+					for i = 1, targetsToSpawn do
+						if not isActive then break end
+						SpawnQTE()
+						task.wait(0.4) 
+					end
+
+					while activeTargets > 0 and isActive do
+						task.wait(0.1)
+					end
+
+					if not isActive then return end
+					sequenceActive = false
+
+					if hits == targetsToSpawn then
+						Title.Text = "PERFECT DEFLECTION!"
+						Title.TextColor3 = Color3.fromRGB(50, 255, 50)
+					elseif hits > 0 then
+						Title.Text = "PARTIAL DEFLECTION!"
+						Title.TextColor3 = Color3.fromRGB(255, 215, 0)
+					else
+						Title.Text = "PUMMELED!"
+						Title.TextColor3 = Color3.fromRGB(255, 50, 50)
+					end
+
+					task.wait(1.5)
+					if jcContainer.Parent then jcContainer:Destroy() end
+					StopMinigame(true, "JoJoQTE", { EnemySkill = data.EnemySkill, Hits = hits, Misses = misses })
+				end)
+			end
 
 		elseif data.MinigameType == "Balance" then
 			ScreenGui.Enabled = true
