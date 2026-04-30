@@ -1,6 +1,7 @@
 -- @ScriptType: ModuleScript
 -- @ScriptType: ModuleScript
 -- @ScriptType: ModuleScript
+-- @ScriptType: ModuleScript
 local ClanData = {
 	Clans = {
 		["Yeager"] = {
@@ -60,12 +61,12 @@ local ClanData = {
 			TitanSynergies = { ["Founding"] = { DmgMult = 2.00, HpMult = 2.00, ArmorMult = 2.00, CritBonus = 25 } }
 		},
 
-		-- [[ EVENT EXCLUSIVE CLAN: JOESTAR ]]
+		-- [[ BUFFED EVENT EXCLUSIVE CLAN: JOESTAR ]]
 		["Joestar"] = {
-			BaseSpdMult = 1.40, AwakenedSpdMult = 2.50, AbyssalSpdMult = 5.00,
-			BaseResolveMult = 1.50, AwakenedResolveMult = 2.50, AbyssalResolveMult = 4.00,
-			CritBonus = 10, AwakenedCritBonus = 20, AbyssalCritBonus = 40,
-			DodgeBonus = 10, AbyssalDodgeBonus = 25
+			BaseSpdMult = 1.75, AwakenedSpdMult = 3.00, AbyssalSpdMult = 6.00,
+			BaseResolveMult = 1.75, AwakenedResolveMult = 3.00, AbyssalResolveMult = 5.50,
+			CritBonus = 15, AwakenedCritBonus = 25, AbyssalCritBonus = 50,
+			DodgeBonus = 15, AbyssalDodgeBonus = 35
 		}
 	}
 }
