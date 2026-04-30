@@ -1,5 +1,6 @@
 -- @ScriptType: Script
 -- @ScriptType: Script
+-- @ScriptType: Script
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -39,7 +40,6 @@ AbyssalRollEvent.OnServerEvent:Connect(function(player)
 		player:SetAttribute("Clan", "Abyssal " .. baseClan)
 
 		NotificationEvent:FireClient(player, "Your bloodline has transcended.", "Success")
-		--... [Rest of code unchanged]
 
 		task.spawn(function()
 			pcall(function()
@@ -90,7 +90,9 @@ local RarePathsItems = {
 local itemPool = {}
 
 for name, data in pairs(ItemData.Equipment or {}) do 
-	if not data.IsGift and not data.Cursed and data.Rarity ~= "Transcendent" then 
+	local lowerName = string.lower(name)
+	local isEventItem = string.find(lowerName, "stopwatch") or string.find(lowerName, "jotaro") or string.find(lowerName, "stand arrow")
+	if not data.IsGift and not data.Cursed and data.Rarity ~= "Transcendent" and not isEventItem then 
 		table.insert(itemPool, {Name = name, Data = data}) 
 	end
 end
@@ -103,6 +105,9 @@ for name, data in pairs(ItemData.Consumables or {}) do
 		or string.find(lowerName, "itemized") 
 		or name == "Ymir's Clay Fragment"
 		or name == "Titan Hardening Extract"
+		or name == "Stone Mask Fragment"
+		or name == "Vampire Titan Blood"
+		or name == "Stand Arrow Head"
 		or data.Rarity == "Transcendent"
 
 	if not data.IsGift and not isBannedFromShop then table.insert(itemPool, {Name = name, Data = data}) end
