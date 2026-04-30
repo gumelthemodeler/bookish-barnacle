@@ -1,6 +1,7 @@
 -- @ScriptType: Script
 -- @ScriptType: Script
 -- @ScriptType: Script
+-- @ScriptType: Script
 -- Name: DataManager
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -482,13 +483,13 @@ local function LoadPlayer(player)
 					player:SetAttribute("Ach_Collab_JoJo", true)
 				end
 
-				player:SetAttribute("CollabStandArrowCount", (player:GetAttribute("CollabStandArrowCount") or 0) + 1)
-				player:SetAttribute("StandArrowHeadCount", (player:GetAttribute("StandArrowHeadCount") or 0) + 5)
+				player:SetAttribute("ItemizedJoestarCount", (player:GetAttribute("ItemizedJoestarCount") or 0) + 1)
+				player:SetAttribute("JotarosCoatCount", (player:GetAttribute("JotarosCoatCount") or 0) + 1)
 
 				if dVal then dVal.Value += 25000 end
 
 				task.delay(4.0, function()
-					RemotesFolder.NotificationEvent:FireClient(player, "Cross-Game Collab: 'Bizarre Visitor' Title & Rewards Claimed!", "Success")
+					RemotesFolder.NotificationEvent:FireClient(player, "Cross-Game Collab Verified! Granted Itemized Joestar, Jotaro's Coat, & 25k Dews!", "Success")
 				end)
 			end
 		end
