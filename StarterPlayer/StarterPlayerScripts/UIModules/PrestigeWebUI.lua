@@ -199,48 +199,38 @@ function PrestigeWebUI.Build(parentPanel)
 	end)
 
 	local dragging = false
-	local dragInput
-	local dragStart
-	local startPos
+	local dragStart = Vector3.new()
+	local startPos = UDim2.new()
 
 	CanvasContainer.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
 			dragStart = input.Position
 			startPos = Canvas.Position
-
-			-- [[ THE FIX: Immediately cache the input object so mobile drag tracking doesn't fail ]]
-			dragInput = input 
-
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
-				end
-			end)
 		end
 	end)
 
 	CanvasContainer.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
-			dragInput = input
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			if dragging then
+				local delta = input.Position - dragStart
+				Canvas.Position = UDim2.new(
+					startPos.X.Scale, startPos.X.Offset + (delta.X / CanvasScale.Scale),
+					startPos.Y.Scale, startPos.Y.Offset + (delta.Y / CanvasScale.Scale)
+				)
+			end
 		elseif input.UserInputType == Enum.UserInputType.MouseWheel then
 			local newScale = math.clamp(CanvasScale.Scale + (input.Position.Z * 0.15), 0.3, 2.5)
 			CanvasScale.Scale = newScale
 		end
 	end)
 
-	UserInputService.InputChanged:Connect(function(input)
-		-- Because dragInput was assigned in InputBegan, mobile Touch tracking will successfully pass this logic lock
-		if input == dragInput and dragging then
-			local delta = input.Position - dragStart
-			Canvas.Position = UDim2.new(
-				startPos.X.Scale, startPos.X.Offset + (delta.X / CanvasScale.Scale),
-				startPos.Y.Scale, startPos.Y.Offset + (delta.Y / CanvasScale.Scale)
-			)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
 		end
 	end)
 
-	-- [[ ADDITION: Native Mobile Pinch-To-Zoom support ]]
 	local initialPinchScale = 1
 	UserInputService.TouchPinch:Connect(function(touchPositions, scale, velocity, state, gameProcessed)
 		if state == Enum.UserInputState.Begin then
