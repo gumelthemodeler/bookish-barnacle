@@ -31,6 +31,12 @@ local ActiveCodes = {
 			["Legendary Clan Vial"] = 5,
 		}
 	},
+	["BUGFIX"] = {
+		Dews = 1500,
+		Items = { 
+			["Legendary Clan Vial"] = 5,
+		}
+	},
 
 }
 
