@@ -1,7 +1,5 @@
 -- @ScriptType: ModuleScript
 -- @ScriptType: ModuleScript
--- @ScriptType: Script
--- Name: DoomsdayManager
 local DoomsdayManager = {}
 
 local Players = game:GetService("Players")
@@ -294,7 +292,7 @@ task.spawn(function()
 		if EVENT_ACTIVE then
 			if not ddActive or (ddBoss and ddBoss.Name ~= EVENT_BOSS_DATA.Name) then
 				ddBoss = EVENT_BOSS_DATA
-				ddMaxHP = ddBoss.Health * 50
+				ddMaxHP = ddBoss.Health * 50000
 				ddCurrentHP = ddMaxHP
 				ddLeaderboard = {}
 				ddActive = true
@@ -317,7 +315,7 @@ task.spawn(function()
 					end
 					if #bList > 0 then
 						ddBoss = bList[math.random(1, #bList)]
-						ddMaxHP = ddBoss.Health * 50
+						ddMaxHP = ddBoss.Health * 50000
 						ddCurrentHP = ddMaxHP
 						ddLeaderboard = {}
 						ddActive = true
