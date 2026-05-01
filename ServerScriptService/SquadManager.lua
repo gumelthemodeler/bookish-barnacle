@@ -1,6 +1,5 @@
 -- @ScriptType: Script
 -- @ScriptType: Script
--- Name: SquadManager
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
@@ -143,7 +142,6 @@ local function LoadPlayerSquad(player)
 	end
 end
 
--- Subscribe to Cross-Server Squad Updates
 pcall(function()
 	MessagingService:SubscribeAsync("SquadUpdate", function(message)
 		local data = message.Data
@@ -189,6 +187,18 @@ pcall(function()
 					end
 				end
 			elseif actionType == "Accepted" and tostring(p.UserId) == targetId then
+				if p:GetAttribute("SquadName") ~= "None" and p:GetAttribute("SquadName") ~= sqName then
+					pcall(function()
+						MessagingService:PublishAsync("SquadUpdate", {
+							SquadName = sqName,
+							TargetId = targetId,
+							ActionType = "Kicked",
+							OriginServer = game.JobId
+						})
+					end)
+					return
+				end
+
 				if p:GetAttribute("SquadName") ~= sqName then
 					p:SetAttribute("SquadName", sqName) 
 					LoadPlayerSquad(p)
@@ -299,7 +309,6 @@ local function RewardTopSquads()
 				if rank == 1 then
 					for _, p in ipairs(Players:GetPlayers()) do
 						if p:GetAttribute("SquadName") == entry.key and p:FindFirstChild("leaderstats") then
-							-- [ECONOMY PATCH] Heavy squash on end of season rewards
 							p.leaderstats.Dews.Value += 50000
 							NotificationEvent:FireClient(p, "SEASON END: Your Squad placed #1 Globally! (+50,000 Dews)", "Success")
 						end
@@ -307,7 +316,6 @@ local function RewardTopSquads()
 				elseif rank <= 5 then
 					for _, p in ipairs(Players:GetPlayers()) do
 						if p:GetAttribute("SquadName") == entry.key and p:FindFirstChild("leaderstats") then
-							-- [ECONOMY PATCH] Heavy squash on end of season rewards
 							p.leaderstats.Dews.Value += 15000
 							NotificationEvent:FireClient(p, "SEASON END: Your Squad placed Top 5! (+15,000 Dews)", "Success")
 						end
@@ -354,7 +362,6 @@ SquadAction.OnServerEvent:Connect(function(player, action, data)
 		if player:GetAttribute("SquadName") and player:GetAttribute("SquadName") ~= "None" then NotificationEvent:FireClient(player, "You are already in a Squad!", "Error") return end
 
 		local dews = player.leaderstats and player.leaderstats:FindFirstChild("Dews")
-		-- [ECONOMY PATCH] Re-balanced Squad Founding costs
 		if not dews or dews.Value < 25000 then NotificationEvent:FireClient(player, "Requires 25,000 Dews.", "Error") return end
 		if pcall(function() return SquadStore:GetAsync(data.Name) end) and SquadStore:GetAsync(data.Name) then NotificationEvent:FireClient(player, "Squad name taken!", "Error") return end
 
@@ -403,7 +410,6 @@ SquadAction.OnServerEvent:Connect(function(player, action, data)
 			return
 		end
 
-		-- [ECONOMY PATCH] Re-balanced Level Up costs
 		local cost = math.floor(math.pow(sqData.Level, 2.3) * 25000)
 		if player.leaderstats.Dews.Value < cost then
 			NotificationEvent:FireClient(player, "Not enough Dews! (Requires " .. cost .. ")", "Error")
@@ -444,7 +450,6 @@ SquadAction.OnServerEvent:Connect(function(player, action, data)
 			return
 		end
 
-		-- [ECONOMY PATCH] Re-balanced Upgrade costs
 		local Costs = { Capacity = 25000, Wealth = 10000, Training = 10000, Luck = 15000, Prestige = 50000 }
 		local MaxLevels = { Capacity = 5, Wealth = 10, Training = 10, Luck = 10, Prestige = 5 }
 		local ReqScales = { Capacity = 5, Wealth = 5, Training = 5, Luck = 5, Prestige = 10 }
@@ -499,7 +504,6 @@ SquadAction.OnServerEvent:Connect(function(player, action, data)
 			ActiveSquads[sqName].Requests = sqData.Requests
 		end
 
-		-- Alert officers globally
 		pcall(function()
 			MessagingService:PublishAsync("SquadUpdate", {
 				SquadName = sqName,
@@ -510,7 +514,6 @@ SquadAction.OnServerEvent:Connect(function(player, action, data)
 			})
 		end)
 
-		-- Alert officers locally
 		for _, p in ipairs(Players:GetPlayers()) do
 			if p:GetAttribute("SquadName") == sqName then
 				local pRole = p:GetAttribute("SquadRole")
