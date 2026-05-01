@@ -13,6 +13,10 @@ local VFXManager = require(script.Parent.Parent:WaitForChild("VFXManager"))
 local SharedUI = script.Parent.Parent:WaitForChild("SharedUI")
 local UIHelpers = require(SharedUI:WaitForChild("UIHelpers"))
 
+-- [[ FIX: Directly require TooltipManager ]]
+local tooltipModule = SharedUI:WaitForChild("TooltipManager", 2)
+local TooltipManager = tooltipModule and require(tooltipModule) or nil
+
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local TradeAction = Network:WaitForChild("TradeAction")
@@ -72,6 +76,7 @@ end
 local function CreateItemCard(parent, itemName, amount, isInventory)
 	local rarity = GetItemRarity(itemName)
 	local rColor = RARITY_COLORS[rarity] or "#FFFFFF"
+	local itemDataInfo = (ItemData.Equipment and ItemData.Equipment[itemName]) or (ItemData.Consumables and ItemData.Consumables[itemName]) or {}
 
 	local card, stroke = CreateSharpButton(parent, "", UDim2.new(0, 0, 0, 0), Enum.Font.GothamBold, 12, rColor)
 	card.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
@@ -82,6 +87,25 @@ local function CreateItemCard(parent, itemName, amount, isInventory)
 
 	local amtLbl = UIHelpers.CreateLabel(card, "x" .. amount, UDim2.new(1, 0, 0.3, 0), Enum.Font.GothamBlack, UIHelpers.Colors.TextWhite, 14)
 	amtLbl.Position = UDim2.new(0.5, 0, 0.95, 0); amtLbl.AnchorPoint = Vector2.new(0.5, 1)
+
+	local tTipStr = "<font color='" .. rColor .. "'>[" .. rarity .. "]</font> <b>" .. itemName .. "</b>"
+	if itemDataInfo.Desc then
+		tTipStr = tTipStr .. "\n<font color='#AAAAAA'>" .. itemDataInfo.Desc .. "</font>"
+	end
+	if itemDataInfo.Bonus then
+		tTipStr = tTipStr .. "\n\n<font color='#55FF55'><b>[ Stat Bonuses ]</b></font>"
+		for stat, val in pairs(itemDataInfo.Bonus) do
+			local prefix = val >= 0 and "+" or ""
+			tTipStr = tTipStr .. "\n<font color='#FFFFFF'>" .. prefix .. val .. " " .. stat .. "</font>"
+		end
+	end
+
+	card.MouseEnter:Connect(function() 
+		if TooltipManager and type(TooltipManager.Show) == "function" then TooltipManager.Show(tTipStr) end 
+	end)
+	card.MouseLeave:Connect(function() 
+		if TooltipManager and type(TooltipManager.Hide) == "function" then TooltipManager.Hide() end 
+	end)
 
 	if isInventory then
 		card.MouseButton1Click:Connect(function()
@@ -128,15 +152,29 @@ local function UpdateLayoutForScreen()
 	local isMobile = (vp.X <= 850) or (vp.Y > vp.X)
 
 	if isMobile then
-		TradePanel.Size = UDim2.new(0.95, 0, 0.95, 0)
-		if spLayout then spLayout.FillDirection = Enum.FillDirection.Vertical end
-		if LeftPanel then LeftPanel.Size = UDim2.new(1, 0, 0.5, -5) end
-		if RightPanel then RightPanel.Size = UDim2.new(1, 0, 0.5, -5) end
+		TradePanel.Size = UDim2.new(0.98, 0, 0.95, 0)
+		if spLayout then spLayout.FillDirection = Enum.FillDirection.Horizontal end
+		if LeftPanel then LeftPanel.Size = UDim2.new(0.5, -2, 1, 0) end
+		if RightPanel then RightPanel.Size = UDim2.new(0.5, -2, 1, 0) end
+
+		local mGrid = MyOfferGrid and MyOfferGrid:FindFirstChildOfClass("UIGridLayout")
+		if mGrid then mGrid.CellSize = UDim2.new(0, 50, 0, 50) end
+		local tGrid = TheirOfferGrid and TheirOfferGrid:FindFirstChildOfClass("UIGridLayout")
+		if tGrid then tGrid.CellSize = UDim2.new(0, 50, 0, 50) end
+		local iGrid = InventoryGrid and InventoryGrid:FindFirstChildOfClass("UIGridLayout")
+		if iGrid then iGrid.CellSize = UDim2.new(0, 50, 0, 50) end
 	else
 		TradePanel.Size = UDim2.new(0.85, 0, 0.85, 0)
 		if spLayout then spLayout.FillDirection = Enum.FillDirection.Horizontal end
 		if LeftPanel then LeftPanel.Size = UDim2.new(0.5, -5, 1, 0) end
 		if RightPanel then RightPanel.Size = UDim2.new(0.5, -5, 1, 0) end
+
+		local mGrid = MyOfferGrid and MyOfferGrid:FindFirstChildOfClass("UIGridLayout")
+		if mGrid then mGrid.CellSize = UDim2.new(0, 80, 0, 80) end
+		local tGrid = TheirOfferGrid and TheirOfferGrid:FindFirstChildOfClass("UIGridLayout")
+		if tGrid then tGrid.CellSize = UDim2.new(0, 80, 0, 80) end
+		local iGrid = InventoryGrid and InventoryGrid:FindFirstChildOfClass("UIGridLayout")
+		if iGrid then iGrid.CellSize = UDim2.new(0, 80, 0, 80) end
 	end
 end
 
@@ -165,9 +203,6 @@ local function BuildTradingUI()
 	SplitFrame.Size = UDim2.new(1, -20, 1, -120); SplitFrame.Position = UDim2.new(0, 10, 0, 50); SplitFrame.BackgroundTransparency = 1; SplitFrame.ZIndex = 252
 	spLayout = Instance.new("UIListLayout", SplitFrame); spLayout.FillDirection = Enum.FillDirection.Horizontal; spLayout.Padding = UDim.new(0, 10)
 
-	-- ==========================================
-	-- MY OFFER (LEFT)
-	-- ==========================================
 	LeftPanel, _ = CreateGrimPanel(SplitFrame)
 	LeftPanel.Size = UDim2.new(0.5, -5, 1, 0); LeftPanel.BackgroundColor3 = Color3.fromRGB(22, 22, 26); LeftPanel.ZIndex = 253
 
@@ -198,9 +233,6 @@ local function BuildTradingUI()
 
 	MyStatusLbl = UIHelpers.CreateLabel(LeftPanel, "NOT READY", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, Color3.fromRGB(255, 85, 85), 18); MyStatusLbl.Position = UDim2.new(0, 0, 1, -35); MyStatusLbl.ZIndex = 254
 
-	-- ==========================================
-	-- THEIR OFFER (RIGHT)
-	-- ==========================================
 	RightPanel, _ = CreateGrimPanel(SplitFrame)
 	RightPanel.Size = UDim2.new(0.5, -5, 1, 0); RightPanel.BackgroundColor3 = Color3.fromRGB(22, 22, 26); RightPanel.ZIndex = 253
 
@@ -215,9 +247,6 @@ local function BuildTradingUI()
 
 	TheirStatusLbl = UIHelpers.CreateLabel(RightPanel, "NOT READY", UDim2.new(1, 0, 0, 30), Enum.Font.GothamBlack, Color3.fromRGB(255, 85, 85), 18); TheirStatusLbl.Position = UDim2.new(0, 0, 1, -35); TheirStatusLbl.ZIndex = 254
 
-	-- ==========================================
-	-- CONTROLS & COUNTDOWN
-	-- ==========================================
 	ReadyBtn = CreateSharpButton(TradePanel, "READY UP", UDim2.new(0, 200, 0, 50), Enum.Font.GothamBlack, 16, "#FFD700")
 	ReadyBtn.Position = UDim2.new(0.5, 0, 1, -35); ReadyBtn.AnchorPoint = Vector2.new(0.5, 0.5); ReadyBtn.ZIndex = 252
 	ReadyBtn.MouseButton1Click:Connect(function() TradeAction:FireServer("ToggleReady") end)
