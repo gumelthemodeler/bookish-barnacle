@@ -15,6 +15,10 @@ local NotificationManager = notifModule and require(notifModule) or nil
 local auraModule = SharedUI:WaitForChild("UIAuraManager", 2)
 local UIAuraManager = auraModule and require(auraModule) or nil
 
+-- [[ FIX: Directly require TooltipManager ]]
+local tooltipModule = SharedUI:WaitForChild("TooltipManager", 2)
+local TooltipManager = tooltipModule and require(tooltipModule) or nil
+
 local VFXManager = require(script.Parent.Parent:WaitForChild("VFXManager"))
 local cinModule = script.Parent:WaitForChild("CinematicManager", 2)
 local CinematicManager = cinModule and require(cinModule) or nil
@@ -129,7 +133,7 @@ end
 -- ==========================================
 -- IDENTITY TAB
 -- ==========================================
-local function BuildIdentityTab(parentFrame, cachedTooltipMgr)
+local function BuildIdentityTab(parentFrame)
 	local function DrawLineScale(parent, p1x, p1y, p2x, p2y, color, thickness, zindex)
 		local dx = p2x - p1x; local dy = p2y - p1y; local dist = math.sqrt(dx*dx + dy*dy)
 		local frame = Instance.new("Frame", parent)
@@ -535,9 +539,27 @@ local function BuildIdentityTab(parentFrame, cachedTooltipMgr)
 			local rarityTag = CreateSharpLabel(card, string.sub(rarityKey, 1, 1), UDim2.new(0, 16, 0, 16), Enum.Font.GothamBlack, rarityRGB, 12); rarityTag.Position = UDim2.new(0, 6, 1, -22); rarityTag.TextTransparency = 0.3; rarityTag.ZIndex = 3
 			local btnCover = Instance.new("TextButton", card); btnCover.Size = UDim2.new(1,0,1,0); btnCover.BackgroundTransparency = 1; btnCover.Text = ""; btnCover.ZIndex = 5
 
+			-- [[ FIX: Dynamic Tooltip Data string parsing added ]]
 			local tTipStr = "<font color='" .. (RarityColors[rarityKey] or "#FFFFFF") .. "'>[" .. rarityKey .. "]</font> <b>" .. item.Name .. "</b>"
-			btnCover.MouseEnter:Connect(function() if cachedTooltipMgr and type(cachedTooltipMgr.Show) == "function" then cachedTooltipMgr.Show(tTipStr) end end)
-			btnCover.MouseLeave:Connect(function() if cachedTooltipMgr and type(cachedTooltipMgr.Hide) == "function" then cachedTooltipMgr.Hide() end end)
+
+			if item.Data.Desc then
+				tTipStr = tTipStr .. "\n<font color='#AAAAAA'>" .. item.Data.Desc .. "</font>"
+			end
+
+			if item.Data.Bonus then
+				tTipStr = tTipStr .. "\n\n<font color='#55FF55'><b>[ Stat Bonuses ]</b></font>"
+				for stat, val in pairs(item.Data.Bonus) do
+					local prefix = val >= 0 and "+" or ""
+					tTipStr = tTipStr .. "\n<font color='#FFFFFF'>" .. prefix .. val .. " " .. stat .. "</font>"
+				end
+			end
+
+			if item.Data.Style then
+				tTipStr = tTipStr .. "\n\n<font color='#FFD700'><b>[ Requires: " .. item.Data.Style .. " ]</b></font>"
+			end
+
+			btnCover.MouseEnter:Connect(function() if TooltipManager and type(TooltipManager.Show) == "function" then TooltipManager.Show(tTipStr) end end)
+			btnCover.MouseLeave:Connect(function() if TooltipManager and type(TooltipManager.Hide) == "function" then TooltipManager.Hide() end end)
 
 			local ActionsOverlay = Instance.new("Frame", card); ActionsOverlay.Name = "ActionsOverlay"; ActionsOverlay.Size = UDim2.new(1, 0, 1, 0); ActionsOverlay.BackgroundColor3 = Color3.fromRGB(18, 18, 22); ActionsOverlay.BackgroundTransparency = 0.05; ActionsOverlay.Visible = false; ActionsOverlay.ZIndex = 10; ActionsOverlay.Active = true; ActionsOverlay.BorderSizePixel = 0
 			local actLayout = Instance.new("UIListLayout", ActionsOverlay); actLayout.Padding = UDim.new(0, 4); actLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center; actLayout.VerticalAlignment = Enum.VerticalAlignment.Center
@@ -907,6 +929,12 @@ local function BuildSkillsTab(parentFrame)
 	local HeaderLabel = CreateSharpLabel(HeaderContainer, "ACTIVE LOADOUT", UDim2.new(1, 0, 0, 25), Enum.Font.GothamBlack, Color3.fromRGB(225, 185, 60), 18)
 	HeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+	local ResetBtn, rStroke = CreateSharpButton(HeaderContainer, "RESET DEFAULTS", UDim2.new(0, 130, 0, 25), Enum.Font.GothamBlack, 11)
+	ResetBtn.Position = UDim2.new(1, -15, 0, 15)
+	ResetBtn.AnchorPoint = Vector2.new(1, 0)
+	ResetBtn.BackgroundColor3 = Color3.fromRGB(100, 30, 30)
+	rStroke.Color = Color3.fromRGB(200, 50, 50)
+
 	local TopLoadoutGrid = Instance.new("Frame", HeaderContainer)
 	TopLoadoutGrid.Size = UDim2.new(1, 0, 0, 110)
 	TopLoadoutGrid.Position = UDim2.new(0, 0, 0, 40)
@@ -1131,7 +1159,6 @@ local function BuildSkillsTab(parentFrame)
 			end
 		end
 
-		-- Trigger layout update if we just rebuilt
 		local vp = camera.ViewportSize
 		local isMobile = (vp.X <= 850) or (vp.Y > vp.X)
 		if LayoutRefs.Skills and LayoutRefs.Skills.LibraryGrids then
@@ -1141,6 +1168,15 @@ local function BuildSkillsTab(parentFrame)
 			end
 		end
 	end
+
+	ResetBtn.MouseButton1Click:Connect(function()
+		for i = 1, 4 do
+			Network:WaitForChild("EquipSkill"):FireServer(i, "None")
+			player:SetAttribute("EquippedSkill_"..i, "None")
+		end
+		RefreshSkills()
+	end)
+
 	player.AttributeChanged:Connect(function(attr) if string.match(attr, "^EquippedSkill") then RefreshSkills() end end); RefreshSkills()
 end
 
@@ -1198,7 +1234,6 @@ local function BuildPrestigeTab(parentFrame)
 	task.spawn(function() local ls = player:WaitForChild("leaderstats", 10); if ls and ls:FindFirstChild("Prestige") then ls.Prestige.Changed:Connect(UpdateLeftPanelUI) end end)
 	UpdateLeftPanelUI()
 
-	-- [[ DYNAMIC PRESTIGE WEB UI START ]] --
 	local RightPanel = Instance.new("Frame", MainContainer)
 	RightPanel.AnchorPoint = Vector2.new(1, 0)
 	RightPanel.Position = UDim2.new(1, -15, 0, 15)
@@ -1347,40 +1382,44 @@ local function BuildPrestigeTab(parentFrame)
 	end)
 
 	local dragging = false
-	local dragInput
-	local dragStart
-	local startPos
+	local dragStart = Vector3.new()
+	local startPos = UDim2.new()
 
 	CanvasContainer.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
 			dragStart = input.Position
 			startPos = Canvas.Position
-
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
-				end
-			end)
 		end
 	end)
 
 	CanvasContainer.InputChanged:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-			dragInput = input
+			if dragging then
+				local delta = input.Position - dragStart
+				Canvas.Position = UDim2.new(
+					startPos.X.Scale, startPos.X.Offset + (delta.X / CanvasScale.Scale),
+					startPos.Y.Scale, startPos.Y.Offset + (delta.Y / CanvasScale.Scale)
+				)
+			end
 		elseif input.UserInputType == Enum.UserInputType.MouseWheel then
 			local newScale = math.clamp(CanvasScale.Scale + (input.Position.Z * 0.15), 0.3, 2.5)
 			CanvasScale.Scale = newScale
 		end
 	end)
 
-	UserInputService.InputChanged:Connect(function(input)
-		if input == dragInput and dragging then
-			local delta = input.Position - dragStart
-			Canvas.Position = UDim2.new(
-				startPos.X.Scale, startPos.X.Offset + (delta.X / CanvasScale.Scale),
-				startPos.Y.Scale, startPos.Y.Offset + (delta.Y / CanvasScale.Scale)
-			)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+
+	local initialPinchScale = 1
+	UserInputService.TouchPinch:Connect(function(touchPositions, scale, velocity, state, gameProcessed)
+		if state == Enum.UserInputState.Begin then
+			initialPinchScale = CanvasScale.Scale
+		elseif state == Enum.UserInputState.Change then
+			CanvasScale.Scale = math.clamp(initialPinchScale * scale, 0.3, 2.5)
 		end
 	end)
 
@@ -1493,7 +1532,6 @@ local function BuildPrestigeTab(parentFrame)
 	end)
 
 	UpdateWebState()
-	-- [[ DYNAMIC PRESTIGE WEB UI END ]] --
 
 	LayoutRefs.Prestige = {
 		LeftPanel = LeftPanel,
@@ -1504,7 +1542,7 @@ end
 -- ==========================================
 -- INHERITANCE TAB
 -- ==========================================
-local function BuildInheritanceTab(parentFrame, cachedTooltipMgr)
+local function BuildInheritanceTab(parentFrame)
 	local MainScroll = Instance.new("ScrollingFrame", parentFrame)
 	MainScroll.Size = UDim2.new(1, 0, 1, 0)
 	MainScroll.BackgroundTransparency = 1
@@ -2049,7 +2087,7 @@ end
 -- ==========================================
 -- INITIALIZATION / ROUTER
 -- ==========================================
-function HeroMenu.Initialize(parentFrame, tooltipMgr)
+function HeroMenu.Initialize(parentFrame)
 	local pSubNav = Instance.new("ScrollingFrame", parentFrame)
 	pSubNav.Size = UDim2.new(1, 0, 0, 45)
 	pSubNav.BackgroundTransparency = 1
@@ -2108,11 +2146,11 @@ function HeroMenu.Initialize(parentFrame, tooltipMgr)
 	subBtns["IDENTITY"].Btn.TextColor3 = UIHelpers.Colors.Gold
 	subBtns["IDENTITY"].Stroke.Color = UIHelpers.Colors.Gold
 
-	BuildIdentityTab(activeSubFrames["IDENTITY"], tooltipMgr)
+	BuildIdentityTab(activeSubFrames["IDENTITY"])
 	BuildAttributesTab(activeSubFrames["ATTRIBUTES"])
 	BuildSkillsTab(activeSubFrames["SKILLS"])
 	BuildPrestigeTab(activeSubFrames["PRESTIGE"])
-	BuildInheritanceTab(activeSubFrames["INHERITANCE"], tooltipMgr)
+	BuildInheritanceTab(activeSubFrames["INHERITANCE"])
 	BuildBountiesTab(activeSubFrames["BOUNTIES"])
 
 	camera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateLayoutForScreen)
