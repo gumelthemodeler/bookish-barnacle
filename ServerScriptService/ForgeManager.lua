@@ -154,6 +154,12 @@ Network:WaitForChild("ForgeItem").OnServerEvent:Connect(function(player, recipeN
 			local statStr = "+" .. v1 .. (stat1 == "MAX HP" and "" or "%") .. " " .. stat1 .. " | +" .. v2 .. (stat2 == "MAX HP" and "" or "%") .. " " .. stat2
 			player:SetAttribute(resSafeName .. "_Awakened", statStr)
 			player:SetAttribute(resSafeName .. "_AwakenLevel", 1)
+
+			-- Store raw stats for combat calculation
+			player:SetAttribute(resSafeName .. "_AwakenedStat1_Type", stat1)
+			player:SetAttribute(resSafeName .. "_AwakenedStat1_Value", v1)
+			player:SetAttribute(resSafeName .. "_AwakenedStat2_Type", stat2)
+			player:SetAttribute(resSafeName .. "_AwakenedStat2_Value", v2)
 		end
 	end
 
@@ -166,6 +172,10 @@ end)
 
 local RefineGear = Network:FindFirstChild("RefineGear") or Instance.new("RemoteEvent", Network)
 RefineGear.Name = "RefineGear"
+
+-- Set the maximum refinement level here
+local MAX_AWAKEN_LEVEL = 100 
+
 RefineGear.OnServerEvent:Connect(function(player, weaponName)
 	local iData = ItemData.Equipment[weaponName]
 	if not iData or string.find(weaponName, "Abyssal") or iData.Rarity == "Transcendent" then return end
@@ -174,6 +184,12 @@ RefineGear.OnServerEvent:Connect(function(player, weaponName)
 	if GetItemCount(player, weaponName) <= 0 then return end
 
 	local currentLevel = player:GetAttribute(safeWpn .. "_AwakenLevel") or 0
+
+	-- NEW: Cap verification check
+	if currentLevel >= MAX_AWAKEN_LEVEL then
+		NotificationEvent:FireClient(player, weaponName .. " has reached its absolute limits!", "Error")
+		return
+	end
 
 	local dewsNeeded = 10000 + (currentLevel * 5000)
 	local extractsNeeded = 1 + currentLevel
@@ -196,6 +212,12 @@ RefineGear.OnServerEvent:Connect(function(player, weaponName)
 
 		local statStr = "+" .. v1 .. (stat1 == "MAX HP" and "" or "%") .. " " .. stat1 .. " | +" .. v2 .. (stat2 == "MAX HP" and "" or "%") .. " " .. stat2
 		player:SetAttribute(safeWpn .. "_Awakened", statStr)
+
+		-- Store raw stats for combat calculation
+		player:SetAttribute(safeWpn .. "_AwakenedStat1_Type", stat1)
+		player:SetAttribute(safeWpn .. "_AwakenedStat1_Value", v1)
+		player:SetAttribute(safeWpn .. "_AwakenedStat2_Type", stat2)
+		player:SetAttribute(safeWpn .. "_AwakenedStat2_Value", v2)
 
 		NotificationEvent:FireClient(player, weaponName .. " awakened to Level " .. newLevel .. "!", "Success")
 	else
