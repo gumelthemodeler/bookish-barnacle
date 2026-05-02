@@ -1,6 +1,5 @@
 -- @ScriptType: Script
 -- @ScriptType: Script
--- @ScriptType: Script
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -355,8 +354,8 @@ VIPFreeReroll.OnServerEvent:Connect(function(player, isDews)
 
 	if isDews then
 		local dews = player.leaderstats and player.leaderstats:FindFirstChild("Dews")
-		if dews and dews.Value >= 300000 then
-			dews.Value -= 300000
+		if dews and dews.Value >= 15000 then -- CHANGED FROM 300000 to 15000
+			dews.Value -= 15000              -- CHANGED FROM 300000 to 15000
 			canReroll = true
 		end
 	else
