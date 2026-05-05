@@ -2,6 +2,7 @@
 -- @ScriptType: Script
 -- @ScriptType: Script
 -- @ScriptType: Script
+-- @ScriptType: Script
 -- Name: DataManager
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -478,10 +479,7 @@ local function LoadPlayer(player)
 
 			if bSuccess and hasBadge then
 				player:SetAttribute("CollabReward_JoJo_Claimed", true)
-
-				if not player:GetAttribute("Ach_Collab_JoJo") then
-					player:SetAttribute("Ach_Collab_JoJo", true)
-				end
+				player:SetAttribute("Ach_Collab_JoJo", true)
 
 				player:SetAttribute("ItemizedJoestarCount", (player:GetAttribute("ItemizedJoestarCount") or 0) + 1)
 				player:SetAttribute("JotarosCoatCount", (player:GetAttribute("JotarosCoatCount") or 0) + 1)
@@ -492,6 +490,11 @@ local function LoadPlayer(player)
 					RemotesFolder.NotificationEvent:FireClient(player, "Cross-Game Collab Verified! Granted Itemized Joestar, Jotaro's Coat, & 25k Dews!", "Success")
 				end)
 			end
+		end
+
+		-- FIX: Grant the achievement to players who already claimed the reward previously
+		if player:GetAttribute("CollabReward_JoJo_Claimed") and not player:GetAttribute("Ach_Collab_JoJo") then
+			player:SetAttribute("Ach_Collab_JoJo", true)
 		end
 	end)
 
