@@ -14,10 +14,12 @@ local EVENT_BADGE_ID = 1866183828416372
 local TriggerRumbling = Network:WaitForChild("TriggerRumbling")
 local GetDoomsdayData = Network:WaitForChild("GetDoomsdayData")
 local GetRumblingData = Network:WaitForChild("GetRumblingData")
+-- DoomsdayManager.lua (Lines ~12-14)
 local SyncRumbling = Network:WaitForChild("SyncRumbling")
 
-local EVENT_EXPIRATION_DATE = os.time({year = 2026, month = 5, day = 5, hour = 3, min = 20, sec = 0})
-local EVENT_ACTIVE = (os.time() < EVENT_EXPIRATION_DATE) 
+-- Changed day to 8 to extend the event to the 8th
+local EVENT_EXPIRATION_DATE = os.time({year = 2026, month = 5, day = 8, hour = 3, min = 20, sec = 0})
+local EVENT_ACTIVE = (os.time() < EVENT_EXPIRATION_DATE)
 
 local EVENT_STAT_REQUIREMENT = 250 
 local EVENT_BOSS_DATA = {
