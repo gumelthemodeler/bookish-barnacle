@@ -10,11 +10,15 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local playerScripts = player:WaitForChild("PlayerScripts")
 
+-- ClientMain.lua (Lines ~10-18)
 -- Disable default Roblox UI except Chat
 task.spawn(function()
 	pcall(function()
 		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
 		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
+
+		-- Enable Virtual Cursor for Console Gamepad Players
+		StarterGui.VirtualCursorMode = Enum.VirtualCursorMode.Enabled
 	end)
 end)
 
